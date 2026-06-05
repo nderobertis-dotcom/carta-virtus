@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Carta Virtus — Diventa Supporter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -330,7 +331,10 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
       <div class="qr-card">
         <div class="qr-title">Il tuo QR Carta Virtus</div>
         <div class="qr-sub">Mostralo ai partner per accumulare punti</div>
-        <div class="qr-display" id="t-qr-code">—</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <canvas id="t-qr-canvas" style="border-radius:10px;box-shadow:0 4px 16px rgba(21,101,192,.12)"></canvas>
+          <div class="qr-display" id="t-qr-code" style="font-size:13px;letter-spacing:.1em">—</div>
+        </div>
         <div id="t-membership-chip"></div>
       </div>
       <div class="t-card">
@@ -712,6 +716,15 @@ async function caricaAreaTifoso(user) {
   document.getElementById('t-avatar').textContent = tifoso.nome[0].toUpperCase()
   document.getElementById('t-punti').textContent = tifoso.punti_saldo.toLocaleString('it-IT')
   document.getElementById('t-qr-code').textContent = tifoso.qr_code
+  // Genera QR code grafico
+  try {
+    await QRCode.toCanvas(document.getElementById('t-qr-canvas'), tifoso.qr_code, {
+      width: 200,
+      margin: 2,
+      color: { dark: '#1a3a6b', light: '#ffffff' },
+      errorCorrectionLevel: 'M'
+    })
+  } catch(e) { console.warn('QR generation error:', e) }
 
   const { data: memb } = await sb.from('membership')
     .select('*, piano:piano_id(nome)').eq('tifoso_id', tifoso.id)
