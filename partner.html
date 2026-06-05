@@ -464,7 +464,7 @@ async function cercaTifoso(qr) {
 
   const { data: tifoso, error } = await sbAdmin
     .from('tifosi')
-    .select('*, membership(*, piano:piano_id(nome, punti_per_euro, moltiplicatore))')
+    .select('*, membership(*, piano:piano_id(nome, punti_bonus))')
     .eq('qr_code', qr)
     .eq('stato', 'attivo')
     .single()
