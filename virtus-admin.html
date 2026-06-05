@@ -217,11 +217,7 @@ select.form-input:focus{border-color:var(--accent)}
     <p>Accedi con il tuo account amministratore</p>
     <div class="login-error" id="login-error"></div>
     <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="login-email" placeholder="nderobertis@gmail.com"/>
-    </div>
-    <div class="form-group">
-      <label>Password</label>
+      <label>Password admin</label>
       <input type="password" id="login-password" placeholder="••••••••"/>
     </div>
     <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doLogin()">Accedi</button>
@@ -584,39 +580,37 @@ select.form-input:focus{border-color:var(--accent)}
 const SUPABASE_URL = 'https://brwkwlyxkptzmkzkava.supabase.co'
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI' // inserisci la tua anon key
 const { createClient } = supabase
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON)
+let sb = createClient(SUPABASE_URL, SUPABASE_ANON)
 
 let currentUser = null
 let allTifosi = []
 let allPartner = []
 
 // ── AUTH ──
+const ADMIN_PASSWORD = 'CartaVirtus2025!'
+const SUPABASE_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODUzMTc1MCwiZXhwIjoyMDk0MTA3NzUwfQ.Pb61V8euQwLt1KR-m29nr_s0F13gRXSToRiPPL6bLSQ
+'
+const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE)
+
 async function doLogin() {
-  const email = document.getElementById('login-email').value
   const pass  = document.getElementById('login-password').value
   const errEl = document.getElementById('login-error')
   errEl.style.display = 'none'
 
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass })
-  if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return }
-
-  const ruolo = data.user.user_metadata?.ruolo
-  if (ruolo !== 'admin') {
-    await sb.auth.signOut()
-    errEl.textContent = 'Accesso negato: non sei un amministratore'
+  if (pass !== ADMIN_PASSWORD) {
+    errEl.textContent = 'Password non corretta'
     errEl.style.display = 'block'
     return
   }
 
-  currentUser = data.user
+  sb = sbAdmin
   document.getElementById('login-screen').style.display = 'none'
-  document.getElementById('user-email-display').textContent = email.split('@')[0]
-  document.getElementById('user-avatar').textContent = email[0].toUpperCase()
+  document.getElementById('user-email-display').textContent = 'nderobertis'
+  document.getElementById('user-avatar').textContent = 'N'
   initApp()
 }
 
 async function doLogout() {
-  await sb.auth.signOut()
   location.reload()
 }
 
@@ -960,7 +954,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin()
 })
 
-// ── AUTO LOGIN SE GIÀ LOGGATO ──
+
 sb.auth.getSession().then(({ data: { session } }) => {
   if (session?.user?.user_metadata?.ruolo === 'admin') {
     currentUser = session.user
