@@ -620,9 +620,15 @@ async function loadReport() {
     .eq('partner_id', currentPartner.id)
     .eq('tipo', 'ACCUMULO')
 
-  if (!data) return
-  const totPunti = data.reduce((s, t) => s + t.punti_delta, 0)
-  const totVolume = data.reduce((s, t) => s + (t.importo_eur || 0), 0)
+  if (!data || data.length === 0) {
+    document.getElementById('rep-tx').textContent = '0'
+    document.getElementById('rep-punti').textContent = '0'
+    document.getElementById('rep-volume').textContent = '€ 0.00'
+    document.getElementById('rep-tifosi').textContent = '0'
+    return
+  }
+  const totPunti = data.reduce((s, t) => s + (parseInt(t.punti_delta) || 0), 0)
+  const totVolume = data.reduce((s, t) => s + (parseFloat(t.importo_eur) || 0), 0)
   const tifosi = new Set(data.map(t => t.tifoso_id)).size
 
   document.getElementById('rep-tx').textContent = data.length
