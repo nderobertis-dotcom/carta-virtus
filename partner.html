@@ -230,8 +230,8 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
           <div class="or-sep">oppure inserisci manualmente</div>
 
           <div class="qr-manual-wrap">
-            <input class="form-input" id="qr-manual" placeholder="Codice QR tifoso..." style="font-family:monospace"/>
-            <button class="btn-cerca" onclick="cercaTifoso(document.getElementById('qr-manual').value.trim())">Cerca</button>
+            <input class="form-input" id="qr-manual" placeholder="Codice QR tifoso..." style="font-family:monospace;text-transform:lowercase"/>
+            <button class="btn-cerca" onclick="cercaTifoso(document.getElementById('qr-manual').value.trim().toLowerCase())">Cerca</button>
           </div>
         </div>
       </div>
@@ -460,7 +460,7 @@ function stopCamera() {
 // ── CERCA TIFOSO ──
 async function cercaTifoso(qr) {
   if (!qr) { toast('Inserisci un codice QR', 'error'); return }
-  qr = qr.trim().toLowerCase()
+  qr = qr.trim().toLowerCase().replace(/\s+/g, '')
 
   const { data: tifoso, error } = await sbAdmin
     .from('tifosi')
