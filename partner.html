@@ -339,6 +339,8 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const WORKER_URL = 'https://carta-virtus-auth.nderobertis.workers.dev'
 const { createClient } = supabase
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON)
+const SUPABASE_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODUzMTc1MCwiZXhwIjoyMDk0MTA3NzUwfQ.Pb61V8euQwLt1KR-m29nr_s0F13gRXSToRiPPL6bLSQ'
+const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE)
 
 let currentPartner = null
 let currentTifoso = null
@@ -460,7 +462,7 @@ async function cercaTifoso(qr) {
   if (!qr) { toast('Inserisci un codice QR', 'error'); return }
   qr = qr.trim().toLowerCase()
 
-  const { data: tifoso, error } = await sb
+  const { data: tifoso, error } = await sbAdmin
     .from('tifosi')
     .select('*, membership(*, piano:piano_id(nome, punti_per_euro, moltiplicatore))')
     .eq('qr_code', qr)
@@ -501,7 +503,7 @@ async function cercaTifoso(qr) {
 let campagnaAttiva = null
 async function checkCampagna() {
   const now = new Date().toISOString()
-  const { data } = await sb
+  const { data } = await sbAdmin
     .from('campagne')
     .select('*')
     .eq('attiva', true)
@@ -540,7 +542,7 @@ async function confermaPunti() {
   btn.textContent = 'Elaborazione...'
 
   try {
-    const { data, error } = await sb.rpc('accumula_punti', {
+    const { data, error } = await sbAdmin.rpc('accumula_punti', {
       p_tifoso_qr:   currentTifoso.qr_code,
       p_partner_id:  currentPartner.id,
       p_importo_eur: importo,
@@ -584,7 +586,7 @@ function nuovaTransazione() {
 // ── STORICO ──
 async function loadStorico() {
   if (!currentPartner) return
-  const { data } = await sb
+  const { data } = await sbAdmin
     .from('transazioni')
     .select('punti_delta, importo_eur, creato_il, tifoso:tifoso_id(nome, cognome)')
     .eq('partner_id', currentPartner.id)
@@ -612,7 +614,7 @@ async function loadStorico() {
 // ── REPORT ──
 async function loadReport() {
   if (!currentPartner) return
-  const { data } = await sb
+  const { data } = await sbAdmin
     .from('transazioni')
     .select('punti_delta, importo_eur, tifoso_id')
     .eq('partner_id', currentPartner.id)
@@ -633,7 +635,7 @@ async function loadReport() {
 async function loadCampagne() {
   if (!currentPartner) return
   const now = new Date().toISOString()
-  const { data } = await sb
+  const { data } = await sbAdmin
     .from('campagne')
     .select('*')
     .eq('attiva', true)
