@@ -564,18 +564,29 @@ async function completaRegistrazione() {
   const marketing = document.getElementById('reg-marketing').checked
 
   try {
-    const { data: authData, error: authErr } = await sbAdmin.auth.admin.createUser({
-      email,
-      password: pass,
-      email_confirm: true,
-      user_metadata: { nome, cognome, ruolo: 'tifoso' }
+    // Crea utente via fetch diretto all'API admin (bypassa CORS Auth)
+    const authResp = await fetch('https://brwkwlyxkptzmkzkvava.supabase.co/auth/v1/admin/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODUzMTc1MCwiZXhwIjoyMDk0MTA3NzUwfQ.Pb61V8euQwLt1KR-m29nr_s0F13gRXSToRiPPL6bLSQ',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODUzMTc1MCwiZXhwIjoyMDk0MTA3NzUwfQ.Pb61V8euQwLt1KR-m29nr_s0F13gRXSToRiPPL6bLSQ'
+      },
+      body: JSON.stringify({
+        email,
+        password: pass,
+        email_confirm: true,
+        user_metadata: { nome, cognome, ruolo: 'tifoso' }
+      })
     })
-    if (authErr) throw new Error(authErr.message)
+    const authJson = await authResp.json()
+    if (!authResp.ok) throw new Error(authJson.message || authJson.msg || 'Errore creazione account')
+    const authData = { user: authJson }
 
-    const { data: piano } = await sb.from('membership_piani')
+    const { data: piano } = await sbAdmin.from('membership_piani')
       .select('id, punti_bonus').eq('nome', pianoSelezionato.nome).single()
 
-    const { data: tifoso, error: tErr } = await sb.from('tifosi').insert({
+    const { data: tifoso, error: tErr } = await sbAdmin.from('tifosi').insert({
       auth_user_id: authData.user.id,
       nome, cognome, email,
       telefono: tel || null,
@@ -601,10 +612,10 @@ async function completaRegistrazione() {
       membPayload.maglia_cognome = document.getElementById('reg-maglia-cognome').value.toUpperCase()
       membPayload.maglia_numero = parseInt(document.getElementById('reg-maglia-numero').value)
     }
-    await sb.from('membership').insert(membPayload)
+    await sbAdmin.from('membership').insert(membPayload)
 
     if (piano && piano.punti_bonus > 0) {
-      await sb.from('transazioni').insert({
+      await sbAdmin.from('transazioni').insert({
         tifoso_id: tifoso.id,
         tipo: 'BONUS',
         punti_delta: piano.punti_bonus,
