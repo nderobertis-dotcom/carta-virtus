@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Carta Virtus — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0d0f14;
+  --bg2:       #13161e;
+  --bg3:       #1a1e28;
+  --border:    #252a36;
+  --accent:    #e8521a;
+  --accent2:   #f97316;
+  --teal:      #14b8a6;
+  --purple:    #8b5cf6;
+  --gold:      #f59e0b;
+  --text:      #e2e4ea;
+  --muted:     #6b7280;
+  --sidebar-w: 220px;
+  --radius:    10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  width:var(--sidebar-w);min-height:100vh;background:var(--bg2);
+  border-right:1px solid var(--border);display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;bottom:0;z-index:100;
+}
+.logo{padding:24px 20px 20px;border-bottom:1px solid var(--border)}
+.logo-badge{
+  background:var(--accent);color:#fff;font-family:'Syne',sans-serif;
+  font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:8px
+}
+.logo h1{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;line-height:1.2}
+.logo p{font-size:11px;color:var(--muted);margin-top:2px}
+nav{padding:16px 0;flex:1}
+.nav-section{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);padding:8px 20px 4px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 20px;
+  font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;
+  transition:all .15s;border-left:2px solid transparent;
+}
+.nav-item:hover{color:var(--text);background:var(--bg3)}
+.nav-item.active{color:var(--accent2);border-left-color:var(--accent2);background:rgba(249,115,22,.07)}
+.nav-item svg{width:16px;height:16px;flex-shrink:0}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
+.user-chip{display:flex;align-items:center;gap:10px}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:10px;color:var(--accent2)}
+.logout-btn{font-size:11px;color:var(--muted);cursor:pointer;padding:4px 0;
+  background:none;border:none;width:100%;text-align:left;margin-top:8px}
+.logout-btn:hover{color:var(--accent)}
+
+/* ── MAIN ── */
+#main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{
+  height:56px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 28px;
+  position:sticky;top:0;z-index:50;
+}
+.topbar-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff}
+.topbar-actions{display:flex;gap:10px}
+.btn{
+  padding:7px 16px;border-radius:7px;font-size:12px;font-weight:600;
+  cursor:pointer;border:none;transition:all .15s;font-family:'DM Sans',sans-serif
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--muted)}
+.btn-danger{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+.btn-sm{padding:5px 12px;font-size:11px}
+
+/* ── CONTENT ── */
+.content{padding:28px;flex:1}
+.section{display:none}
+.section.active{display:block}
+
+/* ── LOGIN ── */
+#login-screen{
+  position:fixed;inset:0;background:var(--bg);display:flex;
+  align-items:center;justify-content:center;z-index:999
+}
+.login-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:40px;width:360px;
+}
+.login-card .logo-badge{margin-bottom:16px}
+.login-card h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;margin-bottom:4px}
+.login-card p{font-size:13px;color:var(--muted);margin-bottom:28px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:11px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.form-group input{
+  width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:10px 14px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;
+  transition:border-color .15s;outline:none
+}
+.form-group input:focus{border-color:var(--accent)}
+.login-error{font-size:12px;color:#ef4444;margin-bottom:12px;display:none}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+.stat-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fff;line-height:1}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.stat-accent{color:var(--accent2)}
+.stat-teal{color:var(--teal)}
+.stat-purple{color:var(--purple)}
+.stat-gold{color:var(--gold)}
+
+/* ── TABLES ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff}
+.card-body{padding:0}
+table{width:100%;border-collapse:collapse}
+th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);padding:10px 20px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:12px 20px;font-size:13px;border-bottom:1px solid rgba(37,42,54,.6);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+.badge-green{background:rgba(20,184,166,.15);color:var(--teal)}
+.badge-red{background:rgba(239,68,68,.15);color:#ef4444}
+.badge-amber{background:rgba(245,158,11,.15);color:var(--gold)}
+.badge-purple{background:rgba(139,92,246,.15);color:var(--purple)}
+.badge-gray{background:rgba(107,114,128,.15);color:var(--muted)}
+.pts{font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2)}
+.qr-code{font-family:monospace;font-size:11px;color:var(--muted);letter-spacing:.05em}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;
+  display:none;align-items:center;justify-content:center
+}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  width:480px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.modal-close:hover{background:var(--bg3);color:var(--text)}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);
+  display:flex;justify-content:flex-end;gap:10px}
+
+/* ── SEARCH ── */
+.search-bar{
+  display:flex;align-items:center;gap:8px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin-bottom:20px
+}
+.search-bar input{background:none;border:none;outline:none;color:var(--text);
+  font-size:13px;font-family:'DM Sans',sans-serif;flex:1}
+.search-bar input::placeholder{color:var(--muted)}
+
+/* ── CHARTS ── */
+.mini-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:6px}
+.mini-bar-fill{height:100%;border-radius:2px;transition:width .5s}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:.4}
+.empty p{font-size:13px}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:10px;padding:12px 18px;font-size:13px;color:var(--text);
+  box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:999;transform:translateY(80px);
+  opacity:0;transition:all .25s;pointer-events:none
+}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.success{border-color:var(--teal);color:var(--teal)}
+#toast.error{border-color:#ef4444;color:#ef4444}
+
+/* ── FORM GRID ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid .full{grid-column:1/-1}
+select.form-input{
+  width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:10px 14px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;
+  outline:none;cursor:pointer
+}
+select.form-input:focus{border-color:var(--accent)}
+
+/* ── REPORT ── */
+.report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo-badge">Carta Virtus</div>
+    <h2>Admin Panel</h2>
+    <p>Accedi con il tuo account amministratore</p>
+    <div class="login-error" id="login-error"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="nderobertis@gmail.com"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doLogin()">Accedi</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="logo">
+    <div class="logo-badge">Admin</div>
+    <h1>Carta Virtus</h1>
+    <p>Virtus Basket Molfetta</p>
+  </div>
+  <nav>
+    <div class="nav-section">Panoramica</div>
+    <div class="nav-item active" onclick="showSection('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-section">Gestione</div>
+    <div class="nav-item" onclick="showSection('tifosi')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Tifosi
+    </div>
+    <div class="nav-item" onclick="showSection('partner')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Partner
+    </div>
+    <div class="nav-item" onclick="showSection('premi')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+      Premi
+    </div>
+    <div class="nav-item" onclick="showSection('campagne')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Campagne
+    </div>
+    <div class="nav-section">Analisi</div>
+    <div class="nav-item" onclick="showSection('transazioni')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Transazioni
+    </div>
+    <div class="nav-item" onclick="showSection('report')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Report
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">A</div>
+      <div class="user-info">
+        <div class="user-name" id="user-email-display">—</div>
+        <div class="user-role">Amministratore</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">← Esci</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-actions" id="topbar-actions"></div>
+  </div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="section-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Tifosi attivi</div>
+          <div class="stat-value stat-accent" id="stat-tifosi">—</div>
+          <div class="stat-sub">iscritti al programma</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Partner</div>
+          <div class="stat-value stat-teal" id="stat-partner">—</div>
+          <div class="stat-sub">negozi aderenti</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Punti emessi</div>
+          <div class="stat-value stat-purple" id="stat-punti">—</div>
+          <div class="stat-sub">totale accumulato</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Coupon attivi</div>
+          <div class="stat-value stat-gold" id="stat-coupon">—</div>
+          <div class="stat-sub">emessi non usati</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Ultimi tifosi iscritti</div></div>
+          <div class="card-body"><table>
+            <thead><tr><th>Nome</th><th>Punti</th><th>Stato</th></tr></thead>
+            <tbody id="dash-tifosi-list"><tr><td colspan="3" style="color:var(--muted);font-size:12px;text-align:center;padding:20px">Caricamento...</td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Ultime transazioni</div></div>
+          <div class="card-body"><table>
+            <thead><tr><th>Tipo</th><th>Punti</th><th>Data</th></tr></thead>
+            <tbody id="dash-tx-list"><tr><td colspan="3" style="color:var(--muted);font-size:12px;text-align:center;padding:20px">Caricamento...</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIFOSI -->
+    <div class="section" id="section-tifosi">
+      <div class="search-bar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Cerca tifoso per nome o email..." id="tifosi-search" oninput="filterTifosi()"/>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Tutti i tifosi</div>
+          <span id="tifosi-count" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Nome</th><th>Email</th><th>QR Code</th><th>Punti</th><th>Stato</th><th>Iscritto il</th><th></th></tr></thead>
+            <tbody id="tifosi-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTNER -->
+    <div class="section" id="section-partner">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Partner attivi</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-partner')">+ Aggiungi partner</button>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Negozio</th><th>Categoria</th><th>Referente</th><th>Punti/€</th><th>Stato</th><th></th></tr></thead>
+            <tbody id="partner-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREMI -->
+    <div class="section" id="section-premi">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Catalogo premi</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-premio')">+ Nuovo premio</button>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Premio</th><th>Partner</th><th>Costo (pt)</th><th>Disponibili</th><th>Scadenza</th><th>Stato</th><th></th></tr></thead>
+            <tbody id="premi-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAMPAGNE -->
+    <div class="section" id="section-campagne">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Campagne promozionali</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-campagna')">+ Nuova campagna</button>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Titolo</th><th>Partner</th><th>Moltiplicatore</th><th>Periodo</th><th>Stato</th><th></th></tr></thead>
+            <tbody id="campagne-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSAZIONI -->
+    <div class="section" id="section-transazioni">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Ledger transazioni</div>
+          <span style="font-size:11px;color:var(--muted)">Solo lettura — append only</span>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Tipo</th><th>Tifoso</th><th>Partner</th><th>Punti</th><th>Importo €</th><th>Saldo dopo</th><th>Data</th></tr></thead>
+            <tbody id="transazioni-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT -->
+    <div class="section" id="section-report">
+      <div class="report-grid">
+        <div class="stat-card">
+          <div class="stat-label">Volume totale €</div>
+          <div class="stat-value stat-accent" id="rep-volume">—</div>
+          <div class="stat-sub">da tutti i partner</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Punti totali emessi</div>
+          <div class="stat-value stat-teal" id="rep-punti-emessi">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Punti riscattati</div>
+          <div class="stat-value stat-purple" id="rep-punti-riscattati">—</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Top partner per punti emessi</div></div>
+          <div class="card-body"><table>
+            <thead><tr><th>Partner</th><th>Punti emessi</th><th>Transazioni</th></tr></thead>
+            <tbody id="rep-partner-list"></tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Top tifosi per saldo</div></div>
+          <div class="card-body"><table>
+            <thead><tr><th>Tifoso</th><th>Saldo punti</th></tr></thead>
+            <tbody id="rep-tifosi-top"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MODAL: Nuovo Partner -->
+<div class="modal-overlay" id="modal-partner">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuovo partner</div>
+      <button class="modal-close" onclick="closeModal('modal-partner')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="full form-group"><label>Nome negozio</label><input class="form-input" id="p-nome" placeholder="Bar dello Sport"/></div>
+        <div class="form-group"><label>Categoria</label>
+          <select class="form-input" id="p-cat">
+            <option value="ristorazione">Ristorazione</option>
+            <option value="abbigliamento">Abbigliamento</option>
+            <option value="sport">Sport</option>
+            <option value="salute_benessere">Salute & Benessere</option>
+            <option value="intrattenimento">Intrattenimento</option>
+            <option value="servizi">Servizi</option>
+            <option value="altro">Altro</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Punti per €</label><input class="form-input" id="p-punti" type="number" value="1" min="0.1" step="0.5"/></div>
+        <div class="form-group"><label>Referente nome</label><input class="form-input" id="p-ref-nome" placeholder="Mario Rossi"/></div>
+        <div class="form-group"><label>Referente email</label><input class="form-input" id="p-ref-email" type="email" placeholder="mario@negozio.it"/></div>
+        <div class="form-group"><label>Referente tel</label><input class="form-input" id="p-ref-tel" placeholder="333..."/></div>
+        <div class="full form-group"><label>Indirizzo</label><input class="form-input" id="p-indirizzo" placeholder="Via Roma 12, Molfetta"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-partner')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaPartner()">Salva partner</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuovo Premio -->
+<div class="modal-overlay" id="modal-premio">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuovo premio</div>
+      <button class="modal-close" onclick="closeModal('modal-premio')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="full form-group"><label>Partner</label>
+          <select class="form-input" id="pr-partner"></select>
+        </div>
+        <div class="full form-group"><label>Titolo premio</label><input class="form-input" id="pr-titolo" placeholder="Caffè gratis"/></div>
+        <div class="full form-group"><label>Descrizione</label><input class="form-input" id="pr-desc" placeholder="Un caffè offerto dalla casa"/></div>
+        <div class="form-group"><label>Costo punti</label><input class="form-input" id="pr-punti" type="number" placeholder="50"/></div>
+        <div class="form-group"><label>Quantità max</label><input class="form-input" id="pr-qty" type="number" placeholder="lascia vuoto = illimitata"/></div>
+        <div class="form-group"><label>Validità coupon (giorni)</label><input class="form-input" id="pr-giorni" type="number" value="30"/></div>
+        <div class="form-group"><label>Scadenza premio</label><input class="form-input" id="pr-scadenza" type="date"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-premio')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaPremio()">Salva premio</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuova Campagna -->
+<div class="modal-overlay" id="modal-campagna">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuova campagna</div>
+      <button class="modal-close" onclick="closeModal('modal-campagna')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="full form-group"><label>Titolo campagna</label><input class="form-input" id="c-titolo" placeholder="Weekend doppi punti"/></div>
+        <div class="form-group"><label>Partner (vuoto = globale)</label>
+          <select class="form-input" id="c-partner">
+            <option value="">— Tutti i partner —</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Moltiplicatore</label>
+          <select class="form-input" id="c-molt">
+            <option value="2">×2 — Doppi punti</option>
+            <option value="3">×3 — Tripli punti</option>
+            <option value="1.5">×1.5 — +50%</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Valida dal</label><input class="form-input" id="c-da" type="datetime-local"/></div>
+        <div class="form-group"><label>Valida fino al</label><input class="form-input" id="c-a" type="datetime-local"/></div>
+        <div class="full form-group"><label>Descrizione</label><input class="form-input" id="c-desc" placeholder="Descrizione visibile ai tifosi"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-campagna')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaCampagna()">Lancia campagna</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Bonus punti tifoso -->
+<div class="modal-overlay" id="modal-bonus">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Assegna bonus punti</div>
+      <button class="modal-close" onclick="closeModal('modal-bonus')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="bonus-tifoso-id"/>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Tifoso</label>
+        <input class="form-input" id="bonus-tifoso-nome" disabled/>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Punti bonus</label>
+        <input class="form-input" id="bonus-punti" type="number" placeholder="es. 50"/>
+      </div>
+      <div class="form-group">
+        <label>Motivo</label>
+        <input class="form-input" id="bonus-motivo" placeholder="es. Presenza partita, compleanno..."/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-bonus')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaBonus()">Assegna bonus</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ──
+const SUPABASE_URL = 'https://brwkwlyxkptzmkzkava.supabase.co'
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI' // inserisci la tua anon key
+const { createClient } = supabase
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON)
+
+let currentUser = null
+let allTifosi = []
+let allPartner = []
+
+// ── AUTH ──
+async function doLogin() {
+  const email = document.getElementById('login-email').value
+  const pass  = document.getElementById('login-password').value
+  const errEl = document.getElementById('login-error')
+  errEl.style.display = 'none'
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass })
+  if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return }
+
+  const ruolo = data.user.user_metadata?.ruolo
+  if (ruolo !== 'admin') {
+    await sb.auth.signOut()
+    errEl.textContent = 'Accesso negato: non sei un amministratore'
+    errEl.style.display = 'block'
+    return
+  }
+
+  currentUser = data.user
+  document.getElementById('login-screen').style.display = 'none'
+  document.getElementById('user-email-display').textContent = email.split('@')[0]
+  document.getElementById('user-avatar').textContent = email[0].toUpperCase()
+  initApp()
+}
+
+async function doLogout() {
+  await sb.auth.signOut()
+  location.reload()
+}
+
+// ── NAV ──
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  document.getElementById('section-' + name).classList.add('active')
+  event.currentTarget.classList.add('active')
+
+  const titles = {
+    dashboard:'Dashboard', tifosi:'Tifosi', partner:'Partner',
+    premi:'Catalogo premi', campagne:'Campagne', transazioni:'Transazioni', report:'Report'
+  }
+  document.getElementById('topbar-title').textContent = titles[name] || name
+
+  const actions = { partner:'', premi:'', campagne:'' }
+  document.getElementById('topbar-actions').innerHTML = ''
+
+  if (name === 'tifosi')      loadTifosi()
+  if (name === 'partner')     loadPartner()
+  if (name === 'premi')       loadPremi()
+  if (name === 'campagne')    loadCampagne()
+  if (name === 'transazioni') loadTransazioni()
+  if (name === 'report')      loadReport()
+}
+
+// ── INIT ──
+async function initApp() {
+  await Promise.all([loadDashboard(), loadPartnerList()])
+}
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  const [{ count: nTifosi }, { count: nPartner }, { data: txData }, { count: nCoupon }] =
+    await Promise.all([
+      sb.from('tifosi').select('*', { count: 'exact', head: true }).eq('stato', 'attivo'),
+      sb.from('partner').select('*', { count: 'exact', head: true }).eq('attivo', true),
+      sb.from('transazioni').select('tipo, punti_delta'),
+      sb.from('riscatti').select('*', { count: 'exact', head: true }).eq('stato', 'emesso')
+    ])
+
+  document.getElementById('stat-tifosi').textContent = nTifosi ?? '0'
+  document.getElementById('stat-partner').textContent = nPartner ?? '0'
+  document.getElementById('stat-coupon').textContent = nCoupon ?? '0'
+
+  const puntiEmessi = (txData || [])
+    .filter(t => ['ACCUMULO','BONUS'].includes(t.tipo))
+    .reduce((s, t) => s + t.punti_delta, 0)
+  document.getElementById('stat-punti').textContent = puntiEmessi.toLocaleString('it-IT')
+
+  // Ultimi tifosi
+  const { data: ultTifosi } = await sb.from('tifosi').select('nome, cognome, punti_saldo, stato')
+    .order('creato_il', { ascending: false }).limit(5)
+  const tBody = document.getElementById('dash-tifosi-list')
+  tBody.innerHTML = (ultTifosi || []).map(t => `
+    <tr>
+      <td>${t.nome} ${t.cognome}</td>
+      <td><span class="pts">${t.punti_saldo}</span></td>
+      <td><span class="badge badge-${t.stato === 'attivo' ? 'green' : 'red'}">${t.stato}</span></td>
+    </tr>`).join('') || '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Nessun tifoso</td></tr>'
+
+  // Ultime transazioni
+  const { data: ultTx } = await sb.from('transazioni')
+    .select('tipo, punti_delta, creato_il').order('creato_il', { ascending: false }).limit(6)
+  const txBody = document.getElementById('dash-tx-list')
+  txBody.innerHTML = (ultTx || []).map(t => `
+    <tr>
+      <td><span class="badge badge-${t.tipo === 'ACCUMULO' ? 'green' : t.tipo === 'RISCATTO' ? 'purple' : 'amber'}">${t.tipo}</span></td>
+      <td><span class="pts">${t.punti_delta > 0 ? '+' : ''}${t.punti_delta}</span></td>
+      <td style="color:var(--muted);font-size:11px">${new Date(t.creato_il).toLocaleDateString('it-IT')}</td>
+    </tr>`).join('')
+}
+
+// ── TIFOSI ──
+async function loadTifosi() {
+  const { data } = await sb.from('tifosi').select('*').order('creato_il', { ascending: false })
+  allTifosi = data || []
+  document.getElementById('tifosi-count').textContent = `${allTifosi.length} tifosi`
+  renderTifosi(allTifosi)
+}
+
+function renderTifosi(list) {
+  document.getElementById('tifosi-list').innerHTML = list.map(t => `
+    <tr>
+      <td><strong>${t.nome} ${t.cognome}</strong></td>
+      <td style="color:var(--muted);font-size:12px">${t.email}</td>
+      <td><span class="qr-code">${t.qr_code}</span></td>
+      <td><span class="pts">${t.punti_saldo}</span></td>
+      <td><span class="badge badge-${t.stato === 'attivo' ? 'green' : 'red'}">${t.stato}</span></td>
+      <td style="color:var(--muted);font-size:11px">${new Date(t.creato_il).toLocaleDateString('it-IT')}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick='openBonus("${t.id}","${t.nome} ${t.cognome}")'>+ Bonus</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessun tifoso</td></tr>'
+}
+
+function filterTifosi() {
+  const q = document.getElementById('tifosi-search').value.toLowerCase()
+  renderTifosi(allTifosi.filter(t =>
+    `${t.nome} ${t.cognome} ${t.email}`.toLowerCase().includes(q)))
+}
+
+// ── PARTNER ──
+async function loadPartner() {
+  const { data } = await sb.from('partner').select('*').order('nome_negozio')
+  allPartner = data || []
+  document.getElementById('partner-list').innerHTML = allPartner.map(p => `
+    <tr>
+      <td><strong>${p.nome_negozio}</strong>${p.indirizzo ? `<br><span style="color:var(--muted);font-size:11px">${p.indirizzo}</span>` : ''}</td>
+      <td><span class="badge badge-gray">${p.categoria}</span></td>
+      <td style="font-size:12px">${p.referente_nome || '—'}<br><span style="color:var(--muted);font-size:11px">${p.referente_email || ''}</span></td>
+      <td><span class="pts">${p.punti_per_euro}</span>/€</td>
+      <td><span class="badge badge-${p.attivo ? 'green' : 'red'}">${p.attivo ? 'attivo' : 'inattivo'}</span></td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick='togglePartner("${p.id}", ${p.attivo})'>${p.attivo ? 'Sospendi' : 'Riattiva'}</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Nessun partner</td></tr>'
+}
+
+async function loadPartnerList() {
+  const { data } = await sb.from('partner').select('id, nome_negozio').eq('attivo', true)
+  allPartner = data || []
+  const opts = allPartner.map(p => `<option value="${p.id}">${p.nome_negozio}</option>`).join('')
+  document.getElementById('pr-partner').innerHTML = opts
+  document.getElementById('c-partner').innerHTML = '<option value="">— Tutti i partner —</option>' + opts
+}
+
+async function salvaPartner() {
+  const payload = {
+    nome_negozio:   document.getElementById('p-nome').value,
+    categoria:      document.getElementById('p-cat').value,
+    punti_per_euro: parseFloat(document.getElementById('p-punti').value),
+    referente_nome:  document.getElementById('p-ref-nome').value,
+    referente_email: document.getElementById('p-ref-email').value,
+    referente_tel:   document.getElementById('p-ref-tel').value,
+    indirizzo:       document.getElementById('p-indirizzo').value,
+  }
+  const { error } = await sb.from('partner').insert(payload)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Partner aggiunto!', 'success')
+  closeModal('modal-partner')
+  loadPartner()
+  loadPartnerList()
+}
+
+async function togglePartner(id, attivo) {
+  await sb.from('partner').update({ attivo: !attivo }).eq('id', id)
+  toast(attivo ? 'Partner sospeso' : 'Partner riattivato', 'success')
+  loadPartner()
+}
+
+// ── PREMI ──
+async function loadPremi() {
+  const { data } = await sb.from('premi')
+    .select('*, partner:partner_id(nome_negozio)').order('creato_il', { ascending: false })
+  document.getElementById('premi-list').innerHTML = (data || []).map(p => `
+    <tr>
+      <td><strong>${p.titolo}</strong><br><span style="color:var(--muted);font-size:11px">${p.descrizione || ''}</span></td>
+      <td style="font-size:12px">${p.partner?.nome_negozio || '—'}</td>
+      <td><span class="pts">${p.costo_punti}</span></td>
+      <td style="font-size:12px">${p.quantita_max ? `${p.quantita_max - p.quantita_usata}/${p.quantita_max}` : '∞'}</td>
+      <td style="font-size:11px;color:var(--muted)">${p.valido_fino ? new Date(p.valido_fino).toLocaleDateString('it-IT') : '—'}</td>
+      <td><span class="badge badge-${p.attivo ? 'green' : 'red'}">${p.attivo ? 'attivo' : 'inattivo'}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick='togglePremio("${p.id}", ${p.attivo})'>${p.attivo ? 'Disattiva' : 'Attiva'}</button></td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessun premio</td></tr>'
+}
+
+async function salvaPremio() {
+  const scadenza = document.getElementById('pr-scadenza').value
+  const qty = document.getElementById('pr-qty').value
+  const payload = {
+    partner_id:      document.getElementById('pr-partner').value,
+    titolo:          document.getElementById('pr-titolo').value,
+    descrizione:     document.getElementById('pr-desc').value,
+    costo_punti:     parseInt(document.getElementById('pr-punti').value),
+    quantita_max:    qty ? parseInt(qty) : null,
+    validita_giorni: parseInt(document.getElementById('pr-giorni').value) || 30,
+    valido_fino:     scadenza || null,
+  }
+  const { error } = await sb.from('premi').insert(payload)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Premio aggiunto al catalogo!', 'success')
+  closeModal('modal-premio')
+  loadPremi()
+}
+
+async function togglePremio(id, attivo) {
+  await sb.from('premi').update({ attivo: !attivo }).eq('id', id)
+  loadPremi()
+}
+
+// ── CAMPAGNE ──
+async function loadCampagne() {
+  const { data } = await sb.from('campagne')
+    .select('*, partner:partner_id(nome_negozio)').order('creato_il', { ascending: false })
+  const now = new Date()
+  document.getElementById('campagne-list').innerHTML = (data || []).map(c => {
+    const da = new Date(c.valida_da), a = new Date(c.valida_fino)
+    const stato = !c.attiva ? 'inattiva' : now < da ? 'programmata' : now > a ? 'scaduta' : 'attiva'
+    const badgeMap = { attiva:'green', programmata:'amber', scaduta:'red', inattiva:'gray' }
+    return `<tr>
+      <td><strong>${c.titolo}</strong><br><span style="color:var(--muted);font-size:11px">${c.descrizione||''}</span></td>
+      <td style="font-size:12px">${c.partner?.nome_negozio || '<em>Tutti i partner</em>'}</td>
+      <td><span class="pts">×${c.moltiplicatore}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${da.toLocaleDateString('it-IT')} → ${a.toLocaleDateString('it-IT')}</td>
+      <td><span class="badge badge-${badgeMap[stato]}">${stato}</span></td>
+      <td>${stato === 'attiva' ? `<button class="btn btn-danger btn-sm" onclick='disattivaCampagna("${c.id}")'>Ferma</button>` : ''}</td>
+    </tr>`}).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Nessuna campagna</td></tr>'
+}
+
+async function salvaCampagna() {
+  const partnerId = document.getElementById('c-partner').value
+  const payload = {
+    titolo:          document.getElementById('c-titolo').value,
+    descrizione:     document.getElementById('c-desc').value,
+    partner_id:      partnerId || null,
+    moltiplicatore:  parseFloat(document.getElementById('c-molt').value),
+    valida_da:       document.getElementById('c-da').value,
+    valida_fino:     document.getElementById('c-a').value,
+    attiva: true
+  }
+  const { error } = await sb.from('campagne').insert(payload)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Campagna lanciata!', 'success')
+  closeModal('modal-campagna')
+  loadCampagne()
+}
+
+async function disattivaCampagna(id) {
+  await sb.from('campagne').update({ attiva: false }).eq('id', id)
+  toast('Campagna fermata', 'success')
+  loadCampagne()
+}
+
+// ── TRANSAZIONI ──
+async function loadTransazioni() {
+  const { data } = await sb.from('transazioni')
+    .select('*, tifoso:tifoso_id(nome,cognome), partner:partner_id(nome_negozio)')
+    .order('creato_il', { ascending: false }).limit(100)
+  const badgeMap = { ACCUMULO:'green', RISCATTO:'purple', BONUS:'amber', RETTIFICA:'gray', SCADENZA:'red' }
+  document.getElementById('transazioni-list').innerHTML = (data || []).map(t => `
+    <tr>
+      <td><span class="badge badge-${badgeMap[t.tipo]||'gray'}">${t.tipo}</span></td>
+      <td style="font-size:12px">${t.tifoso ? `${t.tifoso.nome} ${t.tifoso.cognome}` : '—'}</td>
+      <td style="font-size:12px;color:var(--muted)">${t.partner?.nome_negozio || '—'}</td>
+      <td><span class="pts">${t.punti_delta > 0 ? '+' : ''}${t.punti_delta}</span></td>
+      <td style="font-size:12px">${t.importo_eur ? '€ ' + Number(t.importo_eur).toFixed(2) : '—'}</td>
+      <td style="font-size:12px;color:var(--muted)">${t.saldo_dopo}</td>
+      <td style="font-size:11px;color:var(--muted)">${new Date(t.creato_il).toLocaleString('it-IT')}</td>
+    </tr>`).join('')
+}
+
+// ── REPORT ──
+async function loadReport() {
+  const { data: tx } = await sb.from('transazioni').select('tipo, punti_delta, importo_eur, partner_id, tifoso_id')
+
+  const volume = (tx||[]).filter(t => t.tipo === 'ACCUMULO').reduce((s,t) => s + (t.importo_eur||0), 0)
+  const emessi = (tx||[]).filter(t => ['ACCUMULO','BONUS'].includes(t.tipo)).reduce((s,t) => s + t.punti_delta, 0)
+  const riscattati = (tx||[]).filter(t => t.tipo === 'RISCATTO').reduce((s,t) => s + Math.abs(t.punti_delta), 0)
+
+  document.getElementById('rep-volume').textContent = '€ ' + volume.toFixed(2)
+  document.getElementById('rep-punti-emessi').textContent = emessi.toLocaleString('it-IT')
+  document.getElementById('rep-punti-riscattati').textContent = riscattati.toLocaleString('it-IT')
+
+  // Top partner
+  const byPartner = {}
+  ;(tx||[]).filter(t => t.tipo === 'ACCUMULO' && t.partner_id).forEach(t => {
+    if (!byPartner[t.partner_id]) byPartner[t.partner_id] = { punti: 0, count: 0 }
+    byPartner[t.partner_id].punti += t.punti_delta
+    byPartner[t.partner_id].count++
+  })
+  const topPartner = Object.entries(byPartner).sort((a,b) => b[1].punti - a[1].punti).slice(0,5)
+  const pNames = {}
+  allPartner.forEach(p => pNames[p.id] = p.nome_negozio)
+  document.getElementById('rep-partner-list').innerHTML = topPartner.map(([id, v]) => `
+    <tr>
+      <td style="font-size:12px">${pNames[id] || id.slice(0,8)}</td>
+      <td><span class="pts">${v.punti}</span></td>
+      <td style="color:var(--muted);font-size:12px">${v.count}</td>
+    </tr>`).join('') || '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Nessun dato</td></tr>'
+
+  // Top tifosi
+  const { data: topTifosi } = await sb.from('tifosi').select('nome, cognome, punti_saldo')
+    .order('punti_saldo', { ascending: false }).limit(5)
+  document.getElementById('rep-tifosi-top').innerHTML = (topTifosi||[]).map(t => `
+    <tr>
+      <td style="font-size:12px">${t.nome} ${t.cognome}</td>
+      <td><span class="pts">${t.punti_saldo}</span></td>
+    </tr>`).join('')
+}
+
+// ── BONUS ──
+function openBonus(id, nome) {
+  document.getElementById('bonus-tifoso-id').value = id
+  document.getElementById('bonus-tifoso-nome').value = nome
+  document.getElementById('bonus-punti').value = ''
+  document.getElementById('bonus-motivo').value = ''
+  openModal('modal-bonus')
+}
+
+async function salvaBonus() {
+  const tifoso_id = document.getElementById('bonus-tifoso-id').value
+  const punti = parseInt(document.getElementById('bonus-punti').value)
+  const motivo = document.getElementById('bonus-motivo').value
+
+  if (!punti || punti <= 0) { toast('Inserisci un numero di punti valido', 'error'); return }
+
+  // Legge saldo attuale
+  const { data: tifoso } = await sb.from('tifosi').select('punti_saldo').eq('id', tifoso_id).single()
+
+  const { error } = await sb.from('transazioni').insert({
+    tifoso_id, tipo: 'BONUS', punti_delta: punti,
+    saldo_dopo: tifoso.punti_saldo + punti,
+    note: motivo || 'Bonus admin'
+  })
+
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast(`+${punti} punti assegnati!`, 'success')
+  closeModal('modal-bonus')
+  loadTifosi()
+}
+
+// ── MODAL ──
+function openModal(id) { document.getElementById(id).classList.add('open') }
+function closeModal(id) { document.getElementById(id).classList.remove('open') }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open') })
+})
+
+// ── TOAST ──
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.className = 'show ' + type
+  setTimeout(() => el.className = '', 3000)
+}
+
+// ── ENTER LOGIN ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin()
+})
+
+// ── AUTO LOGIN SE GIÀ LOGGATO ──
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session?.user?.user_metadata?.ruolo === 'admin') {
+    currentUser = session.user
+    document.getElementById('login-screen').style.display = 'none'
+    document.getElementById('user-email-display').textContent = session.user.email.split('@')[0]
+    document.getElementById('user-avatar').textContent = session.user.email[0].toUpperCase()
+    initApp()
+  }
+})
+</script>
+</body>
+</html>
