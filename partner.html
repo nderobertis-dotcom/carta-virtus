@@ -288,7 +288,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
     <div class="panel" id="panel-storico">
       <div class="storico-header">
         <div class="storico-title">Ultime transazioni</div>
-        <button style="background:var(--bg);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif" onclick="loadStorico()">↻ Aggiorna</button>
+        <button style="background:var(--bg);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif" onclick="this.textContent='↻...';loadStorico().finally(()=>this.textContent='↻ Aggiorna')">↻ Aggiorna</button>
       </div>
       <div class="tx-list" id="storico-list">
         <div style="text-align:center;padding:32px;color:var(--muted);font-size:13px">Caricamento...</div>
@@ -297,6 +297,10 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 
     <!-- REPORT -->
     <div class="panel" id="panel-report">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 0 12px">
+        <div style="font-size:11px;color:var(--muted)">Dati riferiti a tutte le transazioni del tuo negozio</div>
+        <button style="background:var(--bg);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif" onclick="this.textContent='↻...';loadReport().finally(()=>this.textContent='↻ Aggiorna')">↻ Aggiorna</button>
+      </div>
       <div class="report-grid">
         <div class="report-stat">
           <div class="report-stat-value" id="rep-tx">—</div>
@@ -585,7 +589,7 @@ function nuovaTransazione() {
 
 // ── STORICO ──
 async function loadStorico() {
-  if (!currentPartner) return
+  if (!currentPartner) { console.warn("currentPartner null in loadStorico"); return }
   const { data } = await sbAdmin
     .from('transazioni')
     .select('punti_delta, importo_eur, creato_il, tifoso:tifoso_id(nome, cognome)')
