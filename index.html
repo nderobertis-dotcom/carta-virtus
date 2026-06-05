@@ -471,6 +471,8 @@ const SUPABASE_URL = 'https://brwkwlyxkptzmkzkava.supabase.co'
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
 const { createClient } = supabase
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON)
+const SUPABASE_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODUzMTc1MCwiZXhwIjoyMDk0MTA3NzUwfQ.Pb61V8euQwLt1KR-m29nr_s0F13gRXSToRiPPL6bLSQ'
+const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE)
 
 let pianoSelezionato = null
 let metodoPagamento = null
@@ -562,9 +564,11 @@ async function completaRegistrazione() {
   const marketing = document.getElementById('reg-marketing').checked
 
   try {
-    const { data: authData, error: authErr } = await sb.auth.signUp({
-      email, password: pass,
-      options: { data: { nome, cognome, ruolo: 'tifoso' } }
+    const { data: authData, error: authErr } = await sbAdmin.auth.admin.createUser({
+      email,
+      password: pass,
+      email_confirm: true,
+      user_metadata: { nome, cognome, ruolo: 'tifoso' }
     })
     if (authErr) throw new Error(authErr.message)
 
@@ -639,9 +643,13 @@ async function doLogin() {
   const pass = document.getElementById('login-password').value
   const errEl = document.getElementById('login-error')
   errEl.style.display = 'none'
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass })
+  const { data, error } = await sbAdmin.auth.admin.signInWithEmail ? await sb.auth.signInWithPassword({ email, password: pass }) : await sb.auth.signInWithPassword({ email, password: pass })
   if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return }
   chiudiModalLogin()
+  // Imposta sessione manuale per le query successive
+  if (data.session && data.session.access_token) {
+    await sb.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token || '' })
+  }
   caricaAreaTifoso(data.user)
 }
 
