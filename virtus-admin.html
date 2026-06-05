@@ -952,15 +952,7 @@ function toast(msg, type = 'success') {
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin()
 })
- => {
-  if (session?.user?.user_metadata?.ruolo === 'admin') {
-    currentUser = session.user
-    document.getElementById('login-screen').style.display = 'none'
-    document.getElementById('user-email-display').textContent = session.user.email.split('@')[0]
-    document.getElementById('user-avatar').textContent = session.user.email[0].toUpperCase()
-    initApp()
-  }
-})
+
 </script>
 </body>
 </html>
