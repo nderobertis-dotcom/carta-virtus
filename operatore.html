@@ -318,6 +318,7 @@ async function doLogin() {
 async function doLogout() {
   stopCamera()
   if (countdownInterval) clearInterval(countdownInterval)
+  if (realtimeChannel) sbA.removeChannel(realtimeChannel)
   await sb.auth.signOut()
   location.reload()
 }
@@ -350,8 +351,8 @@ async function initApp() {
 
   aggiornaBanner()
   countdownInterval = setInterval(aggiornaBanner, 10000)
-  loadLog()
-  loadContatori()
+  await loadLog()
+  avviaRealtime()
 }
 
 // ── BANNER GARA ──
@@ -547,8 +548,8 @@ async function verificaIngresso(qr) {
     tifoso.nome + ' ' + tifoso.cognome + ' · Piano ' + pianoNome,
     pianoNome, puntiGara)
 
-  loadLog()
-  loadContatori()
+  await loadLog()
+  avviaRealtime()
 }
 
 // ── MOSTRA RISULTATO ──
@@ -576,15 +577,29 @@ function nuovaScansione() {
   document.getElementById('qr-input').value = ''
 }
 
-// ── LOG ──
+// ── LOG E CONTATORI ──
 async function loadLog() {
   if (!garaCorrente) return
   const { data } = await sbA.from('ingressi_gare')
     .select('piano_nome, registrato_il, tifoso:tifoso_id(nome, cognome)')
     .eq('gara_id', garaCorrente.id)
     .order('registrato_il', { ascending: false })
-    .limit(20)
+    .limit(30)
 
+  aggiornaUI(data || [])
+}
+
+async function loadContatori() {
+  if (!garaCorrente) return
+  const { data } = await sbA.from('ingressi_gare')
+    .select('piano_nome')
+    .eq('gara_id', garaCorrente.id)
+  if (!data) return
+  aggiornaContatori(data)
+}
+
+function aggiornaUI(data) {
+  aggiornaContatori(data)
   const list = document.getElementById('log-list')
   if (!data || data.length === 0) {
     list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Nessun ingresso ancora</div>'
@@ -603,18 +618,36 @@ async function loadLog() {
   }).join('')
 }
 
-// ── CONTATORI ──
-async function loadContatori() {
-  if (!garaCorrente) return
-  const { data } = await sbA.from('ingressi_gare')
-    .select('piano_nome')
-    .eq('gara_id', garaCorrente.id)
-
-  if (!data) return
+function aggiornaContatori(data) {
   document.getElementById('cnt-totale').textContent = data.length
   document.getElementById('cnt-base').textContent = data.filter(i => i.piano_nome === 'Base').length
   document.getElementById('cnt-pro').textContent = data.filter(i => i.piano_nome === 'Pro').length
   document.getElementById('cnt-premium').textContent = data.filter(i => i.piano_nome === 'Premium').length
+}
+
+// ── REALTIME ──
+let realtimeChannel = null
+
+function avviaRealtime() {
+  if (!garaCorrente) return
+  if (realtimeChannel) sbA.removeChannel(realtimeChannel)
+
+  realtimeChannel = sbA
+    .channel('ingressi-gara-' + garaCorrente.id)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'ingressi_gare',
+      filter: 'gara_id=eq.' + garaCorrente.id
+    }, async () => {
+      // Aggiorna dati quando un altro operatore registra un ingresso
+      await loadLog()
+      // Lampeggio visivo sul contatore
+      const el = document.getElementById('cnt-totale')
+      el.style.color = 'var(--verde)'
+      setTimeout(() => { el.style.color = 'var(--blu)' }, 800)
+    })
+    .subscribe()
 }
 
 // ── TOAST ──

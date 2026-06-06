@@ -720,7 +720,7 @@ select.form-input:focus{border-color:var(--accent)}
 <div class="modal-overlay" id="modal-ingressi">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title" id="ingressi-title">Ingressi gara</div>
+      <div style="display:flex;align-items:center;gap:10px"><div class="modal-title" id="ingressi-title">Ingressi gara</div><div style="width:8px;height:8px;border-radius:50%;background:#2e7d32;animation:pulse 1.5s infinite" title="Aggiornamento live"></div></div>
       <button class="modal-close" onclick="closeModal('modal-ingressi')">×</button>
     </div>
     <div class="modal-body">
@@ -748,7 +748,8 @@ select.form-input:focus{border-color:var(--accent)}
       </table>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-ingressi')">Chiudi</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-ingressi');if(ingressiRealtimeChannel)sb.removeChannel(ingressiRealtimeChannel)">Chiudi</button>
+      <button class="btn btn-primary" onclick="esportaIngressi()">↓ Esporta CSV</button>
     </div>
   </div>
 </div>
@@ -1246,8 +1247,27 @@ async function eliminaGara(id) {
   loadGare()
 }
 
+let ingressiRealtimeChannel = null
+let currentGaraId = null
+
 async function loadIngressi(garaId, titolo) {
+  currentGaraId = garaId
   document.getElementById('ingressi-title').textContent = 'Ingressi — ' + titolo
+  await aggiornaIngressi(garaId)
+  openModal('modal-ingressi')
+
+  // Realtime aggiornamento mentre modal è aperto
+  if (ingressiRealtimeChannel) sb.removeChannel(ingressiRealtimeChannel)
+  ingressiRealtimeChannel = sb
+    .channel('admin-ingressi-' + garaId)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'ingressi_gare',
+      filter: 'gara_id=eq.' + garaId
+    }, () => aggiornaIngressi(garaId))
+    .subscribe()
+}
+
+async function aggiornaIngressi(garaId) {
   const { data } = await sb.from('ingressi_gare')
     .select('piano_nome, registrato_il, tifoso:tifoso_id(nome, cognome)')
     .eq('gara_id', garaId)
@@ -1259,17 +1279,42 @@ async function loadIngressi(garaId, titolo) {
   document.getElementById('ing-pro').textContent = list.filter(i => i.piano_nome === 'Pro').length
   document.getElementById('ing-premium').textContent = list.filter(i => i.piano_nome === 'Premium').length
 
+  const badgeMap = { Base:'badge-teal', Pro:'badge-amber', Premium:'badge-purple' }
   document.getElementById('ingressi-list').innerHTML = list.map(ing => {
-    const ora = new Date(ing.registrato_il).toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'})
-    const badgeMap = { Base:'badge-teal', Pro:'badge-amber', Premium:'badge-purple' }
+    const dataOra = new Date(ing.registrato_il)
+    const ora = dataOra.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit',second:'2-digit'})
     return `<tr>
       <td>${ing.tifoso ? ing.tifoso.nome + ' ' + ing.tifoso.cognome : '—'}</td>
       <td><span class="badge ${badgeMap[ing.piano_nome]||'badge-gray'}">${ing.piano_nome||'—'}</span></td>
       <td style="color:var(--muted);font-size:12px">${ora}</td>
     </tr>`
   }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">Nessun ingresso</td></tr>'
+}
 
-  openModal('modal-ingressi')
+function esportaIngressi() {
+  if (!currentGaraId) return
+  sb.from('ingressi_gare')
+    .select('piano_nome, registrato_il, tifoso:tifoso_id(nome, cognome)')
+    .eq('gara_id', currentGaraId)
+    .order('registrato_il', { ascending: true })
+    .then(({ data }) => {
+      if (!data || !data.length) { toast('Nessun dato da esportare', 'error'); return }
+      const titolo = document.getElementById('ingressi-title').textContent.replace('Ingressi — ', '')
+      let csv = 'Nome,Cognome,Piano,Ora ingresso\n'
+      csv += data.map(ing => {
+        const nome = ing.tifoso ? ing.tifoso.nome : ''
+        const cognome = ing.tifoso ? ing.tifoso.cognome : ''
+        const ora = new Date(ing.registrato_il).toLocaleString('it-IT')
+        return `${nome},${cognome},${ing.piano_nome||''},${ora}`
+      }).join('\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'ingressi-' + titolo.replace(/[^a-z0-9]/gi, '-').toLowerCase() + '.csv'
+      a.click()
+      URL.revokeObjectURL(url)
+    })
 }
 
 // ── MEMBERSHIP ──
