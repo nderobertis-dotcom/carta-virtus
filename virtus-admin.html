@@ -1003,11 +1003,11 @@ function renderMembership(list) {
     const dal = m.valida_dal ? new Date(m.valida_dal).toLocaleDateString('it-IT') : '—'
     const fino = m.valida_fino ? new Date(m.valida_fino).toLocaleDateString('it-IT') : '—'
     const badge = badgeMap[m.stato] || 'badge-gray'
-    const btns = (m.stato === 'in_attesa'
-      ? '<button class="btn btn-primary btn-sm" onclick="attivaMemb('' + m.id + '')">Attiva</button> <button class="btn btn-danger btn-sm" onclick="annullaMemb('' + m.id + '')">Annulla</button>'
+    const btns = m.stato === 'in_attesa'
+      ? '<button class="btn btn-primary btn-sm" onclick="attivaMemb(\'' + m.id + '\')">Attiva</button> <button class="btn btn-danger btn-sm" onclick="annullaMemb(\'' + m.id + '\')">Annulla</button>'
       : m.stato === 'attiva'
-        ? '<button class="btn btn-danger btn-sm" onclick="sospendiMemb('' + m.id + '')">Sospendi</button>'
-        : '')
+        ? '<button class="btn btn-danger btn-sm" onclick="sospendiMemb(\'' + m.id + '\')">Sospendi</button>'
+        : ''
     return '<tr><td><strong>' + nome + '</strong><br><span style="color:var(--muted);font-size:11px">' + email + '</span></td><td><span class="pts">' + piano + '</span><br><span style="color:var(--muted);font-size:11px">€ ' + prezzo + '</span></td><td style="font-size:12px;text-transform:capitalize">' + (m.metodo_pagamento || '—') + '</td><td style="font-size:11px;color:var(--muted)">' + dal + '</td><td style="font-size:11px;color:var(--muted)">' + fino + '</td><td><span class="badge ' + badge + '">' + m.stato + '</span></td><td>' + btns + '</td></tr>'
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessuna membership trovata</td></tr>'
 }
