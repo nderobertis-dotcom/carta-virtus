@@ -259,6 +259,14 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       Campagne
     </div>
+    <div class="nav-item" onclick="showSection('gare')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Gare
+    </div>
+    <div class="nav-item" onclick="window.open('operatore.html','_blank')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>
+      Pannello Operatore ↗
+    </div>
     <div class="nav-section">Analisi</div>
     <div class="nav-item" onclick="showSection('transazioni')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -399,6 +407,22 @@ select.form-input:focus{border-color:var(--accent)}
           <table>
             <thead><tr><th>Titolo</th><th>Partner</th><th>Moltiplicatore</th><th>Periodo</th><th>Stato</th><th></th></tr></thead>
             <tbody id="campagne-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- GARE -->
+    <div class="section" id="section-gare">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Calendario gare</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-gara')">+ Nuova gara</button>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Titolo</th><th>Avversario</th><th>Data e ora</th><th>Luogo</th><th>Stagione</th><th>Stato</th><th>Ingressi</th><th></th></tr></thead>
+            <tbody id="gare-list"></tbody>
           </table>
         </div>
       </div>
@@ -669,6 +693,66 @@ select.form-input:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- MODAL: Nuova Gara -->
+<div class="modal-overlay" id="modal-gara">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuova gara</div>
+      <button class="modal-close" onclick="closeModal('modal-gara')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="full form-group"><label>Titolo</label><input class="form-input" id="g-titolo" placeholder="Virtus Molfetta vs Avversario"/></div>
+        <div class="full form-group"><label>Avversario</label><input class="form-input" id="g-avversario" placeholder="Nome squadra avversaria"/></div>
+        <div class="form-group"><label>Data e ora</label><input class="form-input" id="g-data" type="datetime-local"/></div>
+        <div class="form-group"><label>Luogo</label><input class="form-input" id="g-luogo" value="PalaPoli, Molfetta"/></div>
+        <div class="form-group"><label>Stagione</label><input class="form-input" id="g-stagione" value="2026/2027"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-gara')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaGara()">Salva gara</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Dettaglio ingressi gara -->
+<div class="modal-overlay" id="modal-ingressi">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="ingressi-title">Ingressi gara</div>
+      <button class="modal-close" onclick="closeModal('modal-ingressi')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:12px">
+          <div class="pts" style="font-size:24px" id="ing-totale">0</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Totale</div>
+        </div>
+        <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:12px">
+          <div style="font-size:24px;font-weight:700;color:var(--accent)" id="ing-base">0</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Base</div>
+        </div>
+        <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:12px">
+          <div style="font-size:24px;font-weight:700;color:var(--gold)" id="ing-pro">0</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Pro</div>
+        </div>
+        <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:12px">
+          <div style="font-size:24px;font-weight:700;color:var(--purple)" id="ing-premium">0</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Premium</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Tifoso</th><th>Piano</th><th>Ora ingresso</th></tr></thead>
+        <tbody id="ingressi-list"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-ingressi')">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -732,6 +816,7 @@ function showSection(name) {
   if (name === 'transazioni') loadTransazioni()
   if (name === 'report')      loadReport()
   if (name === 'membership')  loadMembership('in_attesa')
+  if (name === 'gare')         loadGare()
 }
 
 // ── INIT ──
@@ -1102,6 +1187,90 @@ function toast(msg, type = 'success') {
   setTimeout(() => el.className = '', 3000)
 }
 
+
+
+// ── GARE ──
+async function loadGare() {
+  const { data, error } = await sb.from('gare')
+    .select('*')
+    .order('data_ora', { ascending: false })
+
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+
+  const ora = new Date()
+  document.getElementById('gare-list').innerHTML = (data || []).map(g => {
+    const dataGara = new Date(g.data_ora)
+    const passata = dataGara < ora
+    const apertura = new Date(dataGara.getTime() - 60*60*1000)
+    const aperta = ora >= apertura && !passata
+    const stato = passata ? 'Conclusa' : aperta ? 'Aperta' : 'Programmata'
+    const badgeCol = passata ? 'badge-gray' : aperta ? 'badge-green' : 'badge-amber'
+    return `<tr>
+      <td><strong>${g.titolo}</strong></td>
+      <td style="font-size:12px">${g.avversario}</td>
+      <td style="font-size:12px">${dataGara.toLocaleString('it-IT', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+      <td style="font-size:12px;color:var(--muted)">${g.luogo}</td>
+      <td style="font-size:12px;color:var(--muted)">${g.stagione}</td>
+      <td><span class="badge ${badgeCol}">${stato}</span></td>
+      <td>
+        <button class="btn btn-ghost btn-sm" data-id="${g.id}" data-titolo="${g.titolo}" onclick="loadIngressi(this.dataset.id, this.dataset.titolo)">Ingressi</button>
+      </td>
+      <td>
+        <button class="btn btn-danger btn-sm" data-id="${g.id}" onclick="eliminaGara(this.dataset.id)">${g.attiva ? 'Disattiva' : 'Attiva'}</button>
+      </td>
+    </tr>`
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Nessuna gara</td></tr>'
+}
+
+async function salvaGara() {
+  const payload = {
+    titolo:    document.getElementById('g-titolo').value,
+    avversario:document.getElementById('g-avversario').value,
+    data_ora:  document.getElementById('g-data').value,
+    luogo:     document.getElementById('g-luogo').value,
+    stagione:  document.getElementById('g-stagione').value,
+    attiva:    true
+  }
+  if (!payload.titolo || !payload.data_ora) { toast('Compila titolo e data', 'error'); return }
+  const { error } = await sb.from('gare').insert(payload)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Gara aggiunta!', 'success')
+  closeModal('modal-gara')
+  loadGare()
+}
+
+async function eliminaGara(id) {
+  const { data: g } = await sb.from('gare').select('attiva').eq('id', id).single()
+  await sb.from('gare').update({ attiva: !g.attiva }).eq('id', id)
+  toast('Gara aggiornata', 'success')
+  loadGare()
+}
+
+async function loadIngressi(garaId, titolo) {
+  document.getElementById('ingressi-title').textContent = 'Ingressi — ' + titolo
+  const { data } = await sb.from('ingressi_gare')
+    .select('piano_nome, registrato_il, tifoso:tifoso_id(nome, cognome)')
+    .eq('gara_id', garaId)
+    .order('registrato_il', { ascending: true })
+
+  const list = data || []
+  document.getElementById('ing-totale').textContent = list.length
+  document.getElementById('ing-base').textContent = list.filter(i => i.piano_nome === 'Base').length
+  document.getElementById('ing-pro').textContent = list.filter(i => i.piano_nome === 'Pro').length
+  document.getElementById('ing-premium').textContent = list.filter(i => i.piano_nome === 'Premium').length
+
+  document.getElementById('ingressi-list').innerHTML = list.map(ing => {
+    const ora = new Date(ing.registrato_il).toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'})
+    const badgeMap = { Base:'badge-teal', Pro:'badge-amber', Premium:'badge-purple' }
+    return `<tr>
+      <td>${ing.tifoso ? ing.tifoso.nome + ' ' + ing.tifoso.cognome : '—'}</td>
+      <td><span class="badge ${badgeMap[ing.piano_nome]||'badge-gray'}">${ing.piano_nome||'—'}</span></td>
+      <td style="color:var(--muted);font-size:12px">${ora}</td>
+    </tr>`
+  }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">Nessun ingresso</td></tr>'
+
+  openModal('modal-ingressi')
+}
 
 // ── MEMBERSHIP ──
 async function loadMembership(statoFiltro) {
