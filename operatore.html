@@ -145,6 +145,36 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
       <input class="form-input" type="password" id="login-password" placeholder="••••••••"/>
     </div>
     <button class="btn-login" onclick="doLogin()">Accedi →</button>
+    <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted)">
+      Sei un nuovo operatore? <span style="color:var(--blu2);cursor:pointer;font-weight:600" onclick="toggleRegOp()">Registrati</span>
+    </div>
+  </div>
+
+  <!-- Card registrazione operatore -->
+  <div class="login-card" id="reg-op-card" style="display:none;margin-top:16px">
+    <div class="login-title" style="font-size:20px">Registrazione Operatore</div>
+    <div class="login-sub">Invia la richiesta all'amministratore</div>
+    <div class="login-error" id="reg-op-error"></div>
+    <div class="form-group">
+      <label>Nome</label>
+      <input class="form-input" id="rop-nome" placeholder="Mario"/>
+    </div>
+    <div class="form-group">
+      <label>Cognome</label>
+      <input class="form-input" id="rop-cognome" placeholder="Rossi"/>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input class="form-input" type="email" id="rop-email" placeholder="mario@email.it"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input class="form-input" type="password" id="rop-password" placeholder="minimo 8 caratteri"/>
+    </div>
+    <button class="btn-login" onclick="registraOperatore()" style="background:var(--arancio)">Invia richiesta →</button>
+    <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--muted)">
+      <span style="color:var(--blu2);cursor:pointer;font-weight:600" onclick="toggleRegOp()">← Torna al login</span>
+    </div>
   </div>
 </div>
 
@@ -281,6 +311,7 @@ let garaCorrente = null
 let cameraStream = null
 let scanInterval = null
 let countdownInterval = null
+let currentOperatoreEmail = null
 
 // ── LOGIN ──
 async function doLogin() {
@@ -304,6 +335,7 @@ async function doLogin() {
     const ruolo = json.user?.user_metadata?.ruolo
     if (!['operatore', 'admin'].includes(ruolo)) throw new Error('Accesso riservato agli operatori gare')
 
+    currentOperatoreEmail = json.user.email
     document.getElementById('op-chip').textContent = json.user.email.split('@')[0]
     document.getElementById('login-screen').style.display = 'none'
     document.getElementById('app').style.display = 'flex'
@@ -516,9 +548,10 @@ async function verificaIngresso(qr) {
 
   // Registra ingresso
   const { data: ingresso, error: iErr } = await sbA.from('ingressi_gare').insert({
-    gara_id:     garaCorrente.id,
-    tifoso_id:   tifoso.id,
-    piano_nome:  pianoNome
+    gara_id:         garaCorrente.id,
+    tifoso_id:       tifoso.id,
+    piano_nome:      pianoNome,
+    operatore_email: currentOperatoreEmail || null
   }).select().single()
 
   if (iErr) {
@@ -650,6 +683,55 @@ function avviaRealtime() {
     .subscribe()
 }
 
+// ── REGISTRAZIONE OPERATORE ──
+function toggleRegOp() {
+  const card = document.getElementById('reg-op-card')
+  card.style.display = card.style.display === 'none' ? 'block' : 'none'
+}
+
+async function registraOperatore() {
+  const nome     = document.getElementById('rop-nome').value.trim()
+  const cognome  = document.getElementById('rop-cognome').value.trim()
+  const email    = document.getElementById('rop-email').value.trim()
+  const password = document.getElementById('rop-password').value
+  const errEl    = document.getElementById('reg-op-error')
+  errEl.style.display = 'none'
+
+  if (!nome || !cognome || !email || !password) {
+    errEl.textContent = 'Compila tutti i campi'
+    errEl.style.display = 'block'; return
+  }
+  if (password.length < 8) {
+    errEl.textContent = 'Password minimo 8 caratteri'
+    errEl.style.display = 'block'; return
+  }
+
+  try {
+    // Crea utente con ruolo 'operatore_pending' (in attesa di approvazione admin)
+    const resp = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'register',
+        email, password,
+        user_metadata: { nome, cognome, ruolo: 'operatore_pending' }
+      })
+    })
+    const json = await resp.json()
+    if (!resp.ok) throw new Error(json.message || json.error || 'Errore registrazione')
+
+    document.getElementById('reg-op-card').innerHTML =
+      '<div style="text-align:center;padding:20px">' +
+      '<div style="font-size:48px;margin-bottom:12px">✅</div>' +
+      '<div style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;color:var(--blu);margin-bottom:8px">Richiesta inviata!</div>' +
+      '<div style="font-size:13px;color:var(--muted)">L'amministratore attiverà il tuo account. Riceverai le credenziali via email.</div>' +
+      '</div>'
+  } catch(err) {
+    errEl.textContent = err.message
+    errEl.style.display = 'block'
+  }
+}
+
 // ── TOAST ──
 function toast(msg, type) {
   const el = document.getElementById('toast')
@@ -674,6 +756,7 @@ window.addEventListener('load', async () => {
   if (session) {
     const ruolo = session.user?.user_metadata?.ruolo
     if (['operatore', 'admin'].includes(ruolo)) {
+      currentOperatoreEmail = session.user.email
       document.getElementById('op-chip').textContent = session.user.email.split('@')[0]
       document.getElementById('login-screen').style.display = 'none'
       document.getElementById('app').style.display = 'flex'
