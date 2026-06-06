@@ -792,24 +792,32 @@ async function loadTifosi() {
 }
 
 function renderTifosi(list) {
-  document.getElementById('tifosi-list').innerHTML = list.map(t => {
-    const residenza = [t.via, t.cap, t.citta].filter(Boolean).join(', ') || '—'
-    const sesso = t.sesso === 'M' ? 'M' : t.sesso === 'F' ? 'F' : t.sesso || '—'
-    return '<tr>' +
-      '<td><strong>' + t.nome + ' ' + t.cognome + '</strong><br><span class="qr-code" style="font-size:10px">' + t.qr_code + '</span></td>' +
-      '<td style="color:var(--muted);font-size:12px">' + t.email + '<br><span style="font-size:11px">' + (t.telefono || '') + '</span></td>' +
-      '<td style="font-size:11px;color:var(--muted)">' + residenza + '</td>' +
-      '<td style="font-size:12px;text-align:center">' + sesso + '</td>' +
-      '<td><span class="pts">' + t.punti_saldo + '</span></td>' +
-      '<td><span class="badge badge-' + (t.stato === 'attivo' ? 'green' : 'red') + '">' + t.stato + '</span></td>' +
-      '<td style="color:var(--muted);font-size:11px">' + new Date(t.creato_il).toLocaleDateString('it-IT') + '</td>' +
-      '<td style="display:flex;gap:4px">' +
-        '<button class="btn btn-ghost btn-sm" onclick='openBonus("' + t.id + '","' + t.nome + ' ' + t.cognome + '")'>+ Bonus</button>' +
-        '<button class="btn btn-ghost btn-sm" onclick='openDettaglioTifoso("' + t.id + '")'>Info</button>' +
-      '</td>' +
-    '</tr>'
-  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Nessun tifoso</td></tr>'
+  const tbody = document.getElementById('tifosi-list')
+  if (!list || !list.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Nessun tifoso</td></tr>'
+    return
+  }
+  tbody.innerHTML = list.map(t => {
+    const residenza = [t.via, t.cap, t.citta].filter(Boolean).join(', ') || '&mdash;'
+    const sesso = t.sesso === 'M' ? 'M' : t.sesso === 'F' ? 'F' : t.sesso || '&mdash;'
+    const stato_badge = t.stato === 'attivo' ? 'green' : 'red'
+    const data = new Date(t.creato_il).toLocaleDateString('it-IT')
+    return `<tr>
+      <td><strong>${t.nome} ${t.cognome}</strong><br><span class="qr-code" style="font-size:10px">${t.qr_code}</span></td>
+      <td style="color:var(--muted);font-size:12px">${t.email}<br><span style="font-size:11px">${t.telefono||''}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${residenza}</td>
+      <td style="font-size:12px;text-align:center">${sesso}</td>
+      <td><span class="pts">${t.punti_saldo}</span></td>
+      <td><span class="badge badge-${stato_badge}">${t.stato}</span></td>
+      <td style="color:var(--muted);font-size:11px">${data}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" data-id="${t.id}" data-nome="${t.nome} ${t.cognome}" onclick="openBonus(this.dataset.id,this.dataset.nome)">+ Bonus</button>
+        <button class="btn btn-ghost btn-sm" data-id="${t.id}" onclick="openDettaglioTifoso(this.dataset.id)">Info</button>
+      </td>
+    </tr>`
+  }).join('')
 }
+
 
 function filterTifosi() {
   const q = document.getElementById('tifosi-search').value.toLowerCase()
