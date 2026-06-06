@@ -357,7 +357,10 @@ select.form-input:focus{border-color:var(--accent)}
       <div class="card">
         <div class="card-header">
           <div class="card-title">Tutti i tifosi</div>
-          <span id="tifosi-count" style="font-size:11px;color:var(--muted)"></span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span id="tifosi-count" style="font-size:11px;color:var(--muted)"></span>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-emetti-fancard')">🎫 Emetti Fan Card</button>
+          </div>
         </div>
         <div class="card-body">
           <table>
@@ -784,6 +787,64 @@ select.form-input:focus{border-color:var(--accent)}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-ingressi');if(ingressiRealtimeChannel)sb.removeChannel(ingressiRealtimeChannel)">Chiudi</button>
       <button class="btn btn-primary" onclick="esportaIngressi()">↓ Esporta CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Emetti Fan Card -->
+<div class="modal-overlay" id="modal-emetti-fancard">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title">🎫 Emetti Fan Card</div>
+      <button class="modal-close" onclick="closeModal('modal-emetti-fancard')">×</button>
+    </div>
+    <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group" style="grid-column:1/2">
+        <label>Nome *</label>
+        <input class="form-input" id="fc-nome" type="text" placeholder="Mario"/>
+      </div>
+      <div class="form-group" style="grid-column:2/3">
+        <label>Cognome *</label>
+        <input class="form-input" id="fc-cognome" type="text" placeholder="Rossi"/>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Email *</label>
+        <input class="form-input" id="fc-email" type="email" placeholder="mario.rossi@email.com"/>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Il tifoso riceverà un link per impostare la password</div>
+      </div>
+      <div class="form-group">
+        <label>Telefono</label>
+        <input class="form-input" id="fc-telefono" type="tel" placeholder="+39 320 000 0000"/>
+      </div>
+      <div class="form-group">
+        <label>Data di nascita</label>
+        <input class="form-input" id="fc-nascita" type="date"/>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Piano membership *</label>
+        <select class="form-input" id="fc-piano">
+          <option value="">— Seleziona piano —</option>
+          <option value="base">Base — € 30/anno</option>
+          <option value="pro">Pro — € 50/anno</option>
+          <option value="premium">Premium — € 100/anno</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Importo riscosso (€) *</label>
+        <input class="form-input" id="fc-importo" type="number" min="0" step="0.01" placeholder="30.00"/>
+      </div>
+      <div class="form-group">
+        <label>Metodo di pagamento *</label>
+        <select class="form-input" id="fc-metodo">
+          <option value="">— Seleziona —</option>
+          <option value="contanti">Contanti</option>
+          <option value="pos">POS</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-emetti-fancard')">Annulla</button>
+      <button class="btn btn-primary" id="fc-submit-btn" onclick="emettiFantCard()">🎫 Emetti e invia link</button>
     </div>
   </div>
 </div>
@@ -1502,6 +1563,93 @@ async function annullaMemb(id) {
   toast('Membership annullata', 'success')
   loadMembership('')
   loadDashboard()
+}
+
+// ── EMETTI FAN CARD ──
+const PIANI_PREZZI = { base: 30, pro: 50, premium: 100 }
+const PIANI_PUNTI_BENVENUTO = { base: 50, pro: 100, premium: 200 }
+
+async function emettiFantCard() {
+  const nome    = document.getElementById('fc-nome').value.trim()
+  const cognome = document.getElementById('fc-cognome').value.trim()
+  const email   = document.getElementById('fc-email').value.trim()
+  const telefono = document.getElementById('fc-telefono').value.trim()
+  const nascita  = document.getElementById('fc-nascita').value
+  const piano    = document.getElementById('fc-piano').value
+  const importo  = parseFloat(document.getElementById('fc-importo').value)
+  const metodo   = document.getElementById('fc-metodo').value
+
+  if (!nome || !cognome || !email || !piano || !metodo || isNaN(importo)) {
+    toast('Compila tutti i campi obbligatori', 'error'); return
+  }
+
+  const btn = document.getElementById('fc-submit-btn')
+  btn.disabled = true
+  btn.textContent = 'Elaborazione...'
+
+  try {
+    // 1. Invita l'utente via Supabase Auth → riceve email con link per scegliere password
+    const { data: inviteData, error: inviteErr } = await sbAdmin.auth.admin.inviteUserByEmail(email, {
+      data: { ruolo: 'tifoso', nome, cognome }
+    })
+    if (inviteErr) throw new Error('Errore invito: ' + inviteErr.message)
+
+    const uid = inviteData.user.id
+
+    // 2. Crea record tifoso
+    const scadenza = new Date()
+    scadenza.setFullYear(scadenza.getFullYear() + 1)
+
+    const { error: tifErr } = await sbAdmin.from('tifosi').insert({
+      id: uid,
+      nome, cognome, email,
+      telefono: telefono || null,
+      data_nascita: nascita || null,
+      punti_saldo: PIANI_PUNTI_BENVENUTO[piano],
+      stato: 'attivo',
+      piano_attivo: piano
+    })
+    if (tifErr) throw new Error('Errore tifoso: ' + tifErr.message)
+
+    // 3. Crea record membership
+    const oggi = new Date().toISOString().split('T')[0]
+    const { error: membErr } = await sbAdmin.from('membership').insert({
+      tifoso_id: uid,
+      piano,
+      importo_pagato: importo,
+      metodo_pagamento: metodo,
+      stato: 'attiva',
+      valida_dal: oggi,
+      scade_il: scadenza.toISOString().split('T')[0]
+    })
+    if (membErr) throw new Error('Errore membership: ' + membErr.message)
+
+    // 4. Registra transazione punti benvenuto
+    await sbAdmin.from('transazioni').insert({
+      tifoso_id: uid,
+      tipo: 'BONUS',
+      punti_delta: PIANI_PUNTI_BENVENUTO[piano],
+      nota: `Bonus benvenuto piano ${piano}`
+    })
+
+    toast(`✅ Fan Card emessa! Email di attivazione inviata a ${email}`, 'success')
+    closeModal('modal-emetti-fancard')
+
+    // Reset form
+    ;['fc-nome','fc-cognome','fc-email','fc-telefono','fc-nascita'].forEach(id => document.getElementById(id).value = '')
+    document.getElementById('fc-piano').value = ''
+    document.getElementById('fc-importo').value = ''
+    document.getElementById('fc-metodo').value = ''
+
+    loadTifosi()
+    loadDashboard()
+
+  } catch(err) {
+    toast('Errore: ' + err.message, 'error')
+  } finally {
+    btn.disabled = false
+    btn.textContent = '🎫 Emetti e invia link'
+  }
 }
 
 // ── ENTER LOGIN ──
