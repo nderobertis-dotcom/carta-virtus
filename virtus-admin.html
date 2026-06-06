@@ -110,7 +110,7 @@ nav{padding:16px 0;flex:1}
 .login-error{font-size:12px;color:#ef4444;margin-bottom:12px;display:none}
 
 /* ── STATS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:28px}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
 .stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
 .stat-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text);line-height:1}
@@ -138,6 +138,7 @@ tr:hover td{background:rgba(21,101,192,.03)}
 .badge-amber{background:rgba(245,158,11,.15);color:var(--gold)}
 .badge-purple{background:rgba(139,92,246,.15);color:var(--purple)}
 .badge-gray{background:rgba(107,114,128,.15);color:var(--muted)}
+.badge-amber{background:rgba(245,158,11,.15);color:var(--gold)}
 .pts{font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2)}
 .qr-code{font-family:monospace;font-size:11px;color:var(--muted);letter-spacing:.05em}
 
@@ -242,6 +243,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Tifosi
     </div>
+    <div class="nav-item" onclick="showSection('membership')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Membership
+    </div>
     <div class="nav-item" onclick="showSection('partner')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       Partner
@@ -306,6 +311,11 @@ select.form-input:focus{border-color:var(--accent)}
           <div class="stat-label">Coupon attivi</div>
           <div class="stat-value stat-gold" id="stat-coupon">—</div>
           <div class="stat-sub">emessi non usati</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;border:1px solid rgba(245,158,11,.3)" onclick="showSection('membership')">
+          <div class="stat-label">In attesa pagamento</div>
+          <div class="stat-value stat-gold" id="stat-attesa">-</div>
+          <div class="stat-sub">da attivare</div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
@@ -405,6 +415,26 @@ select.form-input:focus{border-color:var(--accent)}
           <table>
             <thead><tr><th>Tipo</th><th>Tifoso</th><th>Partner</th><th>Punti</th><th>Importo €</th><th>Saldo dopo</th><th>Data</th></tr></thead>
             <tbody id="transazioni-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBERSHIP -->
+    <div class="section" id="section-membership">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Gestione Membership</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="filtraMembership('in_attesa')" id="filt-attesa" style="border-color:var(--gold);color:var(--gold)">In attesa</button>
+            <button class="btn btn-ghost btn-sm" onclick="filtraMembership('attiva')" id="filt-attiva">Attive</button>
+            <button class="btn btn-ghost btn-sm" onclick="filtraMembership('')" id="filt-tutte">Tutte</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Tifoso</th><th>Piano</th><th>Metodo</th><th>Valida dal</th><th>Scade il</th><th>Stato</th><th></th></tr></thead>
+            <tbody id="membership-list"></tbody>
           </table>
         </div>
       </div>
@@ -635,6 +665,7 @@ function showSection(name) {
   if (name === 'campagne')    loadCampagne()
   if (name === 'transazioni') loadTransazioni()
   if (name === 'report')      loadReport()
+  if (name === 'membership')  loadMembership('in_attesa')
 }
 
 // ── INIT ──
@@ -644,17 +675,19 @@ async function initApp() {
 
 // ── DASHBOARD ──
 async function loadDashboard() {
-  const [{ count: nTifosi }, { count: nPartner }, { data: txData }, { count: nCoupon }] =
+  const [{ count: nTifosi }, { count: nPartner }, { data: txData }, { count: nCoupon }, { count: nAttesa }] =
     await Promise.all([
       sb.from('tifosi').select('*', { count: 'exact', head: true }).eq('stato', 'attivo'),
       sb.from('partner').select('*', { count: 'exact', head: true }).eq('attivo', true),
       sb.from('transazioni').select('tipo, punti_delta'),
-      sb.from('riscatti').select('*', { count: 'exact', head: true }).eq('stato', 'emesso')
+      sb.from('riscatti').select('*', { count: 'exact', head: true }).eq('stato', 'emesso'),
+      sb.from('membership').select('*', { count: 'exact', head: true }).eq('stato', 'in_attesa')
     ])
 
   document.getElementById('stat-tifosi').textContent = nTifosi ?? '0'
   document.getElementById('stat-partner').textContent = nPartner ?? '0'
   document.getElementById('stat-coupon').textContent = nCoupon ?? '0'
+  const elAttesa = document.getElementById('stat-attesa'); if(elAttesa) elAttesa.textContent = nAttesa ?? '0'
 
   const puntiEmessi = (txData || [])
     .filter(t => ['ACCUMULO','BONUS'].includes(t.tipo))
@@ -946,6 +979,64 @@ function toast(msg, type = 'success') {
   el.textContent = msg
   el.className = 'show ' + type
   setTimeout(() => el.className = '', 3000)
+}
+
+
+// ── MEMBERSHIP ──
+async function loadMembership(statoFiltro) {
+  let query = sb.from('membership')
+    .select('*, tifoso:tifoso_id(nome, cognome, email), piano:piano_id(nome, prezzo_eur)')
+    .order('creato_il', { ascending: false })
+  if (statoFiltro) query = query.eq('stato', statoFiltro)
+  const { data, error } = await query
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  renderMembership(data || [])
+}
+
+function renderMembership(list) {
+  const badgeMap = { in_attesa:'badge-amber', attiva:'badge-green', scaduta:'badge-red', annullata:'badge-gray' }
+  document.getElementById('membership-list').innerHTML = list.map(m => {
+    const nome = m.tifoso ? m.tifoso.nome + ' ' + m.tifoso.cognome : '—'
+    const email = m.tifoso ? m.tifoso.email : ''
+    const piano = m.piano ? m.piano.nome : '—'
+    const prezzo = m.piano ? m.piano.prezzo_eur : '—'
+    const dal = m.valida_dal ? new Date(m.valida_dal).toLocaleDateString('it-IT') : '—'
+    const fino = m.valida_fino ? new Date(m.valida_fino).toLocaleDateString('it-IT') : '—'
+    const badge = badgeMap[m.stato] || 'badge-gray'
+    const btns = (m.stato === 'in_attesa'
+      ? '<button class="btn btn-primary btn-sm" onclick="attivaMemb('' + m.id + '')">Attiva</button> <button class="btn btn-danger btn-sm" onclick="annullaMemb('' + m.id + '')">Annulla</button>'
+      : m.stato === 'attiva'
+        ? '<button class="btn btn-danger btn-sm" onclick="sospendiMemb('' + m.id + '')">Sospendi</button>'
+        : '')
+    return '<tr><td><strong>' + nome + '</strong><br><span style="color:var(--muted);font-size:11px">' + email + '</span></td><td><span class="pts">' + piano + '</span><br><span style="color:var(--muted);font-size:11px">€ ' + prezzo + '</span></td><td style="font-size:12px;text-transform:capitalize">' + (m.metodo_pagamento || '—') + '</td><td style="font-size:11px;color:var(--muted)">' + dal + '</td><td style="font-size:11px;color:var(--muted)">' + fino + '</td><td><span class="badge ' + badge + '">' + m.stato + '</span></td><td>' + btns + '</td></tr>'
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessuna membership trovata</td></tr>'
+}
+
+function filtraMembership(stato) {
+  loadMembership(stato)
+}
+
+async function attivaMemb(id) {
+  const { error } = await sb.from('membership').update({ stato: 'attiva' }).eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Membership attivata!', 'success')
+  loadMembership('')
+  loadDashboard()
+}
+
+async function sospendiMemb(id) {
+  const { error } = await sb.from('membership').update({ stato: 'scaduta' }).eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Membership sospesa', 'success')
+  loadMembership('')
+}
+
+async function annullaMemb(id) {
+  const { error } = await sb.from('membership').update({ stato: 'annullata' }).eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Membership annullata', 'success')
+  loadMembership('')
+  loadDashboard()
 }
 
 // ── ENTER LOGIN ──
