@@ -349,7 +349,7 @@ select.form-input:focus{border-color:var(--accent)}
         </div>
         <div class="card-body">
           <table>
-            <thead><tr><th>Nome</th><th>Email</th><th>QR Code</th><th>Punti</th><th>Stato</th><th>Iscritto il</th><th></th></tr></thead>
+            <thead><tr><th>Nome</th><th>Email</th><th>Residenza</th><th>Sesso</th><th>Punti</th><th>Stato</th><th>Iscritto il</th><th></th></tr></thead>
             <tbody id="tifosi-list"></tbody>
           </table>
         </div>
@@ -574,6 +574,72 @@ select.form-input:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- MODAL: Dettaglio tifoso -->
+<div class="modal-overlay" id="modal-dettaglio-tifoso">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="det-nome-title">Dettaglio tifoso</div>
+      <button class="modal-close" onclick="closeModal('modal-dettaglio-tifoso')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Nome</div>
+          <div style="font-size:14px;font-weight:600" id="det-nome">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Email</div>
+          <div style="font-size:13px" id="det-email">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Telefono</div>
+          <div style="font-size:13px" id="det-tel">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Data di nascita</div>
+          <div style="font-size:13px" id="det-nascita">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Sesso</div>
+          <div style="font-size:13px" id="det-sesso">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">QR Code</div>
+          <div class="qr-code" style="font-size:11px" id="det-qr">—</div>
+        </div>
+        <div style="grid-column:1/-1">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Indirizzo</div>
+          <div style="font-size:13px" id="det-indirizzo">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Punti saldo</div>
+          <div class="pts" style="font-size:20px" id="det-punti">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Stato</div>
+          <div id="det-stato">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Marketing</div>
+          <div style="font-size:13px" id="det-marketing">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Iscritto il</div>
+          <div style="font-size:13px;color:var(--muted)" id="det-data">—</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Membership</div>
+        <div id="det-membership" style="font-size:13px;color:var(--muted)">Caricamento...</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-dettaglio-tifoso')">Chiudi</button>
+      <button class="btn btn-primary" onclick="openBonus(currentDetTifoso.id, currentDetTifoso.nome + ' ' + currentDetTifoso.cognome);closeModal('modal-dettaglio-tifoso')">+ Bonus punti</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Bonus punti tifoso -->
 <div class="modal-overlay" id="modal-bonus">
   <div class="modal">
@@ -726,24 +792,29 @@ async function loadTifosi() {
 }
 
 function renderTifosi(list) {
-  document.getElementById('tifosi-list').innerHTML = list.map(t => `
-    <tr>
-      <td><strong>${t.nome} ${t.cognome}</strong></td>
-      <td style="color:var(--muted);font-size:12px">${t.email}</td>
-      <td><span class="qr-code">${t.qr_code}</span></td>
-      <td><span class="pts">${t.punti_saldo}</span></td>
-      <td><span class="badge badge-${t.stato === 'attivo' ? 'green' : 'red'}">${t.stato}</span></td>
-      <td style="color:var(--muted);font-size:11px">${new Date(t.creato_il).toLocaleDateString('it-IT')}</td>
-      <td>
-        <button class="btn btn-ghost btn-sm" onclick='openBonus("${t.id}","${t.nome} ${t.cognome}")'>+ Bonus</button>
-      </td>
-    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessun tifoso</td></tr>'
+  document.getElementById('tifosi-list').innerHTML = list.map(t => {
+    const residenza = [t.via, t.cap, t.citta].filter(Boolean).join(', ') || '—'
+    const sesso = t.sesso === 'M' ? 'M' : t.sesso === 'F' ? 'F' : t.sesso || '—'
+    return '<tr>' +
+      '<td><strong>' + t.nome + ' ' + t.cognome + '</strong><br><span class="qr-code" style="font-size:10px">' + t.qr_code + '</span></td>' +
+      '<td style="color:var(--muted);font-size:12px">' + t.email + '<br><span style="font-size:11px">' + (t.telefono || '') + '</span></td>' +
+      '<td style="font-size:11px;color:var(--muted)">' + residenza + '</td>' +
+      '<td style="font-size:12px;text-align:center">' + sesso + '</td>' +
+      '<td><span class="pts">' + t.punti_saldo + '</span></td>' +
+      '<td><span class="badge badge-' + (t.stato === 'attivo' ? 'green' : 'red') + '">' + t.stato + '</span></td>' +
+      '<td style="color:var(--muted);font-size:11px">' + new Date(t.creato_il).toLocaleDateString('it-IT') + '</td>' +
+      '<td style="display:flex;gap:4px">' +
+        '<button class="btn btn-ghost btn-sm" onclick='openBonus("' + t.id + '","' + t.nome + ' ' + t.cognome + '")'>+ Bonus</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick='openDettaglioTifoso("' + t.id + '")'>Info</button>' +
+      '</td>' +
+    '</tr>'
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Nessun tifoso</td></tr>'
 }
 
 function filterTifosi() {
   const q = document.getElementById('tifosi-search').value.toLowerCase()
   renderTifosi(allTifosi.filter(t =>
-    `${t.nome} ${t.cognome} ${t.email}`.toLowerCase().includes(q)))
+    `${t.nome} ${t.cognome} ${t.email} ${t.citta||''} ${t.via||''}`.toLowerCase().includes(q)))
 }
 
 // ── PARTNER ──
@@ -933,6 +1004,48 @@ async function loadReport() {
       <td style="font-size:12px">${t.nome} ${t.cognome}</td>
       <td><span class="pts">${t.punti_saldo}</span></td>
     </tr>`).join('')
+}
+
+// ── DETTAGLIO TIFOSO ──
+let currentDetTifoso = null
+
+async function openDettaglioTifoso(id) {
+  const t = allTifosi.find(t => t.id === id)
+  if (!t) return
+  currentDetTifoso = t
+
+  document.getElementById('det-nome-title').textContent = t.nome + ' ' + t.cognome
+  document.getElementById('det-nome').textContent = t.nome + ' ' + t.cognome
+  document.getElementById('det-email').textContent = t.email
+  document.getElementById('det-tel').textContent = t.telefono || '—'
+  document.getElementById('det-nascita').textContent = t.data_nascita ? new Date(t.data_nascita).toLocaleDateString('it-IT') : '—'
+  document.getElementById('det-sesso').textContent = t.sesso === 'M' ? 'Maschio' : t.sesso === 'F' ? 'Femmina' : t.sesso || '—'
+  document.getElementById('det-qr').textContent = t.qr_code
+  document.getElementById('det-indirizzo').textContent = [t.via, t.cap, t.citta].filter(Boolean).join(', ') || '—'
+  document.getElementById('det-punti').textContent = t.punti_saldo
+  document.getElementById('det-stato').innerHTML = '<span class="badge badge-' + (t.stato === 'attivo' ? 'green' : 'red') + '">' + t.stato + '</span>'
+  document.getElementById('det-marketing').textContent = t.consenso_marketing ? 'Sì' : 'No'
+  document.getElementById('det-data').textContent = new Date(t.creato_il).toLocaleDateString('it-IT')
+
+  // Carica membership
+  const { data: memb } = await sb.from('membership')
+    .select('*, piano:piano_id(nome, prezzo_eur)')
+    .eq('tifoso_id', id)
+    .order('creato_il', { ascending: false })
+    .limit(1)
+    .single()
+
+  const membEl = document.getElementById('det-membership')
+  if (memb) {
+    const badgeMap = { in_attesa:'badge-amber', attiva:'badge-green', scaduta:'badge-red', annullata:'badge-gray' }
+    membEl.innerHTML = '<span class="badge ' + (badgeMap[memb.stato]||'badge-gray') + '">' + memb.stato + '</span> ' +
+      '<strong>' + (memb.piano?.nome || '—') + '</strong> · € ' + (memb.piano?.prezzo_eur || '—') + '/anno · ' +
+      'Scade il ' + (memb.valida_fino ? new Date(memb.valida_fino).toLocaleDateString('it-IT') : '—')
+  } else {
+    membEl.textContent = 'Nessuna membership'
+  }
+
+  openModal('modal-dettaglio-tifoso')
 }
 
 // ── BONUS ──
