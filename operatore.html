@@ -720,13 +720,13 @@ async function registraOperatore() {
     const json = await resp.json()
     if (!resp.ok) throw new Error(json.message || json.error || 'Errore registrazione')
 
-    document.getElementById('reg-op-card').innerHTML =
-      '<div style="text-align:center;padding:20px">' +
-      '<div style="font-size:48px;margin-bottom:12px">✅</div>' +
-      '<div style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;color:var(--blu);margin-bottom:8px">Richiesta inviata!</div>' +
-      '<div style="font-size:13px;color:var(--muted)">L'amministratore attiverà il tuo account. Riceverai le credenziali via email.</div>' +
-      '</div>'
-  } catch(err) {
+        const cardEl = document.getElementById('reg-op-card')
+    cardEl.innerHTML = ''
+    const successDiv = document.createElement('div')
+    successDiv.style.cssText = 'text-align:center;padding:20px'
+    successDiv.innerHTML = '<div style="font-size:48px;margin-bottom:12px">&#10003;</div><div style="font-size:20px;font-weight:800;color:var(--blu);margin-bottom:8px">Richiesta inviata!</div><div style="font-size:13px;color:var(--muted)">Attendi l attivazione da parte dell amministratore.</div>'
+    cardEl.appendChild(successDiv)
+      } catch(err) {
     errEl.textContent = err.message
     errEl.style.display = 'block'
   }
