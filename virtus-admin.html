@@ -770,7 +770,7 @@ let allPartner = []
 // ── AUTH ──
 const ADMIN_PASSWORD = 'CartaVirtus2025!'
 const SUPABASE_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODUzMTc1MCwiZXhwIjoyMDk0MTA3NzUwfQ.Pb61V8euQwLt1KR-m29nr_s0F13gRXSToRiPPL6bLSQ'
-const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE)
+const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE, { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } })
 
 async function doLogin() {
   const pass  = document.getElementById('login-password').value
@@ -847,7 +847,7 @@ async function loadDashboard() {
   document.getElementById('stat-punti').textContent = puntiEmessi.toLocaleString('it-IT')
 
   // Ultimi tifosi
-  const { data: ultTifosi } = await sb.from('tifosi').select('nome, cognome, punti_saldo, stato')
+  const { data: ultTifosi } = await sbAdmin.from('tifosi').select('nome, cognome, punti_saldo, stato')
     .order('creato_il', { ascending: false }).limit(5)
   const tBody = document.getElementById('dash-tifosi-list')
   tBody.innerHTML = (ultTifosi || []).map(t => `
@@ -858,7 +858,7 @@ async function loadDashboard() {
     </tr>`).join('') || '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Nessun tifoso</td></tr>'
 
   // Ultime transazioni
-  const { data: ultTx } = await sb.from('transazioni')
+  const { data: ultTx } = await sbAdmin.from('transazioni')
     .select('tipo, punti_delta, creato_il').order('creato_il', { ascending: false }).limit(6)
   const txBody = document.getElementById('dash-tx-list')
   txBody.innerHTML = (ultTx || []).map(t => `
@@ -871,7 +871,7 @@ async function loadDashboard() {
 
 // ── TIFOSI ──
 async function loadTifosi() {
-  const { data } = await sb.from('tifosi').select('*').order('creato_il', { ascending: false })
+  const { data } = await sbAdmin.from('tifosi').select('*').order('creato_il', { ascending: false })
   allTifosi = data || []
   document.getElementById('tifosi-count').textContent = `${allTifosi.length} tifosi`
   renderTifosi(allTifosi)
@@ -913,7 +913,7 @@ function filterTifosi() {
 
 // ── PARTNER ──
 async function loadPartner() {
-  const { data } = await sb.from('partner').select('*').order('nome_negozio')
+  const { data } = await sbAdmin.from('partner').select('*').order('nome_negozio')
   allPartner = data || []
   document.getElementById('partner-list').innerHTML = allPartner.map(p => `
     <tr>
@@ -929,7 +929,7 @@ async function loadPartner() {
 }
 
 async function loadPartnerList() {
-  const { data } = await sb.from('partner').select('id, nome_negozio').eq('attivo', true)
+  const { data } = await sbAdmin.from('partner').select('id, nome_negozio').eq('attivo', true)
   allPartner = data || []
   const opts = allPartner.map(p => `<option value="${p.id}">${p.nome_negozio}</option>`).join('')
   document.getElementById('pr-partner').innerHTML = opts
@@ -946,7 +946,7 @@ async function salvaPartner() {
     referente_tel:   document.getElementById('p-ref-tel').value,
     indirizzo:       document.getElementById('p-indirizzo').value,
   }
-  const { error } = await sb.from('partner').insert(payload)
+  const { error } = await sbAdmin.from('partner').insert(payload)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('Partner aggiunto!', 'success')
   closeModal('modal-partner')
@@ -955,14 +955,14 @@ async function salvaPartner() {
 }
 
 async function togglePartner(id, attivo) {
-  await sb.from('partner').update({ attivo: !attivo }).eq('id', id)
+  await sbAdmin.from('partner').update({ attivo: !attivo }).eq('id', id)
   toast(attivo ? 'Partner sospeso' : 'Partner riattivato', 'success')
   loadPartner()
 }
 
 // ── PREMI ──
 async function loadPremi() {
-  const { data } = await sb.from('premi')
+  const { data } = await sbAdmin.from('premi')
     .select('*, partner:partner_id(nome_negozio)').order('creato_il', { ascending: false })
   document.getElementById('premi-list').innerHTML = (data || []).map(p => `
     <tr>
@@ -988,7 +988,7 @@ async function salvaPremio() {
     validita_giorni: parseInt(document.getElementById('pr-giorni').value) || 30,
     valido_fino:     scadenza || null,
   }
-  const { error } = await sb.from('premi').insert(payload)
+  const { error } = await sbAdmin.from('premi').insert(payload)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('Premio aggiunto al catalogo!', 'success')
   closeModal('modal-premio')
@@ -996,13 +996,13 @@ async function salvaPremio() {
 }
 
 async function togglePremio(id, attivo) {
-  await sb.from('premi').update({ attivo: !attivo }).eq('id', id)
+  await sbAdmin.from('premi').update({ attivo: !attivo }).eq('id', id)
   loadPremi()
 }
 
 // ── CAMPAGNE ──
 async function loadCampagne() {
-  const { data } = await sb.from('campagne')
+  const { data } = await sbAdmin.from('campagne')
     .select('*, partner:partner_id(nome_negozio)').order('creato_il', { ascending: false })
   const now = new Date()
   document.getElementById('campagne-list').innerHTML = (data || []).map(c => {
@@ -1030,7 +1030,7 @@ async function salvaCampagna() {
     valida_fino:     document.getElementById('c-a').value,
     attiva: true
   }
-  const { error } = await sb.from('campagne').insert(payload)
+  const { error } = await sbAdmin.from('campagne').insert(payload)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('Campagna lanciata!', 'success')
   closeModal('modal-campagna')
@@ -1038,14 +1038,14 @@ async function salvaCampagna() {
 }
 
 async function disattivaCampagna(id) {
-  await sb.from('campagne').update({ attiva: false }).eq('id', id)
+  await sbAdmin.from('campagne').update({ attiva: false }).eq('id', id)
   toast('Campagna fermata', 'success')
   loadCampagne()
 }
 
 // ── TRANSAZIONI ──
 async function loadTransazioni() {
-  const { data } = await sb.from('transazioni')
+  const { data } = await sbAdmin.from('transazioni')
     .select('*, tifoso:tifoso_id(nome,cognome), partner:partner_id(nome_negozio)')
     .order('creato_il', { ascending: false }).limit(100)
   const badgeMap = { ACCUMULO:'green', RISCATTO:'purple', BONUS:'amber', RETTIFICA:'gray', SCADENZA:'red' }
@@ -1063,7 +1063,7 @@ async function loadTransazioni() {
 
 // ── REPORT ──
 async function loadReport() {
-  const { data: tx } = await sb.from('transazioni').select('tipo, punti_delta, importo_eur, partner_id, tifoso_id')
+  const { data: tx } = await sbAdmin.from('transazioni').select('tipo, punti_delta, importo_eur, partner_id, tifoso_id')
 
   const volume = (tx||[]).filter(t => t.tipo === 'ACCUMULO').reduce((s,t) => s + (t.importo_eur||0), 0)
   const emessi = (tx||[]).filter(t => ['ACCUMULO','BONUS'].includes(t.tipo)).reduce((s,t) => s + t.punti_delta, 0)
@@ -1091,7 +1091,7 @@ async function loadReport() {
     </tr>`).join('') || '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Nessun dato</td></tr>'
 
   // Top tifosi
-  const { data: topTifosi } = await sb.from('tifosi').select('nome, cognome, punti_saldo')
+  const { data: topTifosi } = await sbAdmin.from('tifosi').select('nome, cognome, punti_saldo')
     .order('punti_saldo', { ascending: false }).limit(5)
   document.getElementById('rep-tifosi-top').innerHTML = (topTifosi||[]).map(t => `
     <tr>
@@ -1122,7 +1122,7 @@ async function openDettaglioTifoso(id) {
   document.getElementById('det-data').textContent = new Date(t.creato_il).toLocaleDateString('it-IT')
 
   // Carica membership
-  const { data: memb } = await sb.from('membership')
+  const { data: memb } = await sbAdmin.from('membership')
     .select('*, piano:piano_id(nome, prezzo_eur)')
     .eq('tifoso_id', id)
     .order('creato_il', { ascending: false })
@@ -1159,9 +1159,9 @@ async function salvaBonus() {
   if (!punti || punti <= 0) { toast('Inserisci un numero di punti valido', 'error'); return }
 
   // Legge saldo attuale
-  const { data: tifoso } = await sb.from('tifosi').select('punti_saldo').eq('id', tifoso_id).single()
+  const { data: tifoso } = await sbAdmin.from('tifosi').select('punti_saldo').eq('id', tifoso_id).single()
 
-  const { error } = await sb.from('transazioni').insert({
+  const { error } = await sbAdmin.from('transazioni').insert({
     tifoso_id, tipo: 'BONUS', punti_delta: punti,
     saldo_dopo: tifoso.punti_saldo + punti,
     note: motivo || 'Bonus admin'
@@ -1192,7 +1192,7 @@ function toast(msg, type = 'success') {
 
 // ── GARE ──
 async function loadGare() {
-  const { data, error } = await sb.from('gare')
+  const { data, error } = await sbAdmin.from('gare')
     .select('*')
     .order('data_ora', { ascending: false })
 
@@ -1233,7 +1233,7 @@ async function salvaGara() {
     attiva:    true
   }
   if (!payload.titolo || !payload.data_ora) { toast('Compila titolo e data', 'error'); return }
-  const { error } = await sb.from('gare').insert(payload)
+  const { error } = await sbAdmin.from('gare').insert(payload)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('Gara aggiunta!', 'success')
   closeModal('modal-gara')
@@ -1241,8 +1241,8 @@ async function salvaGara() {
 }
 
 async function eliminaGara(id) {
-  const { data: g } = await sb.from('gare').select('attiva').eq('id', id).single()
-  await sb.from('gare').update({ attiva: !g.attiva }).eq('id', id)
+  const { data: g } = await sbAdmin.from('gare').select('attiva').eq('id', id).single()
+  await sbAdmin.from('gare').update({ attiva: !g.attiva }).eq('id', id)
   toast('Gara aggiornata', 'success')
   loadGare()
 }
@@ -1268,7 +1268,7 @@ async function loadIngressi(garaId, titolo) {
 }
 
 async function aggiornaIngressi(garaId) {
-  const { data } = await sb.from('ingressi_gare')
+  const { data } = await sbAdmin.from('ingressi_gare')
     .select('piano_nome, registrato_il, tifoso:tifoso_id(nome, cognome)')
     .eq('gara_id', garaId)
     .order('registrato_il', { ascending: true })
@@ -1352,7 +1352,7 @@ function filtraMembership(stato) {
 }
 
 async function attivaMemb(id) {
-  const { error } = await sb.from('membership').update({ stato: 'attiva' }).eq('id', id)
+  const { error } = await sbAdmin.from('membership').update({ stato: 'attiva' }).eq('id', id)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('Membership attivata!', 'success')
   loadMembership('')
@@ -1360,14 +1360,14 @@ async function attivaMemb(id) {
 }
 
 async function sospendiMemb(id) {
-  const { error } = await sb.from('membership').update({ stato: 'scaduta' }).eq('id', id)
+  const { error } = await sbAdmin.from('membership').update({ stato: 'scaduta' }).eq('id', id)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('Membership sospesa', 'success')
   loadMembership('')
 }
 
 async function annullaMemb(id) {
-  const { error } = await sb.from('membership').update({ stato: 'annullata' }).eq('id', id)
+  const { error } = await sbAdmin.from('membership').update({ stato: 'annullata' }).eq('id', id)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('Membership annullata', 'success')
   loadMembership('')
