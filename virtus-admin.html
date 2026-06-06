@@ -1274,7 +1274,7 @@ async function loadPendingOperatori() {
 async function attivaOperatore(email) {
   // Usa Supabase Management API per aggiornare i metadata
   // Non direttamente possibile via client — usiamo il worker
-  toast('Per attivare un operatore: SQL Editor → update auth.users set raw_user_meta_data... dove email = '' + email + ''', 'success')
+  toast(`Per attivare un operatore: SQL Editor → update auth.users set raw_user_meta_data = jsonb_set(raw_user_meta_data, '{ruolo}', '"operatore"') where email = '${email}'`, 'success')
 }
 
 async function loadScansioni(email) {
