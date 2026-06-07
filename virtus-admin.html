@@ -389,16 +389,47 @@ select.form-input:focus{border-color:var(--accent)}
 
     <!-- PREMI -->
     <div class="section" id="section-premi">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Catalogo premi</div>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-premio')">+ Nuovo premio</button>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-primary btn-sm" id="tab-catalogo" onclick="switchPremioTab('catalogo')">🎁 Catalogo premi</button>
+        <button class="btn btn-ghost btn-sm" id="tab-riscatti" onclick="switchPremioTab('riscatti')">📋 Riscatti</button>
+      </div>
+
+      <!-- TAB CATALOGO -->
+      <div id="premi-tab-catalogo">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Catalogo premi</div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-premio')">+ Nuovo premio</button>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead><tr><th>Premio</th><th>Tipo</th><th>Partner</th><th>Costo (pt)</th><th>Disponibili</th><th>Scadenza</th><th>Stato</th><th></th></tr></thead>
+              <tbody id="premi-list"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="card-body">
-          <table>
-            <thead><tr><th>Premio</th><th>Partner</th><th>Costo (pt)</th><th>Disponibili</th><th>Scadenza</th><th>Stato</th><th></th></tr></thead>
-            <tbody id="premi-list"></tbody>
-          </table>
+      </div>
+
+      <!-- TAB RISCATTI -->
+      <div id="premi-tab-riscatti" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Richieste di riscatto</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select class="form-input" id="riscatti-filter" style="width:160px;padding:6px 10px" onchange="loadRiscatti()">
+                <option value="">Tutti</option>
+                <option value="in_attesa">In attesa</option>
+                <option value="consegnato">Consegnati</option>
+                <option value="annullato">Annullati</option>
+              </select>
+            </div>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead><tr><th>Codice</th><th>Tifoso</th><th>Premio</th><th>Punti</th><th>Richiesto il</th><th>Stato</th><th></th></tr></thead>
+              <tbody id="riscatti-list"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -583,12 +614,21 @@ select.form-input:focus{border-color:var(--accent)}
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="full form-group"><label>Partner</label>
-          <select class="form-input" id="pr-partner"></select>
+        <div class="form-group"><label>Tipo premio *</label>
+          <select class="form-input" id="pr-tipo">
+            <option value="coupon">🎟️ Coupon partner</option>
+            <option value="prodotto">👕 Prodotto fisico</option>
+            <option value="esperienza">⭐ Esperienza</option>
+          </select>
         </div>
-        <div class="full form-group"><label>Titolo premio</label><input class="form-input" id="pr-titolo" placeholder="Caffè gratis"/></div>
+        <div class="form-group"><label>Partner (opzionale)</label>
+          <select class="form-input" id="pr-partner">
+            <option value="">— Nessun partner —</option>
+          </select>
+        </div>
+        <div class="full form-group"><label>Titolo premio *</label><input class="form-input" id="pr-titolo" placeholder="Caffè gratis"/></div>
         <div class="full form-group"><label>Descrizione</label><input class="form-input" id="pr-desc" placeholder="Un caffè offerto dalla casa"/></div>
-        <div class="form-group"><label>Costo punti</label><input class="form-input" id="pr-punti" type="number" placeholder="50"/></div>
+        <div class="form-group"><label>Costo punti *</label><input class="form-input" id="pr-punti" type="number" placeholder="50" min="1"/></div>
         <div class="form-group"><label>Quantità max</label><input class="form-input" id="pr-qty" type="number" placeholder="lascia vuoto = illimitata"/></div>
         <div class="form-group"><label>Validità coupon (giorni)</label><input class="form-input" id="pr-giorni" type="number" value="30"/></div>
         <div class="form-group"><label>Scadenza premio</label><input class="form-input" id="pr-scadenza" type="date"/></div>
@@ -849,6 +889,28 @@ select.form-input:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- MODAL: Conferma consegna riscatto -->
+<div class="modal-overlay" id="modal-consegna">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">✅ Conferma consegna</div>
+      <button class="modal-close" onclick="closeModal('modal-consegna')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="consegna-info" style="background:var(--bg);border-radius:8px;padding:16px;margin-bottom:12px"></div>
+      <div class="form-group">
+        <label>Note (opzionale)</label>
+        <input class="form-input" id="consegna-note" placeholder="Es. Consegnato in sede"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-consegna')">Annulla</button>
+      <button class="btn btn-danger btn-sm" id="consegna-annulla-btn" onclick="annullaRiscatto()">Annulla riscatto</button>
+      <button class="btn btn-primary" id="consegna-confirm-btn" onclick="confermaConsegna()">✅ Marca consegnato</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -1060,26 +1122,33 @@ async function togglePartner(id, attivo) {
 async function loadPremi() {
   const { data } = await sbAdmin.from('premi')
     .select('*, partner:partner_id(nome_negozio)').order('creato_il', { ascending: false })
+  const tipoIcon = { prodotto: '👕', esperienza: '⭐', coupon: '🎟️' }
   document.getElementById('premi-list').innerHTML = (data || []).map(p => `
     <tr>
       <td><strong>${p.titolo}</strong><br><span style="color:var(--muted);font-size:11px">${p.descrizione || ''}</span></td>
+      <td style="font-size:12px">${tipoIcon[p.tipo] || ''} ${p.tipo || '—'}</td>
       <td style="font-size:12px">${p.partner?.nome_negozio || '—'}</td>
       <td><span class="pts">${p.costo_punti}</span></td>
-      <td style="font-size:12px">${p.quantita_max ? `${p.quantita_max - p.quantita_usata}/${p.quantita_max}` : '∞'}</td>
+      <td style="font-size:12px">${p.quantita_max ? `${p.quantita_max - (p.quantita_usata||0)}/${p.quantita_max}` : '∞'}</td>
       <td style="font-size:11px;color:var(--muted)">${p.valido_fino ? new Date(p.valido_fino).toLocaleDateString('it-IT') : '—'}</td>
       <td><span class="badge badge-${p.attivo ? 'green' : 'red'}">${p.attivo ? 'attivo' : 'inattivo'}</span></td>
       <td><button class="btn btn-danger btn-sm" onclick='togglePremio("${p.id}", ${p.attivo})'>${p.attivo ? 'Disattiva' : 'Attiva'}</button></td>
-    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessun premio</td></tr>'
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Nessun premio</td></tr>'
 }
 
 async function salvaPremio() {
-  const scadenza = document.getElementById('pr-scadenza').value
-  const qty = document.getElementById('pr-qty').value
+  const titolo = document.getElementById('pr-titolo').value.trim()
+  const punti  = parseInt(document.getElementById('pr-punti').value)
+  if (!titolo || !punti) { toast('Titolo e costo punti sono obbligatori', 'error'); return }
+  const scadenza   = document.getElementById('pr-scadenza').value
+  const qty        = document.getElementById('pr-qty').value
+  const partner_id = document.getElementById('pr-partner').value
   const payload = {
-    partner_id:      document.getElementById('pr-partner').value,
-    titolo:          document.getElementById('pr-titolo').value,
-    descrizione:     document.getElementById('pr-desc').value,
-    costo_punti:     parseInt(document.getElementById('pr-punti').value),
+    tipo:            document.getElementById('pr-tipo').value,
+    partner_id:      partner_id || null,
+    titolo,
+    descrizione:     document.getElementById('pr-desc').value.trim() || null,
+    costo_punti:     punti,
     quantita_max:    qty ? parseInt(qty) : null,
     validita_giorni: parseInt(document.getElementById('pr-giorni').value) || 30,
     valido_fino:     scadenza || null,
@@ -1088,12 +1157,96 @@ async function salvaPremio() {
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('Premio aggiunto al catalogo!', 'success')
   closeModal('modal-premio')
+  ;['pr-titolo','pr-desc','pr-punti','pr-qty','pr-giorni','pr-scadenza'].forEach(id => document.getElementById(id).value = '')
+  document.getElementById('pr-tipo').value = 'coupon'
+  document.getElementById('pr-partner').value = ''
   loadPremi()
 }
 
 async function togglePremio(id, attivo) {
   await sbAdmin.from('premi').update({ attivo: !attivo }).eq('id', id)
   loadPremi()
+}
+
+// ── RISCATTI (ADMIN) ──
+let currentRiscatto = null
+
+function switchPremioTab(tab) {
+  document.getElementById('premi-tab-catalogo').style.display = tab === 'catalogo' ? '' : 'none'
+  document.getElementById('premi-tab-riscatti').style.display = tab === 'riscatti' ? '' : 'none'
+  document.getElementById('tab-catalogo').className = tab === 'catalogo' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'
+  document.getElementById('tab-riscatti').className  = tab === 'riscatti'  ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'
+  if (tab === 'riscatti') loadRiscatti()
+}
+
+async function loadRiscatti() {
+  const stato = document.getElementById('riscatti-filter').value
+  let q = sbAdmin.from('riscatti')
+    .select('*, tifoso:tifoso_id(nome,cognome), premio:premio_id(titolo,tipo)')
+    .order('creato_il', { ascending: false })
+  if (stato) q = q.eq('stato', stato)
+  const { data, error } = await q
+  if (error) { toast('Errore caricamento riscatti', 'error'); return }
+
+  const statoStyle = { in_attesa: 'orange', consegnato: 'green', annullato: 'red' }
+  const statoLabel = { in_attesa: '⏳ In attesa', consegnato: '✅ Consegnato', annullato: '❌ Annullato' }
+
+  document.getElementById('riscatti-list').innerHTML = (data || []).map(r => `
+    <tr>
+      <td><code style="background:var(--bg);padding:2px 8px;border-radius:4px;font-size:13px;letter-spacing:1px">${r.codice}</code></td>
+      <td style="font-size:13px">${r.tifoso?.nome || ''} ${r.tifoso?.cognome || ''}</td>
+      <td style="font-size:12px">${r.premio?.titolo || '—'}</td>
+      <td><span class="pts">${r.punti_scalati}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${new Date(r.creato_il).toLocaleDateString('it-IT')}</td>
+      <td><span class="badge badge-${statoStyle[r.stato]}">${statoLabel[r.stato]}</span></td>
+      <td>${r.stato === 'in_attesa' ? `<button class="btn btn-primary btn-sm" onclick='openConsegna(${JSON.stringify(r)})'>Gestisci</button>` : ''}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessun riscatto</td></tr>'
+}
+
+function openConsegna(r) {
+  currentRiscatto = r
+  document.getElementById('consegna-info').innerHTML = `
+    <div style="display:grid;gap:6px">
+      <div><strong>Codice:</strong> <code style="background:#fff;padding:2px 8px;border-radius:4px;letter-spacing:2px;font-size:16px">${r.codice}</code></div>
+      <div><strong>Tifoso:</strong> ${r.tifoso?.nome} ${r.tifoso?.cognome}</div>
+      <div><strong>Premio:</strong> ${r.premio?.titolo}</div>
+      <div><strong>Punti scalati:</strong> ${r.punti_scalati}</div>
+      <div><strong>Richiesto:</strong> ${new Date(r.creato_il).toLocaleString('it-IT')}</div>
+    </div>`
+  document.getElementById('consegna-note').value = ''
+  openModal('modal-consegna')
+}
+
+async function confermaConsegna() {
+  if (!currentRiscatto) return
+  const { error } = await sbAdmin.from('riscatti').update({
+    stato: 'consegnato',
+    consegnato_il: new Date().toISOString(),
+    note: document.getElementById('consegna-note').value || null
+  }).eq('id', currentRiscatto.id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('✅ Riscatto marcato come consegnato', 'success')
+  closeModal('modal-consegna')
+  loadRiscatti()
+}
+
+async function annullaRiscatto() {
+  if (!currentRiscatto) return
+  if (!confirm('Annullare il riscatto? I punti verranno restituiti al tifoso.')) return
+  // Restituisce punti
+  const { data: tifoso } = await sbAdmin.from('tifosi').select('punti_saldo').eq('id', currentRiscatto.tifoso_id).single()
+  if (tifoso) {
+    await sbAdmin.from('tifosi').update({ punti_saldo: tifoso.punti_saldo + currentRiscatto.punti_scalati }).eq('id', currentRiscatto.tifoso_id)
+    await sbAdmin.from('transazioni').insert({
+      tifoso_id: currentRiscatto.tifoso_id, tipo: 'BONUS',
+      punti_delta: currentRiscatto.punti_scalati,
+      nota: `Restituzione punti - riscatto annullato (${currentRiscatto.codice})`
+    })
+  }
+  await sbAdmin.from('riscatti').update({ stato: 'annullato', note: document.getElementById('consegna-note').value || 'Annullato da admin' }).eq('id', currentRiscatto.id)
+  toast('Riscatto annullato, punti restituiti', 'success')
+  closeModal('modal-consegna')
+  loadRiscatti()
 }
 
 // ── CAMPAGNE ──
