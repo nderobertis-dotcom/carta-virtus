@@ -276,6 +276,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Transazioni
     </div>
+    <div class="nav-item" onclick="showSection('impostazioni')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Impostazioni</span>
+    </div>
     <div class="nav-item" onclick="showSection('report')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Report
@@ -558,6 +562,49 @@ select.form-input:focus{border-color:var(--accent)}
     </div>
 
     <!-- REPORT -->
+    <div class="section" id="section-impostazioni">
+      <div class="card" style="max-width:600px">
+        <div class="card-header">
+          <div class="card-title">⚙️ Impostazioni ricarica punti</div>
+        </div>
+        <div class="card-body" style="padding:24px">
+
+          <!-- Tasso di cambio ricarica -->
+          <div style="margin-bottom:32px">
+            <div style="font-size:14px;font-weight:700;color:var(--blu);margin-bottom:4px">Tasso di cambio ricarica</div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Definisce quanti punti riceve il tifoso per ogni euro versato in ricarica. Aumentalo per incentivare le ricariche durante eventi o promozioni.</div>
+
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+              <div style="flex:1">
+                <input type="range" id="tasso-slider" min="5" max="50" step="1" value="10"
+                  style="width:100%;accent-color:var(--arancio)"
+                  oninput="aggiornaTassoPreview(this.value)"/>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px">
+                  <span>5 pt/€</span><span>50 pt/€</span>
+                </div>
+              </div>
+              <div style="text-align:center;min-width:80px">
+                <input type="number" id="tasso-input" min="1" max="100" value="10"
+                  style="width:70px;border:2px solid var(--blu);border-radius:8px;padding:6px;text-align:center;font-size:20px;font-weight:700;color:var(--blu)"
+                  oninput="aggiornaTassoSlider(this.value)"/>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">pt / €</div>
+              </div>
+            </div>
+
+            <!-- Preview pacchetti -->
+            <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:16px">
+              <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:10px">Anteprima pacchetti con questo tasso</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="tasso-preview-pacchetti"></div>
+            </div>
+
+            <button class="btn btn-primary" onclick="salvaTasso()">💾 Salva tasso di cambio</button>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px" id="tasso-ultimo-aggiornamento"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     <div class="section" id="section-report">
       <div class="report-grid">
         <div class="stat-card">
@@ -1051,13 +1098,14 @@ function showSection(name) {
   }
   document.getElementById('topbar-title').textContent = titles[name] || name
 
-  const actions = { partner:'', premi:'', campagne:'' }
+  const actions = { partner:'', premi:'', campagne:'', impostazioni:'' }
   document.getElementById('topbar-actions').innerHTML = ''
 
   if (name === 'tifosi')      loadTifosi()
   if (name === 'partner')     loadPartner()
   if (name === 'premi')       loadPremi()
   if (name === 'campagne')    loadCampagne()
+  if (name === 'impostazioni') loadImpostazioni()
   if (name === 'transazioni') loadTransazioni()
   if (name === 'report')      loadReport()
   if (name === 'membership')  loadMembership('in_attesa')
@@ -1841,6 +1889,55 @@ async function annullaMemb(id) {
   toast('Membership annullata', 'success')
   loadMembership('')
   loadDashboard()
+}
+
+// ── IMPOSTAZIONI ──
+let _tassoCorrente = 10
+
+async function loadImpostazioni() {
+  const { data } = await sbAdmin.from('impostazioni').select('*').eq('chiave', 'punti_per_euro').single()
+  if (data) {
+    _tassoCorrente = parseFloat(data.valore) || 10
+    document.getElementById('tasso-slider').value = _tassoCorrente
+    document.getElementById('tasso-input').value = _tassoCorrente
+    aggiornaTassoPreview(_tassoCorrente)
+    document.getElementById('tasso-ultimo-aggiornamento').textContent =
+      'Tasso attuale: ' + _tassoCorrente + ' pt/€'
+  }
+}
+
+function aggiornaTassoPreview(valore) {
+  const t = parseFloat(valore) || 10
+  document.getElementById('tasso-input').value = t
+  document.getElementById('tasso-slider').value = Math.min(t, 50)
+  const pacchetti = [
+    { eur: 5,  label: 'Pacchetto Base' },
+    { eur: 9,  label: 'Pacchetto Pro' },
+    { eur: 15, label: 'Pacchetto Premium' },
+  ]
+  document.getElementById('tasso-preview-pacchetti').innerHTML = pacchetti.map(p => {
+    const pt = Math.floor(p.eur * t)
+    return '<div style="background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid var(--border)">' +
+      '<div style="font-size:11px;color:var(--muted)">' + p.label + '</div>' +
+      '<div style="font-size:22px;font-weight:900;color:var(--blu)">€ ' + p.eur + '</div>' +
+      '<div style="font-size:18px;font-weight:700;color:var(--arancio)">→ ' + pt + ' pt</div>' +
+      '</div>'
+  }).join('')
+}
+
+function aggiornaTassoSlider(valore) {
+  aggiornaTassoPreview(valore)
+}
+
+async function salvaTasso() {
+  const t = parseFloat(document.getElementById('tasso-input').value)
+  if (!t || t < 1) { toast('Valore non valido', 'error'); return }
+  const { error } = await sbAdmin.from('impostazioni')
+    .upsert({ chiave: 'punti_per_euro', valore: String(t), nota: 'Aggiornato il ' + new Date().toLocaleDateString('it-IT') })
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  _tassoCorrente = t
+  toast('✅ Tasso salvato: ' + t + ' pt/€', 'success')
+  document.getElementById('tasso-ultimo-aggiornamento').textContent = 'Tasso attuale: ' + t + ' pt/€ — aggiornato ora'
 }
 
 // ── RICARICHE ──

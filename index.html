@@ -669,8 +669,26 @@ async function loadCampagneTifoso() {
 }
 
 // ── RICARICA PUNTI ──
-const PUNTI_PER_EURO = 10  // 1€ = 10 punti (modificabile)
+let PUNTI_PER_EURO = 10  // valore default, aggiornato da Supabase
 let _ricaricaSelezionata = { punti: 0, importo: 0 }
+
+async function loadTassoRicarica() {
+  const { data } = await sb.from('impostazioni').select('valore').eq('chiave', 'punti_per_euro').single()
+  if (data) {
+    PUNTI_PER_EURO = parseFloat(data.valore) || 10
+    aggiornaPacchettiRicarica()
+  }
+}
+
+function aggiornaPacchettiRicarica() {
+  const pacchetti = document.querySelectorAll('.pacchetto-card')
+  pacchetti.forEach(card => {
+    const eur = parseFloat(card.dataset.importo)
+    const pt  = Math.floor(eur * PUNTI_PER_EURO)
+    card.dataset.punti = pt
+    card.querySelector('.pacchetto-punti').textContent = pt
+  })
+}
 
 function selezionaPacchetto(el) {
   document.querySelectorAll('.pacchetto-card').forEach(c => c.classList.remove('selected'))
@@ -1197,7 +1215,8 @@ async function caricaAreaTifoso(user) {
   // Carica riscatti personali
   await loadMieiRiscatti(user.id)
 
-  // Carica campagne attive
+  // Carica tasso ricarica e campagne
+  loadTassoRicarica()
   loadCampagneTifoso()
 
   // Ricarica catalogo in modalità logged
