@@ -407,6 +407,12 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         <div id="t-coupon-list"><div class="empty-state">Nessun riscatto ancora</div></div>
       </div>
     </div>
+    <div class="tifoso-grid" style="margin-top:0">
+      <div class="t-card" style="grid-column:1/-1">
+        <div class="t-card-title">⚡ Promozioni in corso</div>
+        <div id="t-campagne-list"><div class="empty-state">Nessuna promozione attiva al momento</div></div>
+      </div>
+    </div>
   </div>
   <!-- CATALOGO PREMI AREA TIFOSO -->
   <div class="tifoso-content" style="padding-top:0">
@@ -561,6 +567,41 @@ const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE)
 
 let pianoSelezionato = null
 let metodoPagamento = null
+
+// ── CAMPAGNE TIFOSO ──
+async function loadCampagneTifoso() {
+  const now = new Date().toISOString()
+  const { data } = await sb.from('campagne')
+    .select('*, partner:partner_id(nome_negozio)')
+    .eq('attiva', true)
+    .lte('valida_da', now)
+    .gte('valida_fino', now)
+    .order('moltiplicatore', { ascending: false })
+
+  const el = document.getElementById('t-campagne-list')
+  if (!el) return
+  if (!data || !data.length) {
+    el.innerHTML = '<div class="empty-state">Nessuna promozione attiva al momento</div>'
+    return
+  }
+  el.innerHTML = data.map(c => {
+    const da = new Date(c.valida_da).toLocaleDateString('it-IT')
+    const a  = new Date(c.valida_fino).toLocaleDateString('it-IT')
+    const partner = c.partner?.nome_negozio || 'Tutti i partner'
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;background:linear-gradient(135deg,#fff8f0,#fff3e0);border:2px solid #e65100;margin-bottom:8px">' +
+      '<div>' +
+      '<div style="font-weight:700;font-size:14px;color:#e65100">🔥 ' + c.titolo + '</div>' +
+      '<div style="font-size:12px;color:#666;margin-top:2px">' + partner + '</div>' +
+      (c.descrizione ? '<div style="font-size:12px;color:#888;margin-top:2px">' + c.descrizione + '</div>' : '') +
+      '<div style="font-size:11px;color:var(--muted);margin-top:4px">Dal ' + da + ' al ' + a + '</div>' +
+      '</div>' +
+      '<div style="text-align:center;min-width:60px">' +
+      '<div style="font-size:32px;font-weight:900;color:#1a3a6b;font-style:italic">×' + c.moltiplicatore + '</div>' +
+      '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">punti</div>' +
+      '</div>' +
+      '</div>'
+  }).join('')
+}
 
 // ── CATALOGO PREMI ──
 let currentPremioRiscatto = null
@@ -1018,6 +1059,9 @@ async function caricaAreaTifoso(user) {
 
   // Carica riscatti personali
   await loadMieiRiscatti(user.id)
+
+  // Carica campagne attive
+  loadCampagneTifoso()
 
   // Ricarica catalogo in modalità logged
   loadCatalogoPublic(true, tifoso.punti_saldo)
