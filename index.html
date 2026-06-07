@@ -592,7 +592,8 @@ async function loadCatalogoPublic(isLogged = false, puntiSaldo = 0) {
   if (guest) guest.style.display = isLogged ? 'none' : ''
 
   _premiCache = premi
-  grid.innerHTML = premi.map(function(p) {
+  grid.innerHTML = ''
+  premi.forEach(function(p) {
     var disponibili = p.quantita_max ? p.quantita_max - (p.quantita_usata || 0) : null
     var esaurito = disponibili !== null && disponibili <= 0
     var puoiRiscattare = isLogged && !esaurito && puntiSaldo >= p.costo_punti
@@ -603,15 +604,11 @@ async function loadCatalogoPublic(isLogged = false, puntiSaldo = 0) {
       : disponibili !== null
         ? '<div class="premio-badge">' + disponibili + ' rimasti</div>'
         : '<div class="premio-badge">Illimitati</div>'
-    var btn_label = esaurito ? 'Esaurito' : !puoiRiscattare ? 'Punti insufficienti' : '🎁 Riscatta'
-    var btn_html = ''
-    if (isLogged) {
-      btn_html = '<button class="btn-hero btn-hero-primary" style="width:100%;margin-top:10px;font-size:13px;' +
-        (!puoiRiscattare ? 'opacity:.4;cursor:not-allowed' : '') + '"' +
-        (puoiRiscattare ? ' data-pid="' + p.id + '"' : ' disabled') +
-        '>' + btn_label + '</button>'
-    }
-    return '<div class="premio-card" style="' + (esaurito ? 'opacity:.55' : '') + '">' +
+
+    var card = document.createElement('div')
+    card.className = 'premio-card'
+    if (esaurito) card.style.opacity = '0.55'
+    card.innerHTML =
       '<div class="premio-img">' + icon + '</div>' +
       '<div class="premio-body">' +
       '<div class="premio-partner">' + partner_label + '</div>' +
@@ -620,9 +617,26 @@ async function loadCatalogoPublic(isLogged = false, puntiSaldo = 0) {
       '<div class="premio-footer">' +
       '<div class="premio-punti">' + p.costo_punti + ' <span>punti</span></div>' +
       disp_badge +
-      '</div>' + btn_html +
       '</div></div>'
-  }).join('')
+
+    if (isLogged) {
+      var btn = document.createElement('button')
+      btn.className = 'btn-hero btn-hero-primary'
+      btn.style.cssText = 'width:100%;margin-top:10px;font-size:13px'
+      if (!puoiRiscattare) {
+        btn.style.opacity = '0.4'
+        btn.style.cursor = 'not-allowed'
+        btn.disabled = true
+      }
+      btn.textContent = esaurito ? 'Esaurito' : !puoiRiscattare ? 'Punti insufficienti' : '🎁 Riscatta'
+      if (puoiRiscattare) {
+        btn.addEventListener('click', function() { openRiscatto(p) })
+      }
+      card.querySelector('.premio-body').appendChild(btn)
+    }
+
+    grid.appendChild(card)
+  })
 }
 
 function apriRiscattoById(id) {
