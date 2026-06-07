@@ -562,14 +562,12 @@ async function consegnaRiscatto() {
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('✅ Consegna confermata!', 'success')
   document.getElementById('riscatto-risultato').style.display = 'none'
-  document.getElementById('riscatto-codice').value = ''
   currentRiscattoPartner = null
   loadRiscattiPartner()
 }
 
 async function annullaRiscattoPartner() {
   document.getElementById('riscatto-risultato').style.display = 'none'
-  document.getElementById('riscatto-codice').value = ''
   currentRiscattoPartner = null
 }
 
