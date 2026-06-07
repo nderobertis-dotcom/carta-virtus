@@ -562,6 +562,7 @@ let metodoPagamento = null
 let currentPremioRiscatto = null
 let currentTifosoId = null
 let currentPuntiSaldo = 0
+let _premiCache = []
 
 const TIPO_ICON = { prodotto: '👕', esperienza: '⭐', coupon: '🎟️' }
 
@@ -624,11 +625,15 @@ async function loadCatalogoPublic(isLogged = false, puntiSaldo = 0) {
   }).join('')
 }
 
-let _premiCache = []
-
 function apriRiscattoById(id) {
   const p = _premiCache.find(x => x.id === id)
-  if (p) openRiscatto(p)
+  if (p) {
+    openRiscatto(p)
+  } else {
+    // Cache vuota - ricarica e riprova
+    console.warn('Premio non in cache, id:', id, 'cache:', _premiCache.length)
+    toast('Ricarica la pagina e riprova', 'error')
+  }
 }
 
 function openRiscatto(p) {
