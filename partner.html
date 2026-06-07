@@ -287,24 +287,24 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 
     <!-- STORICO -->
     <div class="panel" id="panel-riscatti">
-      <div style="margin-bottom:16px">
-        <div style="font-size:15px;font-weight:700;color:var(--blu);margin-bottom:4px">🎁 Valida un riscatto</div>
-        <div style="font-size:13px;color:var(--muted)">Inserisci il codice mostrato dal tifoso per confermarne la consegna.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--blu);margin-bottom:2px">🎁 Riscatti in attesa</div>
+          <div style="font-size:13px;color:var(--muted)">Clicca su un riscatto per confermarne la consegna al tifoso.</div>
+        </div>
+        <button style="background:var(--bg);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif" onclick="loadRiscattiPartner()">↻ Aggiorna</button>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:16px">
-        <input class="importo-input" id="riscatto-codice" placeholder="Es. A1B2C3D4" style="flex:1;font-family:monospace;letter-spacing:2px;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"/>
-        <button class="btn-primary" onclick="cercaRiscatto()" style="white-space:nowrap">🔍 Cerca</button>
-      </div>
-      <div id="riscatto-risultato" style="display:none;background:#f0f6ff;border-radius:10px;padding:16px;border:1px solid #c8d8f0">
+
+      <!-- Lista riscatti in attesa -->
+      <div id="riscatti-partner-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Caricamento...</div></div>
+
+      <!-- Dettaglio riscatto selezionato -->
+      <div id="riscatto-risultato" style="display:none;background:#f0f6ff;border-radius:10px;padding:16px;border:1px solid #c8d8f0;margin-top:16px">
         <div id="riscatto-dettaglio" style="margin-bottom:14px"></div>
         <div style="display:flex;gap:10px">
           <button class="btn-primary" onclick="consegnaRiscatto()" style="flex:1">✅ Conferma consegna</button>
-          <button style="flex:1;background:#fff;border:1px solid var(--border);padding:10px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif;color:var(--muted)" onclick="annullaRiscattoPartner()">❌ Annulla</button>
+          <button style="flex:1;background:#fff;border:1px solid var(--border);padding:10px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif;color:var(--muted)" onclick="annullaRiscattoPartner()">↩ Chiudi</button>
         </div>
-      </div>
-      <div style="margin-top:24px">
-        <div style="font-size:14px;font-weight:700;color:var(--blu);margin-bottom:12px">Riscatti recenti del tuo negozio</div>
-        <div id="riscatti-partner-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Caricamento...</div></div>
       </div>
     </div>
 
@@ -438,41 +438,82 @@ let currentRiscattoPartner = null
 
 async function loadRiscattiPartner() {
   if (!currentPartner?.id) return
-  const { data } = await sb.from('riscatti')
-    .select('*, premi:premio_id(titolo, tipo, partner_id), tifoso:tifoso_id(nome, cognome)')
-    .order('creato_il', { ascending: false })
-    .limit(50)
+  const list = document.getElementById('riscatti-partner-list')
+  list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Caricamento...</div>'
 
+  const { data } = await sb.from('riscatti')
+    .select('*, premi:premio_id(titolo, tipo, partner_id, costo_punti), tifoso:tifoso_id(nome, cognome)')
+    .order('creato_il', { ascending: false })
+    .limit(100)
+
+  const riscatti = (data || []).filter(function(r){ return r.premi && r.premi.partner_id === currentPartner.id })
+
+  if (!riscatti.length) {
+    list.innerHTML = "<div style='color:var(--muted);font-size:13px;text-align:center;padding:40px'>Nessun riscatto per i tuoi premi</div>"
+    return
+  }
+
+  const inAttesa = riscatti.filter(function(r){ return r.stato === 'in_attesa' })
+  const altri = riscatti.filter(function(r){ return r.stato !== 'in_attesa' })
   const statoColor = { in_attesa: '#e65100', consegnato: '#2e7d32', annullato: '#666' }
   const statoLabel = { in_attesa: '⏳ In attesa', consegnato: '✅ Consegnato', annullato: '❌ Annullato' }
 
-  document.getElementById('riscatti-partner-list').innerHTML = (data || [])
-    .filter(function(r){ return r.premi && r.premi.partner_id === currentPartner?.id })
-    .map(function(r) {
-      var sc = statoColor[r.stato] || '#666'
-      var sl = statoLabel[r.stato] || r.stato
-      var gestisci_btn = ''
-      if (r.stato === 'in_attesa') {
-        gestisci_btn = '<button onclick="preselezioneRiscatto(this.dataset.c)" data-c="' + r.codice + '" style="font-size:11px;background:var(--blu);color:#fff;border:none;padding:4px 10px;border-radius:6px;cursor:pointer">Gestisci</button>'
-      }
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">' +
-        '<div>' +
-        '<div style="font-weight:600;font-size:13px">' + (r.premio ? r.premio.titolo : '—') + '</div>' +
-        '<div style="font-family:monospace;font-size:12px;color:var(--blu2);letter-spacing:1px">' + r.codice + '</div>' +
-        '<div style="font-size:11px;color:var(--muted)">' + (r.tifoso ? r.tifoso.nome : '') + ' ' + (r.tifoso ? r.tifoso.cognome : '') + ' · ' + new Date(r.creato_il).toLocaleDateString('it-IT') + '</div>' +
-        '</div>' +
-        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">' +
-        '<span style="font-size:11px;font-weight:600;color:' + sc + '">' + sl + '</span>' +
-        gestisci_btn +
-        '</div>' +
-        '</div>'
-        }).join('') || "<div style='color:var(--muted);font-size:13px;text-align:center;padding:20px'>Nessun riscatto per i tuoi premi</div>"
+  function renderRow(r) {
+    var sc = statoColor[r.stato] || '#666'
+    var sl = statoLabel[r.stato] || r.stato
+    var row = document.createElement('div')
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid var(--border);background:#fff'
+    if (r.stato === 'in_attesa') {
+      row.style.background = '#f0f6ff'
+      row.style.borderColor = '#c8d8f0'
+      row.style.cursor = 'pointer'
+      row.addEventListener('click', function() { apriDettaglioRiscatto(r) })
+    }
+    row.innerHTML =
+      '<div>' +
+      '<div style="font-weight:700;font-size:14px;color:var(--blu)">' + (r.premi ? r.premi.titolo : '—') + '</div>' +
+      '<div style="font-size:13px;color:#333;margin-top:2px">' + (r.tifoso ? r.tifoso.nome + ' ' + r.tifoso.cognome : '—') + '</div>' +
+      '<div style="font-family:monospace;font-size:12px;color:var(--blu2);letter-spacing:2px;margin-top:2px">' + r.codice + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + new Date(r.creato_il).toLocaleDateString("it-IT") + '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">' +
+      '<span style="font-size:12px;font-weight:700;color:' + sc + '">' + sl + '</span>' +
+      (r.stato === 'in_attesa' ? '<span style="font-size:11px;color:var(--muted)">Clicca per gestire →</span>' : '') +
+      '</div>'
+    return row
+  }
+
+  list.innerHTML = ''
+  if (inAttesa.length) {
+    var h1 = document.createElement('div')
+    h1.style.cssText = 'font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px'
+    h1.textContent = 'Da consegnare (' + inAttesa.length + ')'
+    list.appendChild(h1)
+    inAttesa.forEach(function(r){ list.appendChild(renderRow(r)) })
+  }
+  if (altri.length) {
+    var h2 = document.createElement('div')
+    h2.style.cssText = 'font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px'
+    h2.textContent = 'Storico (' + altri.length + ')'
+    list.appendChild(h2)
+    altri.forEach(function(r){ list.appendChild(renderRow(r)) })
+  }
 }
 
-function preselezioneRiscatto(codice) {
-  document.getElementById('riscatto-codice').value = codice
-  cercaRiscatto()
+function apriDettaglioRiscatto(r) {
+  currentRiscattoPartner = r
+  document.getElementById('riscatto-dettaglio').innerHTML =
+    '<div style="display:grid;gap:6px">' +
+    '<div style="font-size:16px;font-weight:700;color:var(--blu)">' + (r.premi?.titolo || '—') + '</div>' +
+    '<div><strong>Tifoso:</strong> ' + (r.tifoso?.nome || '') + ' ' + (r.tifoso?.cognome || '') + '</div>' +
+    '<div><strong>Codice:</strong> <span style="font-family:monospace;font-size:15px;letter-spacing:2px;color:var(--blu2)">' + r.codice + '</span></div>' +
+    '<div><strong>Punti scalati:</strong> ' + r.punti_scalati + '</div>' +
+    '<div><strong>Richiesto il:</strong> ' + new Date(r.creato_il).toLocaleString("it-IT") + '</div>' +
+    '</div>'
+  document.getElementById('riscatto-risultato').style.display = 'block'
+  document.getElementById('riscatto-risultato').scrollIntoView({ behavior: 'smooth' })
 }
+
 
 async function cercaRiscatto() {
   const codice = document.getElementById('riscatto-codice').value.trim().toUpperCase()
