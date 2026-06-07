@@ -1132,9 +1132,15 @@ async function loadPremi() {
       <td style="font-size:12px">${p.quantita_max ? `${p.quantita_max - (p.quantita_usata||0)}/${p.quantita_max}` : '∞'}</td>
       <td style="font-size:11px;color:var(--muted)">${p.valido_fino ? new Date(p.valido_fino).toLocaleDateString('it-IT') : '—'}</td>
       <td><span class="badge badge-${p.attivo ? 'green' : 'red'}">${p.attivo ? 'attivo' : 'inattivo'}</span></td>
-      <td><button class="btn btn-danger btn-sm" onclick='togglePremio("${p.id}", ${p.attivo})'>${p.attivo ? 'Disattiva' : 'Attiva'}</button></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick='modificaPremio(${JSON.stringify(p)})'>✏️</button>
+        <button class="btn btn-danger btn-sm" onclick='togglePremio("${p.id}", ${p.attivo})'>${p.attivo ? 'Disattiva' : 'Attiva'}</button>
+        <button class="btn btn-danger btn-sm" style="background:#fee" onclick='eliminaPremio("${p.id}", "${p.titolo}")'  >🗑️</button>
+      </td>
     </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Nessun premio</td></tr>'
 }
+
+let _premiEditId = null
 
 async function salvaPremio() {
   const titolo = document.getElementById('pr-titolo').value.trim()
@@ -1153,13 +1159,43 @@ async function salvaPremio() {
     validita_giorni: parseInt(document.getElementById('pr-giorni').value) || 30,
     valido_fino:     scadenza || null,
   }
-  const { error } = await sbAdmin.from('premi').insert(payload)
+  let error
+  if (_premiEditId) {
+    ;({ error } = await sbAdmin.from('premi').update(payload).eq('id', _premiEditId))
+  } else {
+    ;({ error } = await sbAdmin.from('premi').insert(payload))
+  }
   if (error) { toast('Errore: ' + error.message, 'error'); return }
-  toast('Premio aggiunto al catalogo!', 'success')
+  toast(_premiEditId ? 'Premio aggiornato!' : 'Premio aggiunto al catalogo!', 'success')
   closeModal('modal-premio')
+  _premiEditId = null
+  document.getElementById('modal-premio').querySelector('.modal-title').textContent = '🎁 Nuovo premio'
+  document.getElementById('fc-submit-btn') && (document.getElementById('fc-submit-btn').textContent = 'Salva premio')
   ;['pr-titolo','pr-desc','pr-punti','pr-qty','pr-giorni','pr-scadenza'].forEach(id => document.getElementById(id).value = '')
   document.getElementById('pr-tipo').value = 'coupon'
   document.getElementById('pr-partner').value = ''
+  loadPremi()
+}
+
+function modificaPremio(p) {
+  _premiEditId = p.id
+  document.getElementById('modal-premio').querySelector('.modal-title').textContent = '✏️ Modifica premio'
+  document.getElementById('pr-tipo').value = p.tipo || 'coupon'
+  document.getElementById('pr-partner').value = p.partner_id || ''
+  document.getElementById('pr-titolo').value = p.titolo || ''
+  document.getElementById('pr-desc').value = p.descrizione || ''
+  document.getElementById('pr-punti').value = p.costo_punti || ''
+  document.getElementById('pr-qty').value = p.quantita_max || ''
+  document.getElementById('pr-giorni').value = p.validita_giorni || 30
+  document.getElementById('pr-scadenza').value = p.valido_fino || ''
+  openModal('modal-premio')
+}
+
+async function eliminaPremio(id, titolo) {
+  if (!confirm('Eliminare il premio: ' + titolo + '? Azione irreversibile.')) return
+  const { error } = await sbAdmin.from('premi').delete().eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Premio eliminato', 'success')
   loadPremi()
 }
 
@@ -1181,12 +1217,12 @@ function switchPremioTab(tab) {
 
 async function loadRiscatti() {
   const stato = document.getElementById('riscatti-filter').value
-  let q = sbAdmin.from('riscatti')
-    .select('*, tifoso:tifoso_id(nome,cognome), premio:premio_id(titolo,tipo)')
+  let q = sbAdmin.from('riscatti_view')
+    .select('*')
     .order('creato_il', { ascending: false })
   if (stato) q = q.eq('stato', stato)
   const { data, error } = await q
-  if (error) { toast('Errore caricamento riscatti', 'error'); return }
+  if (error) { toast('Errore caricamento riscatti: ' + error.message, 'error'); return }
 
   const statoStyle = { in_attesa: 'orange', consegnato: 'green', annullato: 'red' }
   const statoLabel = { in_attesa: '⏳ In attesa', consegnato: '✅ Consegnato', annullato: '❌ Annullato' }
@@ -1194,8 +1230,8 @@ async function loadRiscatti() {
   document.getElementById('riscatti-list').innerHTML = (data || []).map(r => `
     <tr>
       <td><code style="background:var(--bg);padding:2px 8px;border-radius:4px;font-size:13px;letter-spacing:1px">${r.codice}</code></td>
-      <td style="font-size:13px">${r.tifoso?.nome || ''} ${r.tifoso?.cognome || ''}</td>
-      <td style="font-size:12px">${r.premio?.titolo || '—'}</td>
+      <td style="font-size:13px">${r.tifoso_nome || ''} ${r.tifoso_cognome || ''}</td>
+      <td style="font-size:12px">${r.premio_titolo || '—'}</td>
       <td><span class="pts">${r.punti_scalati}</span></td>
       <td style="font-size:11px;color:var(--muted)">${new Date(r.creato_il).toLocaleDateString('it-IT')}</td>
       <td><span class="badge badge-${statoStyle[r.stato]}">${statoLabel[r.stato]}</span></td>
@@ -1208,8 +1244,8 @@ function openConsegna(r) {
   document.getElementById('consegna-info').innerHTML = `
     <div style="display:grid;gap:6px">
       <div><strong>Codice:</strong> <code style="background:#fff;padding:2px 8px;border-radius:4px;letter-spacing:2px;font-size:16px">${r.codice}</code></div>
-      <div><strong>Tifoso:</strong> ${r.tifoso?.nome} ${r.tifoso?.cognome}</div>
-      <div><strong>Premio:</strong> ${r.premio?.titolo}</div>
+      <div><strong>Tifoso:</strong> ${r.tifoso_nome || ''} ${r.tifoso_cognome || ''}</div>
+      <div><strong>Premio:</strong> ${r.premio_titolo || '—'}</div>
       <div><strong>Punti scalati:</strong> ${r.punti_scalati}</div>
       <div><strong>Richiesto:</strong> ${new Date(r.creato_il).toLocaleString('it-IT')}</div>
     </div>`
