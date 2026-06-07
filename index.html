@@ -683,9 +683,10 @@ async function confermaRiscatto() {
       .eq('id', currentTifosoId)
     if (ptErr) throw new Error('Errore aggiornamento punti: ' + ptErr.message)
 
-    // 2. Crea riscatto con codice generato lato client
-    const codice = Math.random().toString(36).substr(2,4).toUpperCase() +
-                   Math.random().toString(36).substr(2,4).toUpperCase()
+    // 2. Crea riscatto con codice generato lato client (timestamp + random per unicità)
+    const ts = Date.now().toString(36).toUpperCase().slice(-4)
+    const rnd = Math.random().toString(36).substr(2,4).toUpperCase()
+    const codice = ts + rnd
     const { data: risc, error: riscErr } = await sb.from('riscatti').insert({
       tifoso_id: currentTifosoId,
       premio_id: currentPremioRiscatto.id,
