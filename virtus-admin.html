@@ -357,16 +357,41 @@ select.form-input:focus{border-color:var(--accent)}
       <div class="card">
         <div class="card-header">
           <div class="card-title">Tutti i tifosi</div>
-          <div style="display:flex;align-items:center;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px">
             <span id="tifosi-count" style="font-size:11px;color:var(--muted)"></span>
+            <button class="btn btn-ghost btn-sm" onclick="switchTifosiTab('ricariche')">⚡ Ricariche</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-ricarica-diretta')">+ Ricarica diretta</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-emetti-fancard')">🎫 Emetti Fan Card</button>
           </div>
         </div>
+        <!-- TAB RICARICHE -->
+        <div id="tifosi-tab-ricariche" style="display:none;padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:14px;font-weight:600;color:var(--blu)">Richieste di ricarica punti</div>
+            <div style="display:flex;gap:8px">
+              <select class="form-input" id="ricariche-filter" style="width:150px;padding:6px 10px" onchange="loadRicariche()">
+                <option value="">Tutte</option>
+                <option value="in_attesa">In attesa</option>
+                <option value="confermata">Confermate</option>
+                <option value="annullata">Annullate</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" onclick="switchTifosiTab('lista')">← Torna ai tifosi</button>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Tifoso</th><th>Punti</th><th>Importo</th><th>Metodo</th><th>Richiesto il</th><th>Stato</th><th></th></tr></thead>
+            <tbody id="ricariche-list"></tbody>
+          </table>
+        </div>
+
+        <!-- TAB LISTA TIFOSI -->
+        <div id="tifosi-tab-lista">
         <div class="card-body">
           <table>
             <thead><tr><th>Nome</th><th>Email</th><th>Residenza</th><th>Sesso</th><th>Punti</th><th>Stato</th><th>Iscritto il</th><th></th></tr></thead>
             <tbody id="tifosi-list"></tbody>
           </table>
+        </div>
         </div>
       </div>
     </div>
@@ -907,6 +932,68 @@ select.form-input:focus{border-color:var(--accent)}
       <button class="btn btn-ghost" onclick="closeModal('modal-consegna')">Annulla</button>
       <button class="btn btn-danger btn-sm" id="consegna-annulla-btn" onclick="annullaRiscatto()">Annulla riscatto</button>
       <button class="btn btn-primary" id="consegna-confirm-btn" onclick="confermaConsegna()">✅ Marca consegnato</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ricarica diretta -->
+<div class="modal-overlay" id="modal-ricarica-diretta">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">⚡ Ricarica diretta punti</div>
+      <button class="modal-close" onclick="closeModal('modal-ricarica-diretta')">×</button>
+    </div>
+    <div class="modal-body" style="display:grid;gap:12px">
+      <div class="form-group">
+        <label>Tifoso *</label>
+        <select class="form-input" id="rd-tifoso">
+          <option value="">— Seleziona tifoso —</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label>Punti da accreditare *</label>
+          <input class="form-input" id="rd-punti" type="number" min="1" placeholder="es. 100"/>
+        </div>
+        <div class="form-group">
+          <label>Importo riscosso (€) *</label>
+          <input class="form-input" id="rd-importo" type="number" min="0.01" step="0.01" placeholder="es. 9.00"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Metodo di pagamento *</label>
+        <select class="form-input" id="rd-metodo">
+          <option value="contanti">Contanti</option>
+          <option value="pos">POS</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Note (opzionale)</label>
+        <input class="form-input" id="rd-note" placeholder="Es. Ricarica stagionale"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-ricarica-diretta')">Annulla</button>
+      <button class="btn btn-primary" onclick="eseguiRicaricaDiretta()">⚡ Accredita punti</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Conferma ricarica tifoso -->
+<div class="modal-overlay" id="modal-conferma-ricarica">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">✅ Conferma ricarica</div>
+      <button class="modal-close" onclick="closeModal('modal-conferma-ricarica')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="conferma-ricarica-info" style="background:var(--bg);border-radius:8px;padding:16px;margin-bottom:12px"></div>
+      <div style="font-size:13px;color:var(--muted)">Confermando, i punti verranno accreditati immediatamente al tifoso.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-conferma-ricarica')">Annulla</button>
+      <button class="btn btn-danger btn-sm" onclick="annullaRicarica()">Annulla ricarica</button>
+      <button class="btn btn-primary" onclick="confermaRicarica()">✅ Conferma e accredita</button>
     </div>
   </div>
 </div>
@@ -1459,7 +1546,9 @@ async function salvaBonus() {
 }
 
 // ── MODAL ──
-function openModal(id) { document.getElementById(id).classList.add('open') }
+function openModal(id) {
+  if (id === 'modal-ricarica-diretta') loadTifosiSelectRicarica()
+  document.getElementById(id).classList.add('open') }
 function closeModal(id) { document.getElementById(id).classList.remove('open') }
 document.querySelectorAll('.modal-overlay').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open') })
@@ -1752,6 +1841,131 @@ async function annullaMemb(id) {
   toast('Membership annullata', 'success')
   loadMembership('')
   loadDashboard()
+}
+
+// ── RICARICHE ──
+let currentRicarica = null
+
+function switchTifosiTab(tab) {
+  document.getElementById('tifosi-tab-lista').style.display    = tab === 'lista' ? '' : 'none'
+  document.getElementById('tifosi-tab-ricariche').style.display = tab === 'ricariche' ? '' : 'none'
+  if (tab === 'ricariche') loadRicariche()
+}
+
+async function loadRicariche() {
+  const stato = document.getElementById('ricariche-filter')?.value || ''
+  let q = sbAdmin.from('ricariche_view').select('*').order('creato_il', { ascending: false })
+  if (stato) q = q.eq('stato', stato)
+  const { data, error } = await q
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+
+  const statoStyle = { in_attesa: 'orange', confermata: 'green', annullata: 'red' }
+  const statoLabel = { in_attesa: '⏳ In attesa', confermata: '✅ Confermata', annullata: '❌ Annullata' }
+  const metodoIcon = { online: '🌐', contanti: '💵', pos: '💳' }
+
+  document.getElementById('ricariche-list').innerHTML = (data || []).map(r => `
+    <tr>
+      <td style="font-size:13px"><strong>${r.tifoso_nome || ''} ${r.tifoso_cognome || ''}</strong><br>
+        <span style="color:var(--muted);font-size:11px">${r.tifoso_email || ''}</span></td>
+      <td><span class="pts">${r.punti}</span></td>
+      <td style="font-size:13px">€ ${parseFloat(r.importo_eur).toFixed(2)}</td>
+      <td style="font-size:12px">${metodoIcon[r.metodo] || ''} ${r.metodo}</td>
+      <td style="font-size:11px;color:var(--muted)">${new Date(r.creato_il).toLocaleDateString('it-IT')}</td>
+      <td><span class="badge badge-${statoStyle[r.stato]}">${statoLabel[r.stato]}</span></td>
+      <td>${r.stato === 'in_attesa' ? `<button class="btn btn-primary btn-sm" onclick='openConfermaRicarica(${JSON.stringify(r)})'>Gestisci</button>` : ''}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessuna ricarica</td></tr>'
+}
+
+function openConfermaRicarica(r) {
+  currentRicarica = r
+  document.getElementById('conferma-ricarica-info').innerHTML = `
+    <div style="display:grid;gap:6px">
+      <div><strong>Tifoso:</strong> ${r.tifoso_nome} ${r.tifoso_cognome}</div>
+      <div><strong>Punti:</strong> ${r.punti} pt</div>
+      <div><strong>Importo:</strong> € ${parseFloat(r.importo_eur).toFixed(2)}</div>
+      <div><strong>Metodo:</strong> ${r.metodo}</div>
+      <div><strong>Richiesto il:</strong> ${new Date(r.creato_il).toLocaleString('it-IT')}</div>
+    </div>`
+  openModal('modal-conferma-ricarica')
+}
+
+async function confermaRicarica() {
+  if (!currentRicarica) return
+  // 1. Aggiorna saldo tifoso
+  const { data: tifoso } = await sbAdmin.from('tifosi').select('punti_saldo').eq('auth_user_id', currentRicarica.tifoso_id).single()
+  if (!tifoso) { toast('Tifoso non trovato', 'error'); return }
+  await sbAdmin.from('tifosi').update({ punti_saldo: tifoso.punti_saldo + currentRicarica.punti }).eq('auth_user_id', currentRicarica.tifoso_id)
+  // 2. Registra transazione
+  await sbAdmin.from('transazioni').insert({
+    tifoso_id: currentRicarica.tifoso_id,
+    tipo: 'RICARICA',
+    punti_delta: currentRicarica.punti,
+    importo_eur: currentRicarica.importo_eur,
+    nota: 'Ricarica punti confermata - ' + currentRicarica.metodo
+  })
+  // 3. Aggiorna stato ricarica
+  await sbAdmin.from('ricariche').update({ stato: 'confermata', confermata_il: new Date().toISOString() }).eq('id', currentRicarica.id)
+  toast('✅ ' + currentRicarica.punti + ' punti accreditati!', 'success')
+  closeModal('modal-conferma-ricarica')
+  loadRicariche()
+  loadDashboard()
+}
+
+async function annullaRicarica() {
+  if (!currentRicarica) return
+  await sbAdmin.from('ricariche').update({ stato: 'annullata' }).eq('id', currentRicarica.id)
+  toast('Ricarica annullata', 'success')
+  closeModal('modal-conferma-ricarica')
+  loadRicariche()
+}
+
+async function eseguiRicaricaDiretta() {
+  const tifosoId = document.getElementById('rd-tifoso').value
+  const punti    = parseInt(document.getElementById('rd-punti').value)
+  const importo  = parseFloat(document.getElementById('rd-importo').value)
+  const metodo   = document.getElementById('rd-metodo').value
+  const note     = document.getElementById('rd-note').value.trim()
+
+  if (!tifosoId || !punti || !importo) { toast('Compila tutti i campi obbligatori', 'error'); return }
+
+  // Recupera auth_user_id del tifoso
+  const { data: tifoso } = await sbAdmin.from('tifosi').select('punti_saldo, auth_user_id').eq('id', tifosoId).single()
+  if (!tifoso) { toast('Tifoso non trovato', 'error'); return }
+
+  // Accredita punti
+  await sbAdmin.from('tifosi').update({ punti_saldo: tifoso.punti_saldo + punti }).eq('id', tifosoId)
+
+  // Registra transazione
+  await sbAdmin.from('transazioni').insert({
+    tifoso_id: tifoso.auth_user_id,
+    tipo: 'RICARICA',
+    punti_delta: punti,
+    importo_eur: importo,
+    nota: note || 'Ricarica diretta - ' + metodo
+  })
+
+  // Registra ricarica come già confermata
+  await sbAdmin.from('ricariche').insert({
+    tifoso_id:   tifoso.auth_user_id,
+    punti,
+    importo_eur: importo,
+    metodo,
+    stato:       'confermata',
+    note:        note || null,
+    confermata_il: new Date().toISOString()
+  })
+
+  toast('✅ ' + punti + ' punti accreditati direttamente!', 'success')
+  closeModal('modal-ricarica-diretta')
+  ;['rd-punti','rd-importo','rd-note'].forEach(id => document.getElementById(id).value = '')
+  document.getElementById('rd-tifoso').value = ''
+  loadDashboard()
+}
+
+async function loadTifosiSelectRicarica() {
+  const { data } = await sbAdmin.from('tifosi').select('id, nome, cognome').order('cognome')
+  const opts = (data || []).map(t => `<option value="${t.id}">${t.cognome} ${t.nome}</option>`).join('')
+  document.getElementById('rd-tifoso').innerHTML = '<option value="">— Seleziona tifoso —</option>' + opts
 }
 
 // ── EMETTI FAN CARD ──

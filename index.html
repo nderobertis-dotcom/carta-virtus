@@ -158,6 +158,12 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 .partner-dot{width:10px;height:10px;border-radius:50%;background:var(--blu2);flex-shrink:0}
 .partner-name{font-weight:600;color:var(--text);flex:1}
 .partner-cat{font-size:11px;color:var(--muted)}
+.pacchetto-card{border:2px solid var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .15s}
+.pacchetto-card:hover{border-color:var(--blu2);background:#f0f6ff}
+.pacchetto-card.selected{border-color:var(--arancio);background:#fff8f0}
+.pacchetto-punti{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:var(--blu)}
+.pacchetto-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pacchetto-prezzo{font-size:15px;font-weight:700;color:var(--arancio);margin-top:6px}
 .empty-state{text-align:center;padding:32px;color:var(--muted);font-size:13px}
 footer{background:var(--blu);padding:40px 24px;text-align:center;color:rgba(255,255,255,.5);font-size:13px;margin-top:60px}
 footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.06em;display:block;margin-bottom:8px}
@@ -414,6 +420,62 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
       </div>
     </div>
   </div>
+  <!-- RICARICA PUNTI -->
+  <div class="tifoso-content" style="padding-top:0;padding-bottom:0">
+    <div style="max-width:1100px;margin:0 auto;padding:0 24px 32px">
+      <div class="t-card">
+        <div class="t-card-title">⚡ Ricarica punti</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px">Acquista punti extra per riscattare premi o partecipare alle campagne. La ricarica sarà confermata dopo la verifica del pagamento.</div>
+
+        <!-- Pacchetti fissi -->
+        <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Pacchetti</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px" id="pacchetti-grid">
+          <div class="pacchetto-card" data-punti="50" data-importo="5" onclick="selezionaPacchetto(this)">
+            <div class="pacchetto-punti">50</div>
+            <div class="pacchetto-label">punti</div>
+            <div class="pacchetto-prezzo">€ 5,00</div>
+          </div>
+          <div class="pacchetto-card" data-punti="100" data-importo="9" onclick="selezionaPacchetto(this)">
+            <div class="pacchetto-punti">100</div>
+            <div class="pacchetto-label">punti</div>
+            <div class="pacchetto-prezzo">€ 9,00</div>
+            <div style="font-size:10px;color:#e65100;font-weight:700;margin-top:4px">POPOLARE</div>
+          </div>
+          <div class="pacchetto-card" data-punti="200" data-importo="15" onclick="selezionaPacchetto(this)">
+            <div class="pacchetto-punti">200</div>
+            <div class="pacchetto-label">punti</div>
+            <div class="pacchetto-prezzo">€ 15,00</div>
+            <div style="font-size:10px;color:#2e7d32;font-weight:700;margin-top:4px">MIGLIOR VALORE</div>
+          </div>
+        </div>
+
+        <!-- Importo libero -->
+        <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Oppure importo libero</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:20px">
+          <div style="display:flex;border:2px solid var(--border);border-radius:10px;overflow:hidden;flex:1">
+            <div style="background:var(--bg);padding:10px 14px;font-size:16px;font-weight:700;color:var(--muted);border-right:1px solid var(--border)">€</div>
+            <input type="number" id="ricarica-importo-libero" min="1" step="0.50" placeholder="es. 12.00"
+              style="flex:1;border:none;outline:none;padding:10px 14px;font-size:18px;font-weight:700;color:var(--blu);background:#fff"
+              oninput="aggiornaRicaricaLibera()"/>
+          </div>
+          <div style="text-align:center;min-width:80px">
+            <div id="ricarica-punti-preview" style="font-size:24px;font-weight:900;color:var(--blu)">—</div>
+            <div style="font-size:11px;color:var(--muted)">punti</div>
+          </div>
+        </div>
+
+        <div id="ricarica-riepilogo" style="display:none;background:#f0f6ff;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px">
+          <strong>Riepilogo:</strong> <span id="ricarica-riepilogo-testo"></span>
+        </div>
+
+        <button class="btn-hero btn-hero-primary" style="width:100%;font-size:14px" id="btn-ricarica" onclick="inviaRichiestaricarica()" disabled>
+          Richiedi ricarica
+        </button>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">Riceverai conferma dopo la verifica del pagamento da parte della società.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- CATALOGO PREMI AREA TIFOSO -->
   <div class="tifoso-content" style="padding-top:0">
     <div style="max-width:1100px;margin:0 auto;padding:0 24px 60px">
@@ -604,6 +666,78 @@ async function loadCampagneTifoso() {
       '</div>' +
       '</div>'
   }).join('')
+}
+
+// ── RICARICA PUNTI ──
+const PUNTI_PER_EURO = 10  // 1€ = 10 punti (modificabile)
+let _ricaricaSelezionata = { punti: 0, importo: 0 }
+
+function selezionaPacchetto(el) {
+  document.querySelectorAll('.pacchetto-card').forEach(c => c.classList.remove('selected'))
+  el.classList.add('selected')
+  document.getElementById('ricarica-importo-libero').value = ''
+  document.getElementById('ricarica-punti-preview').textContent = '—'
+  _ricaricaSelezionata = {
+    punti: parseInt(el.dataset.punti),
+    importo: parseFloat(el.dataset.importo)
+  }
+  aggiornaRiepilogoRicarica()
+}
+
+function aggiornaRicaricaLibera() {
+  const importo = parseFloat(document.getElementById('ricarica-importo-libero').value) || 0
+  document.querySelectorAll('.pacchetto-card').forEach(c => c.classList.remove('selected'))
+  if (importo > 0) {
+    const punti = Math.floor(importo * PUNTI_PER_EURO)
+    document.getElementById('ricarica-punti-preview').textContent = punti
+    _ricaricaSelezionata = { punti, importo }
+  } else {
+    document.getElementById('ricarica-punti-preview').textContent = '—'
+    _ricaricaSelezionata = { punti: 0, importo: 0 }
+  }
+  aggiornaRiepilogoRicarica()
+}
+
+function aggiornaRiepilogoRicarica() {
+  const box = document.getElementById('ricarica-riepilogo')
+  const btn = document.getElementById('btn-ricarica')
+  if (_ricaricaSelezionata.punti > 0) {
+    document.getElementById('ricarica-riepilogo-testo').textContent =
+      _ricaricaSelezionata.punti + ' punti per € ' + _ricaricaSelezionata.importo.toFixed(2).replace('.', ',')
+    box.style.display = 'block'
+    btn.disabled = false
+  } else {
+    box.style.display = 'none'
+    btn.disabled = true
+  }
+}
+
+async function inviaRichiestaricarica() {
+  if (!_ricaricaSelezionata.punti || !currentAuthUserId) return
+  const btn = document.getElementById('btn-ricarica')
+  btn.disabled = true
+  btn.textContent = 'Invio...'
+  const { error } = await sb.from('ricariche').insert({
+    tifoso_id:  currentAuthUserId,
+    punti:      _ricaricaSelezionata.punti,
+    importo_eur: _ricaricaSelezionata.importo,
+    metodo:     'online',
+    stato:      'in_attesa'
+  })
+  if (error) {
+    toast('Errore: ' + error.message, 'error')
+    btn.disabled = false
+    btn.textContent = 'Richiedi ricarica'
+    return
+  }
+  toast('✅ Richiesta inviata! Riceverai conferma a breve.', 'success')
+  _ricaricaSelezionata = { punti: 0, importo: 0 }
+  document.querySelectorAll('.pacchetto-card').forEach(c => c.classList.remove('selected'))
+  document.getElementById('ricarica-importo-libero').value = ''
+  document.getElementById('ricarica-punti-preview').textContent = '—'
+  document.getElementById('ricarica-riepilogo').style.display = 'none'
+  btn.disabled = true
+  btn.textContent = 'Richiedi ricarica'
 }
 
 // ── CATALOGO PREMI ──
