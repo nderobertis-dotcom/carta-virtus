@@ -441,12 +441,13 @@ async function loadRiscattiPartner() {
   const list = document.getElementById('riscatti-partner-list')
   list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Caricamento...</div>'
 
-  const { data } = await sb.from('riscatti')
-    .select('*, premi:premio_id(titolo, tipo, partner_id, costo_punti), tifoso:tifoso_id(nome, cognome)')
+  const { data } = await sb.from('riscatti_view')
+    .select('*')
+    .eq('partner_id', currentPartner.id)
     .order('creato_il', { ascending: false })
     .limit(100)
 
-  const riscatti = (data || []).filter(function(r){ return r.premi && r.premi.partner_id === currentPartner.id })
+  const riscatti = data || []
 
   if (!riscatti.length) {
     list.innerHTML = "<div style='color:var(--muted);font-size:13px;text-align:center;padding:40px'>Nessun riscatto per i tuoi premi</div>"
@@ -471,8 +472,8 @@ async function loadRiscattiPartner() {
     }
     row.innerHTML =
       '<div>' +
-      '<div style="font-weight:700;font-size:14px;color:var(--blu)">' + (r.premi ? r.premi.titolo : '—') + '</div>' +
-      '<div style="font-size:13px;color:#333;margin-top:2px">' + (r.tifoso ? r.tifoso.nome + ' ' + r.tifoso.cognome : '—') + '</div>' +
+      '<div style="font-weight:700;font-size:14px;color:var(--blu)">' + (r.premio_titolo || '—') + '</div>' +
+      '<div style="font-size:13px;color:#333;margin-top:2px">' + (r.tifoso_nome ? r.tifoso_nome + ' ' + (r.tifoso_cognome||'') : '—') + '</div>' +
       '<div style="font-family:monospace;font-size:12px;color:var(--blu2);letter-spacing:2px;margin-top:2px">' + r.codice + '</div>' +
       '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + new Date(r.creato_il).toLocaleDateString("it-IT") + '</div>' +
       '</div>' +
@@ -504,8 +505,8 @@ function apriDettaglioRiscatto(r) {
   currentRiscattoPartner = r
   document.getElementById('riscatto-dettaglio').innerHTML =
     '<div style="display:grid;gap:6px">' +
-    '<div style="font-size:16px;font-weight:700;color:var(--blu)">' + (r.premi?.titolo || '—') + '</div>' +
-    '<div><strong>Tifoso:</strong> ' + (r.tifoso?.nome || '') + ' ' + (r.tifoso?.cognome || '') + '</div>' +
+    '<div style="font-size:16px;font-weight:700;color:var(--blu)">' + (r.premio_titolo || '—') + '</div>' +
+    '<div><strong>Tifoso:</strong> ' + (r.tifoso_nome || '') + ' ' + (r.tifoso_cognome || '') + '</div>' +
     '<div><strong>Codice:</strong> <span style="font-family:monospace;font-size:15px;letter-spacing:2px;color:var(--blu2)">' + r.codice + '</span></div>' +
     '<div><strong>Punti scalati:</strong> ' + r.punti_scalati + '</div>' +
     '<div><strong>Richiesto il:</strong> ' + new Date(r.creato_il).toLocaleString("it-IT") + '</div>' +
@@ -519,8 +520,8 @@ async function cercaRiscatto() {
   const codice = document.getElementById('riscatto-codice').value.trim().toUpperCase()
   if (!codice) { toast('Inserisci un codice', 'error'); return }
 
-  const { data, error } = await sb.from('riscatti')
-    .select('*, premi:premio_id(titolo, tipo, partner_id, costo_punti), tifoso:tifoso_id(nome, cognome)')
+  const { data, error } = await sb.from('riscatti_view')
+    .select('*')
     .eq('codice', codice)
     .single()
 
@@ -535,7 +536,7 @@ async function cercaRiscatto() {
     box.style.display = 'none'
     toast('Riscatto già ' + data.stato, 'error'); return
   }
-  if (data.premi?.partner_id !== currentPartner?.id) {
+  if (data.partner_id !== currentPartner?.id) {
     box.style.display = 'none'
     toast('Questo riscatto non appartiene al tuo negozio', 'error'); return
   }
@@ -543,7 +544,7 @@ async function cercaRiscatto() {
   currentRiscattoPartner = data
   det.innerHTML =
     '<div style="display:grid;gap:6px">' +
-    '<div><strong>Premio:</strong> ' + (data.premi?.titolo || '—') + '</div>' +
+    '<div><strong>Premio:</strong> ' + (data.premio_titolo || '—') + '</div>' +
     '<div><strong>Tifoso:</strong> ' + (data.tifoso?.nome||'') + ' ' + (data.tifoso?.cognome||'') + '</div>' +
     '<div><strong>Punti scalati:</strong> ' + data.punti_scalati + '</div>' +
     '<div><strong>Richiesto il:</strong> ' + new Date(data.creato_il).toLocaleString('it-IT') + '</div>' +
