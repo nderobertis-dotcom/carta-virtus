@@ -608,7 +608,7 @@ async function loadCatalogoPublic(isLogged = false, puntiSaldo = 0) {
     if (isLogged) {
       btn_html = '<button class="btn-hero btn-hero-primary" style="width:100%;margin-top:10px;font-size:13px;' +
         (!puoiRiscattare ? 'opacity:.4;cursor:not-allowed' : '') + '"' +
-        (puoiRiscattare ? ' onclick="apriRiscattoById(\'' + p.id + '\')"' : ' disabled') +
+        (puoiRiscattare ? ' data-pid="' + p.id + '"' : ' disabled') +
         '>' + btn_label + '</button>'
     }
     return '<div class="premio-card" style="' + (esaurito ? 'opacity:.55' : '') + '">' +
@@ -1004,6 +1004,12 @@ async function caricaAreaTifoso(user) {
 
 document.querySelectorAll('.modal-overlay').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open') })
+})
+
+// Delegato per pulsanti riscatta generati dinamicamente
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('button[data-pid]')
+  if (btn) apriRiscattoById(btn.dataset.pid)
 })
 
 function toast(msg, type) {
