@@ -399,11 +399,19 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         <div id="t-partner-list"><div class="empty-state">Caricamento...</div></div>
       </div>
       <div class="t-card">
-        <div class="t-card-title" style="display:flex;justify-content:space-between;align-items:center">
-          <span>🎁 I miei riscatti</span>
-          <button class="btn-hero btn-hero-primary" style="font-size:12px;padding:6px 14px" onclick="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})">+ Riscatta premi ↓</button>
-        </div>
+        <div class="t-card-title">🎁 I miei riscatti</div>
         <div id="t-coupon-list"><div class="empty-state">Nessun riscatto ancora</div></div>
+      </div>
+    </div>
+  </div>
+  <!-- CATALOGO PREMI AREA TIFOSO -->
+  <div class="tifoso-content" style="padding-top:0">
+    <div style="max-width:1100px;margin:0 auto;padding:0 24px 60px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blu2);margin-bottom:8px">Catalogo premi</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(24px,4vw,36px);font-weight:800;color:var(--blu);margin-bottom:6px;text-transform:uppercase">Cosa puoi riscattare</div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:24px">Hai <strong id="t-punti-catalogo">0</strong> punti disponibili.</div>
+      <div id="catalogo-grid-tifoso" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px">
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:13px">Caricamento premi...</div>
       </div>
     </div>
   </div>
@@ -564,8 +572,16 @@ async function loadCatalogoPublic(isLogged = false, puntiSaldo = 0) {
     .eq('attivo', true)
     .order('costo_punti', { ascending: true })
 
-  const grid = document.getElementById('catalogo-grid')
+  // Usa il grid giusto: quello interno all'area tifoso se loggato, quello pubblico se guest
+  const grid = isLogged
+    ? document.getElementById('catalogo-grid-tifoso')
+    : document.getElementById('catalogo-grid')
   if (!grid) return
+
+  // Aggiorna contatore punti nel catalogo tifoso
+  const ptEl = document.getElementById('t-punti-catalogo')
+  if (ptEl) ptEl.textContent = puntiSaldo.toLocaleString('it-IT')
+
   if (!premi || premi.length === 0) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:13px">Premi in arrivo! Registrati per essere tra i primi.</div>'
     return
