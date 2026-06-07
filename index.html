@@ -565,6 +565,7 @@ let metodoPagamento = null
 // ── CATALOGO PREMI ──
 let currentPremioRiscatto = null
 let currentTifosoId = null
+let currentAuthUserId = null
 let currentPuntiSaldo = 0
 let _premiCache = []
 
@@ -688,7 +689,7 @@ async function confermaRiscatto() {
     const rnd = Math.random().toString(36).substr(2,4).toUpperCase()
     const codice = ts + rnd
     const { data: risc, error: riscErr } = await sb.from('riscatti').insert({
-      tifoso_id: currentTifosoId,
+      tifoso_id: currentAuthUserId,
       premio_id: currentPremioRiscatto.id,
       punti_scalati: currentPremioRiscatto.costo_punti,
       codice
@@ -697,7 +698,7 @@ async function confermaRiscatto() {
 
     // 3. Registra transazione
     await sb.from('transazioni').insert({
-      tifoso_id: currentTifosoId,
+      tifoso_id: currentAuthUserId,
       tipo: 'RISCATTO',
       punti_delta: -currentPremioRiscatto.costo_punti,
       nota: 'Riscatto: ' + currentPremioRiscatto.titolo
@@ -717,7 +718,7 @@ async function confermaRiscatto() {
       currentPuntiSaldo = tifoso.punti_saldo
       document.getElementById('t-punti').textContent = tifoso.punti_saldo.toLocaleString('it-IT')
       loadCatalogoPublic(true, tifoso.punti_saldo)
-      loadMieiRiscatti(currentTifosoId)
+      loadMieiRiscatti(currentAuthUserId)
     }
   } catch(err) {
     toast('Errore: ' + err.message, 'error')
@@ -1012,10 +1013,11 @@ async function caricaAreaTifoso(user) {
 
   // Salva riferimenti globali per il riscatto
   currentTifosoId = tifoso.id
+  currentAuthUserId = user.id
   currentPuntiSaldo = tifoso.punti_saldo
 
   // Carica riscatti personali
-  await loadMieiRiscatti(tifoso.id)
+  await loadMieiRiscatti(user.id)
 
   // Ricarica catalogo in modalità logged
   loadCatalogoPublic(true, tifoso.punti_saldo)
