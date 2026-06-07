@@ -312,23 +312,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
   </div>
 </section>
 
-<!-- MODAL: Conferma riscatto -->
-<div class="modal-overlay" id="modal-riscatto">
-  <div class="modal" style="max-width:440px">
-    <div class="modal-header">
-      <div class="modal-title">🎁 Conferma riscatto</div>
-      <button class="modal-close" onclick="chiudiModalRiscatto()">×</button>
-    </div>
-    <div class="modal-body">
-      <div id="riscatto-info" style="background:#f0f6ff;border-radius:8px;padding:16px;margin-bottom:12px"></div>
-      <div style="font-size:13px;color:var(--muted)">Dopo il riscatto riceverai un codice univoco da mostrare al ritiro fisico. I punti verranno scalati immediatamente.</div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-hero btn-hero-ghost" style="font-size:13px" onclick="chiudiModalRiscatto()">Annulla</button>
-      <button class="btn-hero btn-hero-primary" style="font-size:13px" id="riscatto-confirm-btn" onclick="confermaRiscatto()">✅ Conferma riscatto</button>
-    </div>
-  </div>
-</div>
+
 
 
 
@@ -350,6 +334,26 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 </div>
 
 <!-- AREA TIFOSO -->
+
+
+
+<!-- MODAL: Conferma riscatto -->
+<div class="modal-overlay" id="modal-riscatto">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">🎁 Conferma riscatto</div>
+      <button class="modal-close" onclick="chiudiModalRiscatto()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="riscatto-info" style="background:#f0f6ff;border-radius:8px;padding:16px;margin-bottom:12px"></div>
+      <div style="font-size:13px;color:var(--muted)">Dopo il riscatto riceverai un codice univoco da mostrare al ritiro fisico. I punti verranno scalati immediatamente.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-hero btn-hero-ghost" style="font-size:13px" onclick="chiudiModalRiscatto()">Annulla</button>
+      <button class="btn-hero btn-hero-primary" style="font-size:13px" id="riscatto-confirm-btn" onclick="confermaRiscatto()">✅ Conferma riscatto</button>
+    </div>
+  </div>
+</div>
 <div id="area-tifoso">
   <div class="tifoso-header">
     <div class="tifoso-header-inner">
