@@ -174,9 +174,11 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 #toast.success{background:#2e7d32}
 @media(max-width:768px){
   .hero-inner{grid-template-columns:1fr;gap:40px}
+  .piani-base-info-grid{grid-template-columns:1fr !important}
   .hero-card{display:none}
   .steps{grid-template-columns:1fr 1fr}
-  .piani-grid{grid-template-columns:1fr}
+  .piani-grid{grid-template-columns:1fr 1fr}
+  .piani-grid .piano:first-child{grid-column:1/-1}
   .tifoso-grid{grid-template-columns:1fr}
   .form-grid-2{grid-template-columns:1fr}
   .pagamento-grid{grid-template-columns:1fr}
@@ -192,7 +194,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     <div>
       <div class="hero-badge"><span></span>Stagione 2026/2027</div>
       <h1>Diventa<em>Supporter</em>Virtus</h1>
-      <p>Sostieni la Nuova Virtus Basket Molfetta, accumula punti ad ogni acquisto presso i nostri partner e accedi a premi ed esperienze esclusive.</p>
+      <p>4 livelli di supporto per ogni tifoso. Dal piano Base entry level fino al Gold premium — scegli il tuo posto nella famiglia Virtus e vivi la stagione a pieno.</p>
       <div class="hero-cta">
         <button class="btn-hero btn-hero-primary" onclick="scrollToPiani()">Scegli il tuo piano &#8594;</button>
         <button class="btn-hero btn-hero-ghost" onclick="apriLogin()">Hai gia un account</button>
@@ -208,7 +210,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
           <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Programma fedelta ufficiale</div>
         </div>
         <div class="hero-stats">
-          <div class="hero-stat"><div class="hero-stat-value">3</div><div class="hero-stat-label">Livelli</div></div>
+          <div class="hero-stat"><div class="hero-stat-value">4</div><div class="hero-stat-label">Livelli</div></div>
           <div class="hero-stat"><div class="hero-stat-value" id="stat-partner-count">—</div><div class="hero-stat-label">Partner</div></div>
           <div class="hero-stat"><div class="hero-stat-value">365</div><div class="hero-stat-label">Giorni</div></div>
           <div class="hero-stat"><div class="hero-stat-value">&#8734;</div><div class="hero-stat-label">Premi</div></div>
@@ -221,12 +223,12 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 <section class="section">
   <div class="section-label">Come funziona</div>
   <div class="section-title">4 passi per iniziare</div>
-  <div class="section-sub">Registrati, scegli il livello di supporter, accumula punti e riscatta premi esclusivi nei negozi partner.</div>
+  <div class="section-sub">Scegli il tuo livello, mostra il QR code, accumula punti e riscatta premi esclusivi. Il piano Base ti permette di seguire la squadra mantenendo attivo il tuo accredito alle gare.</div>
   <div class="steps">
-    <div class="step"><div class="step-num">1</div><div class="step-icon">&#128221;</div><h3>Registrati</h3><p>Crea il tuo account e scegli il livello di supporter che fa per te.</p></div>
-    <div class="step"><div class="step-num">2</div><div class="step-icon">&#128717;</div><h3>Acquista</h3><p>Mostra il tuo QR code nei negozi partner e accumula punti ad ogni acquisto.</p></div>
-    <div class="step"><div class="step-num">3</div><div class="step-icon">&#11088;</div><h3>Accumula</h3><p>Guadagna punti bonus agli eventi e con le campagne promozionali speciali.</p></div>
-    <div class="step"><div class="step-num">4</div><div class="step-icon">&#127873;</div><h3>Riscatta</h3><p>Usa i tuoi punti per ottenere sconti, prodotti e esperienze esclusive Virtus.</p></div>
+    <div class="step"><div class="step-num">1</div><div class="step-icon">&#128221;</div><h3>Registrati</h3><p>Crea il tuo account su virtusfanmolfetta.com e scegli tra 4 livelli: Base, Bronze, Silver o Gold.</p></div>
+    <div class="step"><div class="step-num">2</div><div class="step-icon">&#128717;</div><h3>Acquista</h3><p>Mostra il QR code nei negozi partner e accumula punti ad ogni acquisto (Bronze, Silver e Gold).</p></div>
+    <div class="step"><div class="step-num">3</div><div class="step-icon">&#11088;</div><h3>Accumula</h3><p>Guadagna punti bonus agli ingressi, con le campagne promo e ricaricando il saldo dalla tua area.</p></div>
+    <div class="step"><div class="step-num">4</div><div class="step-icon">&#127873;</div><h3>Riscatta</h3><p>Usa i punti per sconti, prodotti e esperienze esclusive Virtus dal catalogo partner.</p></div>
   </div>
 </section>
 
@@ -234,7 +236,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
   <div class="piani-inner">
     <div class="section-label">I nostri piani</div>
     <div class="section-title">Scegli il tuo livello</div>
-    <div class="section-sub">Ogni piano include punti benvenuto, accesso al programma fedelta e benefit esclusivi.</div>
+    <div class="section-sub">4 livelli per ogni tipo di tifoso. Il piano <strong>Base</strong> è la porta d'ingresso — tienici il tuo accredito attivo. I piani <strong>Bronze, Silver e Gold</strong> ti danno accesso completo al programma fedeltà con accumulo punti, premi e benefit esclusivi.</div>
     <div class="piani-grid" style="grid-template-columns:repeat(4,1fr)">
 
       <!-- BASE (entry level) -->
@@ -327,6 +329,40 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         </div>
       </div>
     </div>
+  <!-- INFO PIANO BASE -->
+  <div style="margin-top:40px;background:linear-gradient(135deg,#f0f4ff,#e8f0ff);border:2px solid #c8d8f0;border-radius:16px;padding:32px;max-width:900px;margin-left:auto;margin-right:auto">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start">
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blu2);margin-bottom:8px">⭐ Piano Base — Come funziona</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:var(--blu);margin-bottom:12px;text-transform:uppercase">Accredito alle gare casalinghe</div>
+        <p style="font-size:14px;color:#334466;line-height:1.6;margin-bottom:0">Il tifoso Base può accedere alle gare casalinghe mostrando il QR code. L'operatore verifica il saldo: <strong>con almeno 5 punti l'accesso è consentito</strong>. Il saldo rimane attivo finché partecipi alle partite.</p>
+      </div>
+      <div style="display:grid;gap:12px">
+        <div style="background:#fff;border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px;border:1px solid #c8d8f0">
+          <div style="font-size:24px;flex-shrink:0">✅</div>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:var(--blu)">Vai alla gara</div>
+            <div style="font-size:12px;color:var(--muted)">Mostra il QR → operatore verifica → VIA LIBERA se hai ≥ 5 punti.</div>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px;border:1px solid #c8d8f0">
+          <div style="font-size:24px;flex-shrink:0">⚠️</div>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:#e65100">Non vai alla gara</div>
+            <div style="font-size:12px;color:var(--muted)">Alle 23:59 del giorno di gara vengono scalati automaticamente <strong>5 punti</strong>. Il saldo non scende sotto zero.</div>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px;border:1px solid #c8d8f0">
+          <div style="font-size:24px;flex-shrink:0">⚡</div>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:var(--blu)">Ricarica il saldo</div>
+            <div style="font-size:12px;color:var(--muted)">Dalla tua area personale puoi ricaricare i punti in qualsiasi momento e tornare ad accedere.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   </div>
 </div>
 <!-- CATALOGO PREMI -->
