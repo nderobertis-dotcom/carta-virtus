@@ -880,15 +880,15 @@ select.form-input:focus{border-color:var(--accent)}
         </div>
         <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:12px">
           <div style="font-size:24px;font-weight:700;color:var(--accent)" id="ing-base">0</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Base</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Bronze</div>
         </div>
         <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:12px">
           <div style="font-size:24px;font-weight:700;color:var(--gold)" id="ing-pro">0</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Pro</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Silver</div>
         </div>
         <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:12px">
           <div style="font-size:24px;font-weight:700;color:var(--purple)" id="ing-premium">0</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Premium</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Gold</div>
         </div>
       </div>
       <table>
@@ -936,9 +936,10 @@ select.form-input:focus{border-color:var(--accent)}
         <label>Piano membership *</label>
         <select class="form-input" id="fc-piano">
           <option value="">— Seleziona piano —</option>
-          <option value="base">Base — € 30/anno</option>
-          <option value="pro">Pro — € 50/anno</option>
-          <option value="premium">Premium — € 100/anno</option>
+          <option value="base">Base — € 10/anno</option>
+          <option value="bronze">🥉 Bronze — € 30/anno</option>
+          <option value="silver">🥈 Silver — € 50/anno</option>
+          <option value="gold">🥇 Gold — € 100/anno</option>
         </select>
       </div>
       <div class="form-group">
@@ -1793,8 +1794,8 @@ async function aggiornaIngressi(garaId) {
   const list = data || []
   document.getElementById('ing-totale').textContent = list.length
   document.getElementById('ing-base').textContent = list.filter(i => i.piano_nome === 'Base').length
-  document.getElementById('ing-pro').textContent = list.filter(i => i.piano_nome === 'Pro').length
-  document.getElementById('ing-premium').textContent = list.filter(i => i.piano_nome === 'Premium').length
+  document.getElementById('ing-pro').textContent = list.filter(i => i.piano_nome === 'Bronze').length
+  document.getElementById('ing-premium').textContent = list.filter(i => i.piano_nome === 'Silver' || i.piano_nome === 'Gold').length
 
   const badgeMap = { Base:'badge-teal', Pro:'badge-amber', Premium:'badge-purple' }
   document.getElementById('ingressi-list').innerHTML = list.map(ing => {
@@ -2066,8 +2067,8 @@ async function loadTifosiSelectRicarica() {
 }
 
 // ── EMETTI FAN CARD ──
-const PIANI_PREZZI = { base: 30, pro: 50, premium: 100 }
-const PIANI_PUNTI_BENVENUTO = { base: 50, pro: 100, premium: 200 }
+const PIANI_PREZZI = { base: 10, bronze: 30, silver: 50, gold: 100 }
+const PIANI_PUNTI_BENVENUTO = { base: 10, bronze: 30, silver: 50, gold: 100 }
 
 async function emettiFantCard() {
   const nome    = document.getElementById('fc-nome').value.trim()
@@ -2106,17 +2107,21 @@ async function emettiFantCard() {
       telefono: telefono || null,
       data_nascita: nascita || null,
       punti_saldo: PIANI_PUNTI_BENVENUTO[piano],
-      stato: 'attivo',
-      piano_attivo: piano
+      stato: 'attivo'
     })
     if (tifErr) throw new Error('Errore tifoso: ' + tifErr.message)
 
-    // 3. Crea record membership
+    // 3. Recupera piano_id da membership_piani
+    const pianoNomeMap = { base: 'Base', bronze: 'Bronze', silver: 'Silver', gold: 'Gold' }
+    const { data: pianoData, error: pianoErr } = await sbAdmin.from('membership_piani')
+      .select('id').eq('nome', pianoNomeMap[piano] || piano).single()
+    if (pianoErr || !pianoData) throw new Error('Piano non trovato: ' + piano)
+
+    // 4. Crea record membership
     const oggi = new Date().toISOString().split('T')[0]
     const { error: membErr } = await sbAdmin.from('membership').insert({
       tifoso_id: uid,
-      piano,
-      importo_pagato: importo,
+      piano_id: pianoData.id,
       metodo_pagamento: metodo,
       stato: 'attiva',
       valida_dal: oggi,
