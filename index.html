@@ -140,9 +140,10 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 .qr-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
 .qr-display{font-family:monospace;font-size:20px;font-weight:700;color:var(--blu);letter-spacing:.15em;background:#f0f6ff;padding:16px 24px;border-radius:10px;display:inline-block;border:2px dashed #cdddf5}
 .membership-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-top:12px}
-.membership-chip.base{background:#e3f2fd;color:#1565c0}
-.membership-chip.pro{background:#fff3e0;color:#f57c00}
-.membership-chip.premium{background:#f3e5f5;color:#6a1b9a}
+.membership-chip.base{background:#f5f5f5;color:#555}
+.membership-chip.bronze{background:#e3f2fd;color:#1565c0}
+.membership-chip.silver{background:#fff3e0;color:#f57c00}
+.membership-chip.gold{background:#f3e5f5;color:#6a1b9a}
 .tifoso-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .t-card{background:#fff;border-radius:16px;padding:24px;border:1px solid var(--border)}
 .t-card-title{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--blu);text-transform:uppercase;margin-bottom:16px}
@@ -234,10 +235,35 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     <div class="section-label">I nostri piani</div>
     <div class="section-title">Scegli il tuo livello</div>
     <div class="section-sub">Ogni piano include punti benvenuto, accesso al programma fedelta e benefit esclusivi.</div>
-    <div class="piani-grid">
+    <div class="piani-grid" style="grid-template-columns:repeat(4,1fr)">
+
+      <!-- BASE (entry level) -->
       <div class="piano">
         <div class="piano-header">
           <div class="piano-nome">Base</div>
+          <div class="piano-prezzo"><sup>&#8364;</sup>10<sub>/anno</sub></div>
+          <div class="piano-punti">&#11088; 10 punti benvenuto</div>
+        </div>
+        <div class="piano-body">
+          <div class="piano-divider"></div>
+          <ul class="piano-benefits">
+            <li>QR code personale</li>
+            <li>Visualizza partner aderenti</li>
+            <li>Visualizza catalogo premi</li>
+            <li>Visualizza campagne promozionali</li>
+            <li>Accredito all&#x2019;ingresso gare casalinghe</li>
+            <li style="color:var(--muted);font-size:13px">&#9888; Nessun accumulo punti presso i partner</li>
+            <li style="color:var(--muted);font-size:13px">&#9888; Nessun bonus punti alle gare</li>
+            <li style="color:var(--muted);font-size:13px">&#9888; -5 pt per ogni gara casalinga non frequentata</li>
+          </ul>
+          <button class="btn-piano btn-piano-blu" onclick="apriRegistrazione('base',10,false)">Scegli Base &#8594;</button>
+        </div>
+      </div>
+
+      <!-- BRONZE (ex Base) -->
+      <div class="piano">
+        <div class="piano-header">
+          <div class="piano-nome" style="color:#b87333">&#129353; Bronze</div>
           <div class="piano-prezzo"><sup>&#8364;</sup>30<sub>/anno</sub></div>
           <div class="piano-punti">&#11088; 30 punti benvenuto</div>
         </div>
@@ -252,20 +278,22 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li>&#127936; +3 punti ad ogni ingresso alle gare</li>
             <li>&#127967; Accesso alle gare casalinghe con ingresso riservato</li>
           </ul>
-          <button class="btn-piano btn-piano-blu" onclick="apriRegistrazione('Base',30,false)">Scegli Base &#8594;</button>
+          <button class="btn-piano btn-piano-blu" onclick="apriRegistrazione('bronze',30,false)">Scegli Bronze &#8594;</button>
         </div>
       </div>
+
+      <!-- SILVER (ex Pro) -->
       <div class="piano featured">
         <div class="piano-badge-top">Piu scelto</div>
         <div class="piano-header">
-          <div class="piano-nome">Pro</div>
+          <div class="piano-nome" style="color:#888">&#129352; Silver</div>
           <div class="piano-prezzo"><sup>&#8364;</sup>50<sub>/anno</sub></div>
           <div class="piano-punti">&#11088; 50 punti benvenuto</div>
         </div>
         <div class="piano-body">
           <div class="piano-divider"></div>
           <ul class="piano-benefits">
-            <li>Tutto il piano Base</li>
+            <li>Tutto il piano Bronze</li>
             <li class="maglia">&#128085; Maglia di gara personalizzata</li>
             <li style="padding-left:20px;font-size:13px;color:var(--muted)">Taglia, cognome e numero a scelta</li>
             <li>50 punti di benvenuto</li>
@@ -273,19 +301,21 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li>&#127936; +5 punti ad ogni ingresso alle gare</li>
             <li class="maglia">&#127967; Accesso alle gare casalinghe con posto riservato per tutta la stagione</li>
           </ul>
-          <button class="btn-piano btn-piano-arancio" onclick="apriRegistrazione('Pro',50,true)">Scegli Pro &#8594;</button>
+          <button class="btn-piano btn-piano-arancio" onclick="apriRegistrazione('silver',50,true)">Scegli Silver &#8594;</button>
         </div>
       </div>
+
+      <!-- GOLD (ex Premium) -->
       <div class="piano">
         <div class="piano-header">
-          <div class="piano-nome">Premium</div>
+          <div class="piano-nome" style="color:#f57c00">&#129351; Gold</div>
           <div class="piano-prezzo"><sup>&#8364;</sup>100<sub>/anno</sub></div>
           <div class="piano-punti">&#11088; 100 punti benvenuto</div>
         </div>
         <div class="piano-body">
           <div class="piano-divider"></div>
           <ul class="piano-benefits">
-            <li>Tutto il piano Pro</li>
+            <li>Tutto il piano Silver</li>
             <li class="maglia">&#129346; Cappellino Virtus</li>
             <li class="maglia">&#128085; Maglia di gara personalizzata</li>
             <li class="maglia">&#127967; Accesso area hospitality</li>
@@ -293,7 +323,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li>&#127936; +10 punti ad ogni ingresso alle gare</li>
             <li class="maglia">&#127967; Accesso alle gare casalinghe con posto riservato per tutta la stagione</li>
           </ul>
-          <button class="btn-piano btn-piano-premium" onclick="apriRegistrazione('Premium',100,true)">Scegli Premium &#8594;</button>
+          <button class="btn-piano btn-piano-premium" onclick="apriRegistrazione('gold',100,true)">Scegli Gold &#8594;</button>
         </div>
       </div>
     </div>
@@ -1054,8 +1084,9 @@ async function completaRegistrazione() {
     if (!authResp.ok) throw new Error(authJson.message || authJson.msg || authJson.error || 'Errore creazione account')
     const authData = { user: authJson }
 
+    const pianoNomeCap = pianoSelezionato.nome.charAt(0).toUpperCase() + pianoSelezionato.nome.slice(1)
     const { data: piano } = await sbAdmin.from('membership_piani')
-      .select('id, punti_bonus').eq('nome', pianoSelezionato.nome).single()
+      .select('id, punti_bonus').eq('nome', pianoNomeCap).single()
 
     const { data: tifoso, error: tErr } = await sbAdmin.from('tifosi').insert({
       auth_user_id: authData.user.id,
@@ -1189,7 +1220,8 @@ async function caricaAreaTifoso(user) {
     document.getElementById('t-piano-display').textContent = 'Piano ' + nome
     document.getElementById('t-membership-stato').textContent = 'Piano ' + nome
     document.getElementById('t-scadenza').textContent = memb.valida_fino ? new Date(memb.valida_fino).toLocaleDateString('it-IT') : '—'
-    document.getElementById('t-membership-chip').innerHTML = '<div class="membership-chip ' + nome.toLowerCase() + '">\u2B50 ' + nome + '</div>'
+    const chipIcon = {'base':'⚪', 'bronze':'🥉', 'silver':'🥈', 'gold':'🥇', 'Base':'⚪', 'Bronze':'🥉', 'Silver':'🥈', 'Gold':'🥇'}
+  document.getElementById('t-membership-chip').innerHTML = '<div class="membership-chip ' + nome.toLowerCase() + '">' + (chipIcon[nome]||'⭐') + ' ' + nome + '</div>'
   }
 
   const { data: txs } = await sb.from('transazioni')
