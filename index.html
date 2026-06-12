@@ -184,6 +184,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
   .pagamento-grid{grid-template-columns:1fr}
 }
 </style>
+  <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
 
@@ -694,6 +695,13 @@ const SUPABASE_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE)
 
 let pianoSelezionato = null
+
+const STRIPE_PRICE_IDS = {
+  'base':   'price_1ThTPoLDT200AU24yLlcnysn',
+  'bronze': 'price_1ThTT6LDT200AU24BzLW2pLH',
+  'silver': 'price_1ThTV2LDT200AU24G2pTenCB',
+  'gold':   'price_1ThTWiLDT200AU24L9Al5JfV',
+}
 let metodoPagamento = null
 
 // ── CAMPAGNE TIFOSO ──
@@ -800,28 +808,35 @@ async function inviaRichiestaricarica() {
   if (!_ricaricaSelezionata.punti || !currentAuthUserId) return
   const btn = document.getElementById('btn-ricarica')
   btn.disabled = true
-  btn.textContent = 'Invio...'
-  const { error } = await sb.from('ricariche').insert({
-    tifoso_id:  currentAuthUserId,
-    punti:      _ricaricaSelezionata.punti,
-    importo_eur: _ricaricaSelezionata.importo,
-    metodo:     'online',
-    stato:      'in_attesa'
-  })
-  if (error) {
-    toast('Errore: ' + error.message, 'error')
+  btn.textContent = 'Reindirizzamento...'
+
+  try {
+    // Ottieni email tifoso dalla sessione
+    const { data: { session } } = await sb.auth.getSession()
+    const email = session?.user?.email || ''
+
+    // Crea checkout Stripe per la ricarica
+    const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create-checkout',
+        userId: currentAuthUserId,
+        email,
+        tipoAcquisto: 'ricarica',
+        punti: _ricaricaSelezionata.punti,
+        importo: _ricaricaSelezionata.importo
+      })
+    })
+    const json = await resp.json()
+    if (json.error) throw new Error(json.error)
+    window.location.href = json.url
+
+  } catch (err) {
+    toast('Errore: ' + err.message, 'error')
     btn.disabled = false
     btn.textContent = 'Richiedi ricarica'
-    return
   }
-  toast('✅ Richiesta inviata! Riceverai conferma a breve.', 'success')
-  _ricaricaSelezionata = { punti: 0, importo: 0 }
-  document.querySelectorAll('.pacchetto-card').forEach(c => c.classList.remove('selected'))
-  document.getElementById('ricarica-importo-libero').value = ''
-  document.getElementById('ricarica-punti-preview').textContent = '—'
-  document.getElementById('ricarica-riepilogo').style.display = 'none'
-  btn.disabled = true
-  btn.textContent = 'Richiedi ricarica'
 }
 
 // ── CATALOGO PREMI ──
@@ -1012,6 +1027,23 @@ async function loadMieiRiscatti(tifosoId) {
 }
 
 window.addEventListener('load', async () => {
+  // Gestione ritorno da Stripe
+  const urlParams = new URLSearchParams(window.location.search)
+  const paymentStatus = urlParams.get('payment')
+  if (paymentStatus === 'success') {
+    // Rimuovi parametro dall'URL
+    window.history.replaceState({}, '', window.location.pathname)
+    // Mostra toast di successo dopo un breve delay (attendi che la pagina carichi)
+    setTimeout(() => {
+      toast('🎉 Pagamento completato! Il tuo account è stato attivato.', 'success')
+    }, 1500)
+  } else if (paymentStatus === 'cancel') {
+    window.history.replaceState({}, '', window.location.pathname)
+    setTimeout(() => {
+      toast('Pagamento annullato. Riprova quando vuoi.', 'error')
+    }, 500)
+  }
+
   loadCatalogoPublic(false, 0)
   const { count } = await sb.from('partner').select('*', { count: 'exact', head: true }).eq('attivo', true)
   const el = document.getElementById('stat-partner-count')
@@ -1165,6 +1197,28 @@ async function completaRegistrazione() {
         saldo_dopo: piano.punti_bonus,
         note: 'Bonus benvenuto piano ' + pianoSelezionato.nome
       })
+    }
+
+    // Se Stripe: redirect al checkout
+    if (metodoPagamento === 'stripe') {
+      const priceId = STRIPE_PRICE_IDS[pianoSelezionato.nome.toLowerCase()]
+      if (!priceId) throw new Error('Piano non trovato per Stripe')
+      const checkoutResp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create-checkout',
+          priceId,
+          userId: authData.user.id,
+          email,
+          tipoAcquisto: 'membership'
+        })
+      })
+      const checkoutJson = await checkoutResp.json()
+      if (checkoutJson.error) throw new Error(checkoutJson.error)
+      // Redirect su Stripe
+      window.location.href = checkoutJson.url
+      return
     }
 
     const msg = metodoPagamento === 'bonifico'
