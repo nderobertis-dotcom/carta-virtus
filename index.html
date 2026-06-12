@@ -1152,54 +1152,26 @@ async function completaRegistrazione() {
     if (!authResp.ok) throw new Error(authJson.message || authJson.msg || authJson.error || 'Errore creazione account')
     const authData = { user: authJson }
 
-    const pianoNomeCap = pianoSelezionato.nome.charAt(0).toUpperCase() + pianoSelezionato.nome.slice(1)
-    const { data: piano } = await sbAdmin.from('membership_piani')
-      .select('id, punti_bonus').eq('nome', pianoNomeCap).single()
-
+    // Crea record tifoso (senza membership né punti - gestiti dal webhook dopo pagamento)
     const { data: tifoso, error: tErr } = await sbAdmin.from('tifosi').insert({
       auth_user_id: authData.user.id,
       nome, cognome, email,
       telefono: tel || null,
       data_nascita: nascita || null,
-      consenso_marketing: marketing
+      consenso_marketing: marketing,
+      punti_saldo: 0,
+      stato: 'in_attesa'
     }).select().single()
     if (tErr) throw new Error(tErr.message)
 
-    const oggi = new Date()
-    const scadenza = new Date(oggi)
-    scadenza.setFullYear(scadenza.getFullYear() + 1)
+    // Salva dati maglia in metadata per il webhook
+    const magliaData = pianoSelezionato.richiedeMaglia ? {
+      maglia_taglia: document.getElementById('reg-taglia').value,
+      maglia_cognome: document.getElementById('reg-maglia-cognome').value.toUpperCase(),
+      maglia_numero: parseInt(document.getElementById('reg-maglia-numero').value)
+    } : {}
 
-    const membPayload = {
-      tifoso_id: tifoso.id,
-      piano_id: piano.id,
-      stato: 'in_attesa',
-      metodo_pagamento: metodoPagamento,
-      valida_dal: oggi.toISOString(),
-      valida_fino: scadenza.toISOString()
-    }
-    // Salva dati anagrafici extra in Supabase (aggiornamento tifoso)
-    await sbAdmin.from('tifosi').update({
-      telefono: tel || null,
-      data_nascita: nascita || null
-    }).eq('id', tifoso.id)
-    if (pianoSelezionato.richiedeMaglia) {
-      membPayload.maglia_taglia = document.getElementById('reg-taglia').value
-      membPayload.maglia_cognome = document.getElementById('reg-maglia-cognome').value.toUpperCase()
-      membPayload.maglia_numero = parseInt(document.getElementById('reg-maglia-numero').value)
-    }
-    await sbAdmin.from('membership').insert(membPayload)
-
-    if (piano && piano.punti_bonus > 0) {
-      await sbAdmin.from('transazioni').insert({
-        tifoso_id: tifoso.id,
-        tipo: 'BONUS',
-        punti_delta: piano.punti_bonus,
-        saldo_dopo: piano.punti_bonus,
-        note: 'Bonus benvenuto piano ' + pianoSelezionato.nome
-      })
-    }
-
-    // Se Stripe: redirect al checkout
+    // Se Stripe: redirect immediato al checkout (membership attivata dal webhook)
     if (metodoPagamento === 'stripe') {
       const priceId = STRIPE_PRICE_IDS[pianoSelezionato.nome.toLowerCase()]
       if (!priceId) throw new Error('Piano non trovato per Stripe')
@@ -1211,15 +1183,35 @@ async function completaRegistrazione() {
           priceId,
           userId: authData.user.id,
           email,
-          tipoAcquisto: 'membership'
+          tipoAcquisto: 'membership',
+          magliaData: JSON.stringify(magliaData)
         })
       })
       const checkoutJson = await checkoutResp.json()
       if (checkoutJson.error) throw new Error(checkoutJson.error)
-      // Redirect su Stripe
       window.location.href = checkoutJson.url
       return
     }
+
+    // Per bonifico: crea membership in_attesa subito
+    const pianoNomeCap = pianoSelezionato.nome.charAt(0).toUpperCase() + pianoSelezionato.nome.slice(1)
+    const { data: piano } = await sbAdmin.from('membership_piani')
+      .select('id, punti_bonus').eq('nome', pianoNomeCap).single()
+
+    const oggi = new Date()
+    const scadenza = new Date(oggi)
+    scadenza.setFullYear(scadenza.getFullYear() + 1)
+
+    const membPayload = {
+      tifoso_id: tifoso.id,
+      piano_id: piano.id,
+      stato: 'in_attesa',
+      metodo_pagamento: metodoPagamento,
+      valida_dal: oggi.toISOString(),
+      valida_fino: scadenza.toISOString(),
+      ...magliaData
+    }
+    await sbAdmin.from('membership').insert(membPayload)
 
     const msg = metodoPagamento === 'bonifico'
       ? 'Registrazione completata! Effettua il bonifico di EUR ' + pianoSelezionato.prezzo + ' per attivare il tuo account. Controlla la tua email.'
