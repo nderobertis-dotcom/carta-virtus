@@ -579,7 +579,8 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
       <div class="steps-reg">
         <div class="step-reg active" id="step-tab-1">1. Dati</div>
         <div class="step-reg" id="step-tab-2">2. Maglia</div>
-        <div class="step-reg" id="step-tab-3">3. Pagamento</div>
+        <div class="step-reg" id="step-tab-3" style="display:none">3. Posto</div>
+        <div class="step-reg" id="step-tab-4">3. Pagamento</div>
       </div>
       <div class="form-step active" id="step-1">
         <div class="form-grid-2">
@@ -631,10 +632,45 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         <div id="maglia-skip-msg" style="display:none;background:#f0f6ff;border-radius:10px;padding:16px;font-size:13px;color:var(--muted);margin-bottom:16px">
           Il piano Base non include la maglia di gara.
         </div>
-        <button class="btn-reg" onclick="avanti(3)">Continua &#8594;</button>
+        <button class="btn-reg" id="btn-avanti-maglia" onclick="avantiDaMaglia()">Continua &#8594;</button>
         <button class="btn-reg btn-reg-secondary" onclick="avanti(1)">&#8592; Indietro</button>
       </div>
+
+      <!-- STEP 3: SCELTA POSTO (solo Silver e Gold) -->
       <div class="form-step" id="step-3">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Scegli il tuo posto</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Seleziona una tribuna e clicca sul posto che preferisci. Il posto sarà riservato al completamento del pagamento.</div>
+
+        <!-- Tab tribuna -->
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="pagamento-opt" id="tab-posto-sud" onclick="setTribunaPosto('sud')" style="flex:1;padding:8px;font-size:13px">Tribuna Sud</button>
+          <button class="pagamento-opt" id="tab-posto-nord" onclick="setTribunaPosto('nord')" style="flex:1;padding:8px;font-size:13px">Tribuna Nord</button>
+        </div>
+
+        <!-- Mappa posti -->
+        <div id="posto-mappa-container" style="overflow-x:auto;padding-bottom:8px">
+          <div id="posto-mappa" style="min-width:480px"></div>
+        </div>
+
+        <!-- Legenda -->
+        <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:2px;background:#1A3A6B;flex-shrink:0"></div>Disponibile</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:2px;background:#F57C00;flex-shrink:0"></div>Selezionato</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:2px;background:#e65100;flex-shrink:0"></div>Riservato</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:2px;background:#ccc;flex-shrink:0"></div>Occupato</div>
+        </div>
+
+        <!-- Posto selezionato -->
+        <div id="posto-selezionato-info" style="display:none;margin-top:12px;padding:10px 14px;background:#f0f6ff;border-radius:8px;border:1px solid #c8d8f0;font-size:13px">
+          Posto selezionato: <strong id="posto-selezionato-label">—</strong>
+        </div>
+        <div id="posto-error" style="font-size:12px;color:var(--rosso);margin-top:8px;display:none">Seleziona un posto per continuare.</div>
+
+        <button class="btn-reg" onclick="avantiDaPosto()">Continua &#8594;</button>
+        <button class="btn-reg btn-reg-secondary" onclick="avanti(2)">&#8592; Indietro</button>
+      </div>
+
+      <div class="form-step" id="step-4">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Metodo di pagamento</div>
         <div class="pagamento-grid">
           <div class="pagamento-opt" onclick="selezionaPagamento('stripe',this)"><div class="pagamento-opt-icon">&#128179;</div><div class="pagamento-opt-label">Carta</div></div>
@@ -646,7 +682,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         <div class="pagamento-info" id="info-bonifico">&#127974; <strong>Dati per il bonifico:</strong><br/>Intestatario: ASD Nuova Virtus Basket Molfetta<br/>IBAN: IT00 X000 0000 0000 0000 0000 000<br/>Causale: Carta Virtus [tuo nome] [piano]<br/><br/>Il tuo account verra attivato entro 48h dalla ricezione del bonifico.</div>
         <div id="reg-error" style="font-size:12px;color:var(--rosso);margin-bottom:8px;display:none"></div>
         <button class="btn-reg" id="btn-completa" onclick="completaRegistrazione()" disabled style="opacity:.5">Seleziona un metodo &#8594;</button>
-        <button class="btn-reg btn-reg-secondary" onclick="avanti(2)">&#8592; Indietro</button>
+        <button class="btn-reg btn-reg-secondary" onclick="avantiDaPostoBack()">&#8592; Indietro</button>
       </div>
       <div class="form-step" id="step-success">
         <div class="success-screen">
@@ -836,6 +872,116 @@ async function inviaRichiestaricarica() {
     toast('Errore: ' + err.message, 'error')
     btn.disabled = false
     btn.textContent = 'Richiedi ricarica'
+  }
+}
+
+
+// ── SCELTA POSTO ──
+const MAPPA_POSTI = {
+  sud: {
+    file: ['E','D','C','B','A'],
+    struttura: {
+      E: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,'S',33,34,35],
+      D: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+      C: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+      B: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+      A: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+    }
+  },
+  nord: {
+    file: ['L','I','H','G','F'],
+    struttura: {
+      L: [1,2,3,'S','S','S',4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      I: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      H: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      G: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      F: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+    }
+  }
+}
+
+let _tribunaAttiva = 'sud'
+let _postoSelezionato = null
+let _statiPosti = {}
+
+async function caricaStatiPosti() {
+  const { data } = await sb.from('posti').select('tribuna,fila,numero,stato').neq('stato','disponibile')
+  _statiPosti = {}
+  if (data) data.forEach(p => { _statiPosti[p.tribuna+'_'+p.fila+'_'+p.numero] = p.stato })
+}
+
+function setTribunaPosto(t) {
+  _tribunaAttiva = t
+  document.getElementById('tab-posto-sud').style.background = t==='sud' ? '#1A3A6B' : ''
+  document.getElementById('tab-posto-sud').style.color = t==='sud' ? '#fff' : ''
+  document.getElementById('tab-posto-nord').style.background = t==='nord' ? '#1A3A6B' : ''
+  document.getElementById('tab-posto-nord').style.color = t==='nord' ? '#fff' : ''
+  renderMappaPosti()
+}
+
+function renderMappaPosti() {
+  const conf = MAPPA_POSTI[_tribunaAttiva]
+  const html = conf.file.map(fila => {
+    const riga = conf.struttura[fila]
+    const posti = riga.map(n => {
+      if (n === 'S') return '<div style="width:14px;height:14px;background:repeating-linear-gradient(45deg,#ddd,#ddd 2px,transparent 2px,transparent 6px);border-radius:2px;flex-shrink:0"></div>'
+      const k = _tribunaAttiva+'_'+fila+'_'+n
+      const stato = _statiPosti[k] || 'disponibile'
+      const isSel = _postoSelezionato && _postoSelezionato.k === k
+      let bg = '#1A3A6B', color = '#fff', cursor = 'pointer'
+      if (isSel) bg = '#F57C00'
+      else if (stato === 'riservato') { bg = '#e65100'; cursor = 'not-allowed' }
+      else if (stato === 'occupato') { bg = '#ccc'; color = '#888'; cursor = 'not-allowed' }
+      const click = (stato==='disponibile'||isSel) ? `onclick="selezionaPosto('${_tribunaAttiva}','${fila}',${n})"` : ''
+      return `<div ${click} style="width:14px;height:14px;border-radius:2px;background:${bg};color:${color};cursor:${cursor};display:flex;align-items:center;justify-content:center;font-size:5.5px;font-weight:500;flex-shrink:0" title="Fila ${fila} Posto ${n}">${n}</div>`
+    }).join('')
+    return `<div style="display:flex;align-items:center;gap:2px;margin-bottom:3px"><div style="font-size:10px;color:var(--muted);width:12px;text-align:center;flex-shrink:0">${fila}</div><div style="display:flex;gap:2px">${posti}</div></div>`
+  }).join('')
+  document.getElementById('posto-mappa').innerHTML = html
+}
+
+function selezionaPosto(t, f, n) {
+  const k = t+'_'+f+'_'+n
+  if (_postoSelezionato && _postoSelezionato.k === k) {
+    _postoSelezionato = null
+    document.getElementById('posto-selezionato-info').style.display = 'none'
+  } else {
+    _postoSelezionato = { k, tribuna: t, fila: f, numero: n }
+    document.getElementById('posto-selezionato-label').textContent = 'Tribuna '+t.charAt(0).toUpperCase()+t.slice(1)+' — Fila '+f+' Posto '+n
+    document.getElementById('posto-selezionato-info').style.display = 'block'
+    document.getElementById('posto-error').style.display = 'none'
+  }
+  renderMappaPosti()
+}
+
+function avantiDaMaglia() {
+  const piano = pianoSelezionato?.nome?.toLowerCase()
+  if (piano === 'silver' || piano === 'gold') {
+    // Mostra step posto
+    document.getElementById('step-tab-3').style.display = ''
+    caricaStatiPosti().then(() => renderMappaPosti())
+    setTribunaPosto('sud')
+    avanti(3)
+  } else {
+    // Salta lo step posto
+    avanti(4)
+  }
+}
+
+function avantiDaPosto() {
+  if (!_postoSelezionato) {
+    document.getElementById('posto-error').style.display = 'block'
+    return
+  }
+  avanti(4)
+}
+
+function avantiDaPostoBack() {
+  const piano = pianoSelezionato?.nome?.toLowerCase()
+  if (piano === 'silver' || piano === 'gold') {
+    avanti(3)
+  } else {
+    avanti(2)
   }
 }
 
@@ -1152,26 +1298,54 @@ async function completaRegistrazione() {
     if (!authResp.ok) throw new Error(authJson.message || authJson.msg || authJson.error || 'Errore creazione account')
     const authData = { user: authJson }
 
-    // Crea record tifoso (senza membership né punti - gestiti dal webhook dopo pagamento)
+    const pianoNomeCap = pianoSelezionato.nome.charAt(0).toUpperCase() + pianoSelezionato.nome.slice(1)
+    const { data: piano } = await sbAdmin.from('membership_piani')
+      .select('id, punti_bonus').eq('nome', pianoNomeCap).single()
+
     const { data: tifoso, error: tErr } = await sbAdmin.from('tifosi').insert({
       auth_user_id: authData.user.id,
       nome, cognome, email,
       telefono: tel || null,
       data_nascita: nascita || null,
-      consenso_marketing: marketing,
-      punti_saldo: 0,
-      stato: 'in_attesa'
+      consenso_marketing: marketing
     }).select().single()
     if (tErr) throw new Error(tErr.message)
 
-    // Salva dati maglia in metadata per il webhook
-    const magliaData = pianoSelezionato.richiedeMaglia ? {
-      maglia_taglia: document.getElementById('reg-taglia').value,
-      maglia_cognome: document.getElementById('reg-maglia-cognome').value.toUpperCase(),
-      maglia_numero: parseInt(document.getElementById('reg-maglia-numero').value)
-    } : {}
+    const oggi = new Date()
+    const scadenza = new Date(oggi)
+    scadenza.setFullYear(scadenza.getFullYear() + 1)
 
-    // Se Stripe: redirect immediato al checkout (membership attivata dal webhook)
+    const membPayload = {
+      tifoso_id: tifoso.id,
+      piano_id: piano.id,
+      stato: 'in_attesa',
+      metodo_pagamento: metodoPagamento,
+      valida_dal: oggi.toISOString(),
+      valida_fino: scadenza.toISOString()
+    }
+    // Salva dati anagrafici extra in Supabase (aggiornamento tifoso)
+    await sbAdmin.from('tifosi').update({
+      telefono: tel || null,
+      data_nascita: nascita || null
+    }).eq('id', tifoso.id)
+    if (pianoSelezionato.richiedeMaglia) {
+      membPayload.maglia_taglia = document.getElementById('reg-taglia').value
+      membPayload.maglia_cognome = document.getElementById('reg-maglia-cognome').value.toUpperCase()
+      membPayload.maglia_numero = parseInt(document.getElementById('reg-maglia-numero').value)
+    }
+    await sbAdmin.from('membership').insert(membPayload)
+
+    if (piano && piano.punti_bonus > 0) {
+      await sbAdmin.from('transazioni').insert({
+        tifoso_id: tifoso.id,
+        tipo: 'BONUS',
+        punti_delta: piano.punti_bonus,
+        saldo_dopo: piano.punti_bonus,
+        note: 'Bonus benvenuto piano ' + pianoSelezionato.nome
+      })
+    }
+
+    // Se Stripe: redirect al checkout
     if (metodoPagamento === 'stripe') {
       const priceId = STRIPE_PRICE_IDS[pianoSelezionato.nome.toLowerCase()]
       if (!priceId) throw new Error('Piano non trovato per Stripe')
@@ -1184,34 +1358,15 @@ async function completaRegistrazione() {
           userId: authData.user.id,
           email,
           tipoAcquisto: 'membership',
-          magliaData: JSON.stringify(magliaData)
+          postoData: _postoSelezionato ? JSON.stringify(_postoSelezionato) : null
         })
       })
       const checkoutJson = await checkoutResp.json()
       if (checkoutJson.error) throw new Error(checkoutJson.error)
+      // Redirect su Stripe
       window.location.href = checkoutJson.url
       return
     }
-
-    // Per bonifico: crea membership in_attesa subito
-    const pianoNomeCap = pianoSelezionato.nome.charAt(0).toUpperCase() + pianoSelezionato.nome.slice(1)
-    const { data: piano } = await sbAdmin.from('membership_piani')
-      .select('id, punti_bonus').eq('nome', pianoNomeCap).single()
-
-    const oggi = new Date()
-    const scadenza = new Date(oggi)
-    scadenza.setFullYear(scadenza.getFullYear() + 1)
-
-    const membPayload = {
-      tifoso_id: tifoso.id,
-      piano_id: piano.id,
-      stato: 'in_attesa',
-      metodo_pagamento: metodoPagamento,
-      valida_dal: oggi.toISOString(),
-      valida_fino: scadenza.toISOString(),
-      ...magliaData
-    }
-    await sbAdmin.from('membership').insert(membPayload)
 
     const msg = metodoPagamento === 'bonifico'
       ? 'Registrazione completata! Effettua il bonifico di EUR ' + pianoSelezionato.prezzo + ' per attivare il tuo account. Controlla la tua email.'
@@ -1220,6 +1375,7 @@ async function completaRegistrazione() {
     document.getElementById('step-tab-1').style.display = 'none'
     document.getElementById('step-tab-2').style.display = 'none'
     document.getElementById('step-tab-3').style.display = 'none'
+    document.getElementById('step-tab-4').style.display = 'none'
     document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'))
     document.getElementById('step-success').classList.add('active')
 
