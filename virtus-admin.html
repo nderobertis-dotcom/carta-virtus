@@ -527,15 +527,28 @@ select.form-input:focus{border-color:var(--accent)}
 
       <!-- Modal gestione posto -->
       <div id="admin-posto-modal" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.7);z-index:9999;align-items:center;justify-content:center">
-        <div style="background:#fff;border-radius:16px;padding:24px;max-width:440px;width:90%">
+        <div style="background:#fff;border-radius:16px;padding:24px;max-width:480px;width:90%">
           <div style="font-size:16px;font-weight:700;color:var(--blu);margin-bottom:16px" id="admin-posto-modal-title">Gestisci posto</div>
           <div id="admin-posto-modal-info" style="background:var(--bg);border-radius:8px;padding:12px;font-size:13px;margin-bottom:16px"></div>
-          <div class="form-group" style="margin-bottom:16px">
+
+          <!-- Note admin (solo per riserva) -->
+          <div id="sezione-note" class="form-group" style="margin-bottom:16px">
             <label>Note (opzionale)</label>
             <input class="form-input" id="admin-posto-note" placeholder="Es. Riservato per sponsor"/>
           </div>
+
+          <!-- Assegnazione tifoso (solo per riservato) -->
+          <div id="sezione-assegna" style="display:none;margin-bottom:16px">
+            <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Assegna a un tifoso</div>
+            <select class="form-input" id="admin-posto-tifoso">
+              <option value="">— Seleziona tifoso —</option>
+            </select>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">Solo tifosi Silver o Gold con membership attiva e senza posto assegnato.</div>
+          </div>
+
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-primary" onclick="setPosto('riservato')" id="btn-riserva">🔒 Riserva</button>
+            <button class="btn btn-primary" onclick="assegnaPosto()" id="btn-assegna" style="display:none;background:#2e7d32">✅ Assegna al tifoso</button>
             <button class="btn btn-danger" onclick="setPosto('disponibile')" id="btn-libera">🔓 Libera</button>
             <button class="btn btn-ghost" onclick="chiudiAdminPostoModal()">Annulla</button>
           </div>
@@ -2023,7 +2036,7 @@ function renderAdminMappa(tid) {
   }).join('')
 }
 
-function apriAdminPostoModal(t, f, n) {
+async function apriAdminPostoModal(t, f, n) {
   const k = t+'_'+f+'_'+n
   const p = _adminStatiPosti[k]
   const stato = p?.stato || 'disponibile'
@@ -2034,21 +2047,84 @@ function apriAdminPostoModal(t, f, n) {
   document.getElementById('admin-posto-modal-title').textContent =
     'Tribuna '+t.charAt(0).toUpperCase()+t.slice(1)+' — Fila '+f+' Posto '+n
 
+  const statoLabel = { disponibile: '🟢 Disponibile', riservato: '🔴 Riservato (admin)' }
   document.getElementById('admin-posto-modal-info').innerHTML =
-    '<div><strong>Stato attuale:</strong> '+stato+'</div>'+
+    '<div><strong>Stato:</strong> '+(statoLabel[stato]||stato)+'</div>'+
     (p?.note_admin ? '<div style="margin-top:4px"><strong>Note:</strong> '+p.note_admin+'</div>' : '')
 
+  // Mostra/nascondi sezioni in base allo stato
+  const isRiservato = stato === 'riservato'
+  document.getElementById('sezione-note').style.display = isRiservato ? 'none' : ''
+  document.getElementById('sezione-assegna').style.display = isRiservato ? '' : 'none'
+  document.getElementById('btn-riserva').style.display = isRiservato ? 'none' : ''
+  document.getElementById('btn-assegna').style.display = isRiservato ? '' : 'none'
+  document.getElementById('btn-libera').style.display = isRiservato ? '' : 'none'
   document.getElementById('admin-posto-note').value = p?.note_admin || ''
-  document.getElementById('btn-riserva').style.display = stato==='riservato' ? 'none' : ''
-  document.getElementById('btn-libera').textContent = stato==='riservato' ? '🔓 Libera' : '🔓 Libera'
 
-  const modal = document.getElementById('admin-posto-modal')
-  modal.style.display = 'flex'
+  // Se riservato: carica lista tifosi Silver/Gold senza posto
+  if (isRiservato) {
+    await caricaTifosiPerAssegnazione()
+  }
+
+  document.getElementById('admin-posto-modal').style.display = 'flex'
+}
+
+async function caricaTifosiPerAssegnazione() {
+  // Recupera tifosi con membership Silver o Gold attiva
+  const { data: membs } = await sbAdmin.from('membership')
+    .select('tifoso_id, piano:piano_id(nome), tifosi:tifoso_id(nome, cognome)')
+    .eq('stato', 'attiva')
+    .in('piano_id',
+      await sbAdmin.from('membership_piani')
+        .select('id').in('nome', ['Silver','Gold'])
+        .then(r => (r.data||[]).map(p=>p.id))
+    )
+
+  // Recupera tifosi che hanno già un posto assegnato
+  const { data: postiOccupati } = await sbAdmin.from('posti')
+    .select('tifoso_id').eq('stato','occupato')
+  const tifosiConPosto = new Set((postiOccupati||[]).map(p=>p.tifoso_id))
+
+  const sel = document.getElementById('admin-posto-tifoso')
+  sel.innerHTML = '<option value="">— Seleziona tifoso —</option>'
+  ;(membs||[])
+    .filter(m => !tifosiConPosto.has(m.tifoso_id))
+    .forEach(m => {
+      const nome = m.tifosi?.nome+' '+m.tifosi?.cognome+' ('+m.piano?.nome+')'
+      sel.innerHTML += `<option value="${m.tifoso_id}">${nome}</option>`
+    })
 }
 
 function chiudiAdminPostoModal() {
   document.getElementById('admin-posto-modal').style.display = 'none'
   _adminPostoCorrente = null
+}
+
+async function assegnaPosto() {
+  if (!_adminPostoCorrente) return
+  const tifosoId = document.getElementById('admin-posto-tifoso').value
+  if (!tifosoId) { toast('Seleziona un tifoso', 'error'); return }
+
+  const { tribuna, fila, numero } = _adminPostoCorrente
+
+  // Recupera membership_id del tifoso
+  const { data: memb } = await sbAdmin.from('membership')
+    .select('id').eq('tifoso_id', tifosoId).eq('stato','attiva').single()
+
+  const { error } = await sbAdmin.from('posti')
+    .update({
+      stato: 'occupato',
+      tifoso_id: tifosoId,
+      membership_id: memb?.id || null,
+      note_admin: null,
+      aggiornato_il: new Date().toISOString()
+    })
+    .eq('tribuna', tribuna).eq('fila', fila).eq('numero', numero)
+
+  if (error) { toast('Errore: '+error.message, 'error'); return }
+  toast('✅ Posto assegnato al tifoso', 'success')
+  chiudiAdminPostoModal()
+  loadPosti()
 }
 
 async function setPosto(nuovoStato) {
