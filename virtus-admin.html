@@ -259,6 +259,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       Campagne
     </div>
+    <div class="nav-item" onclick="showSection('posti')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Posti</span>
+    </div>
     <div class="nav-item" onclick="showSection('gare')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Gare
@@ -480,6 +484,65 @@ select.form-input:focus{border-color:var(--accent)}
     </div>
 
     <!-- GARE -->
+    <div class="section" id="section-posti">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div>
+          <div style="font-size:20px;font-weight:700;color:var(--blu)">Gestione posti</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px">Clicca su un posto per riservarlo o liberarlo. I posti occupati sono assegnati ai tifosi.</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="loadPosti()">↻ Aggiorna</button>
+        </div>
+      </div>
+
+      <!-- Legenda -->
+      <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:14px;height:14px;border-radius:3px;background:#1A3A6B"></div>Disponibile</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:14px;height:14px;border-radius:3px;background:#e65100"></div>Riservato (admin)</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:14px;height:14px;border-radius:3px;background:#2e7d32"></div>Occupato (tifoso)</div>
+      </div>
+
+      <!-- Statistiche -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="stat-card"><div class="stat-label">Totale posti</div><div class="stat-value" id="posti-totale">264</div></div>
+        <div class="stat-card"><div class="stat-label">Disponibili</div><div class="stat-value stat-teal" id="posti-disponibili">—</div></div>
+        <div class="stat-card"><div class="stat-label">Occupati</div><div class="stat-value stat-accent" id="posti-occupati">—</div></div>
+        <div class="stat-card"><div class="stat-label">Riservati</div><div class="stat-value" style="color:#e65100" id="posti-riservati">—</div></div>
+      </div>
+
+      <!-- Mappa -->
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div style="flex:1;min-width:300px">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Tribuna Sud</div>
+          <div id="admin-mappa-sud" style="overflow-x:auto"></div>
+        </div>
+        <div style="flex:1;min-width:280px">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Tribuna Nord</div>
+          <div id="admin-mappa-nord" style="overflow-x:auto"></div>
+        </div>
+      </div>
+
+      <!-- Campo -->
+      <div style="margin:16px 0;background:#4a7c4e;border-radius:8px;height:28px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:500;letter-spacing:.08em;opacity:.8;max-width:600px">CAMPO</div>
+
+      <!-- Modal gestione posto -->
+      <div id="admin-posto-modal" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.7);z-index:9999;align-items:center;justify-content:center">
+        <div style="background:#fff;border-radius:16px;padding:24px;max-width:440px;width:90%">
+          <div style="font-size:16px;font-weight:700;color:var(--blu);margin-bottom:16px" id="admin-posto-modal-title">Gestisci posto</div>
+          <div id="admin-posto-modal-info" style="background:var(--bg);border-radius:8px;padding:12px;font-size:13px;margin-bottom:16px"></div>
+          <div class="form-group" style="margin-bottom:16px">
+            <label>Note (opzionale)</label>
+            <input class="form-input" id="admin-posto-note" placeholder="Es. Riservato per sponsor"/>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="setPosto('riservato')" id="btn-riserva">🔒 Riserva</button>
+            <button class="btn btn-danger" onclick="setPosto('disponibile')" id="btn-libera">🔓 Libera</button>
+            <button class="btn btn-ghost" onclick="chiudiAdminPostoModal()">Annulla</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="section" id="section-gare">
       <div class="card">
         <div class="card-header">
@@ -1107,6 +1170,7 @@ function showSection(name) {
   if (name === 'premi')       loadPremi()
   if (name === 'campagne')    loadCampagne()
   if (name === 'impostazioni') loadImpostazioni()
+  if (name === 'posti') loadPosti()
   if (name === 'transazioni') loadTransazioni()
   if (name === 'report')      loadReport()
   if (name === 'membership')  loadMembership('in_attesa')
@@ -1890,6 +1954,117 @@ async function annullaMemb(id) {
   toast('Membership annullata', 'success')
   loadMembership('')
   loadDashboard()
+}
+
+// ── GESTIONE POSTI ──
+const ADMIN_MAPPA_POSTI = {
+  sud: {
+    file: ['E','D','C','B','A'],
+    struttura: {
+      E: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,'S',33,34,35],
+      D: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+      C: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+      B: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+      A: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+    }
+  },
+  nord: {
+    file: ['L','I','H','G','F'],
+    struttura: {
+      L: [1,2,3,'S','S','S',4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      I: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      H: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      G: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      F: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+    }
+  }
+}
+
+let _adminStatiPosti = {}
+let _adminPostoCorrente = null
+
+async function loadPosti() {
+  const { data, error } = await sbAdmin.from('posti').select('tribuna,fila,numero,stato,note_admin,tifoso_id')
+  if (error) { toast('Errore caricamento posti: '+error.message,'error'); return }
+
+  _adminStatiPosti = {}
+  let disponibili=0, occupati=0, riservati=0
+  ;(data||[]).forEach(p => {
+    _adminStatiPosti[p.tribuna+'_'+p.fila+'_'+p.numero] = p
+    if(p.stato==='disponibile') disponibili++
+    else if(p.stato==='occupato') occupati++
+    else if(p.stato==='riservato') riservati++
+  })
+
+  document.getElementById('posti-disponibili').textContent = disponibili
+  document.getElementById('posti-occupati').textContent = occupati
+  document.getElementById('posti-riservati').textContent = riservati
+
+  renderAdminMappa('sud')
+  renderAdminMappa('nord')
+}
+
+function renderAdminMappa(tid) {
+  const conf = ADMIN_MAPPA_POSTI[tid]
+  const el = document.getElementById('admin-mappa-'+tid)
+  el.innerHTML = conf.file.map(fila => {
+    const riga = conf.struttura[fila]
+    const posti = riga.map(n => {
+      if (n==='S') return '<div style="width:14px;height:14px;background:repeating-linear-gradient(45deg,#ddd,#ddd 2px,transparent 2px,transparent 6px);border-radius:2px;flex-shrink:0"></div>'
+      const k = tid+'_'+fila+'_'+n
+      const p = _adminStatiPosti[k]
+      const stato = p?.stato || 'disponibile'
+      let bg = '#1A3A6B', cursor = 'pointer'
+      if (stato==='riservato') bg = '#e65100'
+      else if (stato==='occupato') { bg = '#2e7d32'; cursor = 'default' }
+      return `<div onclick="apriAdminPostoModal('${tid}','${fila}',${n})" style="width:14px;height:14px;border-radius:2px;background:${bg};cursor:${cursor};display:flex;align-items:center;justify-content:center;font-size:5px;color:#fff;flex-shrink:0" title="Fila ${fila} Posto ${n} (${stato})">${n}</div>`
+    }).join('')
+    return `<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px"><div style="font-size:10px;color:var(--muted);width:12px;text-align:center;flex-shrink:0">${fila}</div><div style="display:flex;gap:2px">${posti}</div></div>`
+  }).join('')
+}
+
+function apriAdminPostoModal(t, f, n) {
+  const k = t+'_'+f+'_'+n
+  const p = _adminStatiPosti[k]
+  const stato = p?.stato || 'disponibile'
+  if (stato === 'occupato') return // Non modificabile se assegnato a tifoso
+
+  _adminPostoCorrente = { k, tribuna: t, fila: f, numero: n, stato }
+
+  document.getElementById('admin-posto-modal-title').textContent =
+    'Tribuna '+t.charAt(0).toUpperCase()+t.slice(1)+' — Fila '+f+' Posto '+n
+
+  document.getElementById('admin-posto-modal-info').innerHTML =
+    '<div><strong>Stato attuale:</strong> '+stato+'</div>'+
+    (p?.note_admin ? '<div style="margin-top:4px"><strong>Note:</strong> '+p.note_admin+'</div>' : '')
+
+  document.getElementById('admin-posto-note').value = p?.note_admin || ''
+  document.getElementById('btn-riserva').style.display = stato==='riservato' ? 'none' : ''
+  document.getElementById('btn-libera').textContent = stato==='riservato' ? '🔓 Libera' : '🔓 Libera'
+
+  const modal = document.getElementById('admin-posto-modal')
+  modal.style.display = 'flex'
+}
+
+function chiudiAdminPostoModal() {
+  document.getElementById('admin-posto-modal').style.display = 'none'
+  _adminPostoCorrente = null
+}
+
+async function setPosto(nuovoStato) {
+  if (!_adminPostoCorrente) return
+  const { tribuna, fila, numero } = _adminPostoCorrente
+  const note = document.getElementById('admin-posto-note').value.trim() || null
+
+  const { error } = await sbAdmin.from('posti')
+    .update({ stato: nuovoStato, note_admin: note, tifoso_id: null, membership_id: null, aggiornato_il: new Date().toISOString() })
+    .eq('tribuna', tribuna).eq('fila', fila).eq('numero', numero)
+
+  if (error) { toast('Errore: '+error.message, 'error'); return }
+
+  toast(nuovoStato==='riservato' ? '🔒 Posto riservato' : '🔓 Posto liberato', 'success')
+  chiudiAdminPostoModal()
+  loadPosti()
 }
 
 // ── IMPOSTAZIONI ──
