@@ -502,9 +502,32 @@ async function verificaIngresso(qr) {
     return
   }
 
-  // Trova tifoso per QR
+  // ── Controlla se è un QR sponsor (inizia con SPO) ──
+  if (qr.startsWith('SPO')) {
+    const { data: sponsor, error: spErr } = await sbA.from('sponsor_posti')
+      .select('*, posto:posto_id(tribuna, fila, numero)')
+      .eq('qr_code', qr)
+      .single()
+
+    if (spErr || !sponsor) {
+      mostraRisultato('err', '❌', 'QR Sponsor non valido', 'Codice non trovato nel sistema.')
+      return
+    }
+
+    const posto = sponsor.posto
+    const postoLabel = posto
+      ? 'Tribuna '+posto.tribuna.charAt(0).toUpperCase()+posto.tribuna.slice(1)+' — Fila '+posto.fila+' Posto '+posto.numero
+      : '—'
+
+    mostraRisultato('ok', '🏢', 'Accesso consentito — SPONSOR',
+      (sponsor.azienda ? sponsor.azienda+' — ' : '') + sponsor.nome+' '+sponsor.cognome+'\n'+postoLabel,
+      'SPONSOR', null)
+    return
+  }
+
+  // ── Trova tifoso per QR ──
   const { data: tifoso, error: tErr } = await sbA.from('tifosi')
-    .select('id, nome, cognome, stato, punti_saldo, auth_user_id')
+    .select('id, nome, cognome, stato, punti_saldo, auth_user_id, data_nascita')
     .eq('qr_code', qr)
     .eq('stato', 'attivo')
     .single()
@@ -578,18 +601,52 @@ async function verificaIngresso(qr) {
   const puntiMap = { 'Base': 0, 'Bronze': 3, 'Silver': 5, 'Gold': 10 }  // BASE non riceve bonus punti gara
   const puntiGara = puntiMap[pianoNome] || 3
 
-  const { data: tifosoAggiornato } = await sbA.from('tifosi').select('punti_saldo').eq('id', tifoso.id).single()
-  await sbA.from('transazioni').insert({
-    tifoso_id:   tifoso.id,
-    tipo:        'BONUS',
-    punti_delta: puntiGara,
-    saldo_dopo:  (tifosoAggiornato?.punti_saldo || 0) + puntiGara,
-    note:        'Presenza gara: ' + garaCorrente.titolo
-  })
+  // Controlla compleanno (solo Bronze/Silver/Gold)
+  const bonusCompleanno = { 'Bronze': 3, 'Silver': 5, 'Gold': 10 }
+  let isCompleanno = false
+  let puntiCompleanno = 0
+  if (tifoso.data_nascita && bonusCompleanno[pianoNome]) {
+    const oggi = new Date()
+    const nascita = new Date(tifoso.data_nascita)
+    if (nascita.getDate() === oggi.getDate() && nascita.getMonth() === oggi.getMonth()) {
+      isCompleanno = true
+      puntiCompleanno = bonusCompleanno[pianoNome]
+    }
+  }
 
-  mostraRisultato('ok', '✅', 'Accesso consentito',
-    tifoso.nome + ' ' + tifoso.cognome + ' · Piano ' + pianoNome,
-    pianoNome, puntiGara)
+  const puntiTotali = puntiGara + puntiCompleanno
+
+  if (puntiTotali > 0) {
+    const { data: tifosoAggiornato } = await sbA.from('tifosi').select('punti_saldo').eq('id', tifoso.id).single()
+    const nuovoSaldo = (tifosoAggiornato?.punti_saldo || 0) + puntiTotali
+    await sbA.from('tifosi').update({ punti_saldo: nuovoSaldo }).eq('id', tifoso.id)
+    // Transazione presenza gara
+    if (puntiGara > 0) {
+      await sbA.from('transazioni').insert({
+        tifoso_id:   tifoso.auth_user_id,
+        tipo:        'BONUS',
+        punti_delta: puntiGara,
+        nota:        'Presenza gara: ' + garaCorrente.titolo
+      })
+    }
+    // Transazione compleanno
+    if (isCompleanno) {
+      await sbA.from('transazioni').insert({
+        tifoso_id:   tifoso.auth_user_id,
+        tipo:        'BONUS',
+        punti_delta: puntiCompleanno,
+        nota:        '🎂 Bonus compleanno'
+      })
+    }
+  }
+
+  const titoloRisultato = isCompleanno
+    ? '🎂 Buon compleanno ' + tifoso.nome + '!'
+    : '✅ Accesso consentito'
+  const subRisultato = tifoso.nome + ' ' + tifoso.cognome + ' · Piano ' + pianoNome +
+    (isCompleanno ? '\n🎁 +' + puntiCompleanno + ' punti compleanno accreditati!' : '')
+
+  mostraRisultato('ok', isCompleanno ? '🎂' : '✅', titoloRisultato, subRisultato, pianoNome, puntiTotali)
 
   await loadLog()
   avviaRealtime()

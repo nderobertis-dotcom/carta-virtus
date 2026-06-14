@@ -537,13 +537,31 @@ select.form-input:focus{border-color:var(--accent)}
             <input class="form-input" id="admin-posto-note" placeholder="Es. Riservato per sponsor"/>
           </div>
 
-          <!-- Assegnazione tifoso (solo per riservato) -->
+          <!-- Assegnazione sponsor (solo per riservato) -->
           <div id="sezione-assegna" style="display:none;margin-bottom:16px">
-            <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Assegna a un tifoso</div>
-            <select class="form-input" id="admin-posto-tifoso">
-              <option value="">— Seleziona tifoso —</option>
-            </select>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">Solo tifosi Silver o Gold con membership attiva e senza posto assegnato.</div>
+            <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Assegna a sponsor / ospite</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+              <div class="form-group" style="margin:0">
+                <label>Nome *</label>
+                <input class="form-input" id="sponsor-nome" placeholder="Mario"/>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label>Cognome *</label>
+                <input class="form-input" id="sponsor-cognome" placeholder="Rossi"/>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label>Azienda / Ente</label>
+              <input class="form-input" id="sponsor-azienda" placeholder="Es. Rossi Srl"/>
+            </div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label>Email (per invio QR)</label>
+              <input class="form-input" id="sponsor-email" type="email" placeholder="mario@azienda.it"/>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Note</label>
+              <input class="form-input" id="sponsor-note" placeholder="Es. Sponsor principale"/>
+            </div>
           </div>
 
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -2061,38 +2079,19 @@ async function apriAdminPostoModal(t, f, n) {
   document.getElementById('btn-libera').style.display = isRiservato ? '' : 'none'
   document.getElementById('admin-posto-note').value = p?.note_admin || ''
 
-  // Se riservato: carica lista tifosi Silver/Gold senza posto
+  // Se riservato: pulisci form sponsor
   if (isRiservato) {
-    await caricaTifosiPerAssegnazione()
+    svuotaFormSponsor()
   }
 
   document.getElementById('admin-posto-modal').style.display = 'flex'
 }
 
-async function caricaTifosiPerAssegnazione() {
-  // Recupera tifosi con membership Silver o Gold attiva
-  const { data: membs } = await sbAdmin.from('membership')
-    .select('tifoso_id, piano:piano_id(nome), tifosi:tifoso_id(nome, cognome)')
-    .eq('stato', 'attiva')
-    .in('piano_id',
-      await sbAdmin.from('membership_piani')
-        .select('id').in('nome', ['Silver','Gold'])
-        .then(r => (r.data||[]).map(p=>p.id))
-    )
-
-  // Recupera tifosi che hanno già un posto assegnato
-  const { data: postiOccupati } = await sbAdmin.from('posti')
-    .select('tifoso_id').eq('stato','occupato')
-  const tifosiConPosto = new Set((postiOccupati||[]).map(p=>p.tifoso_id))
-
-  const sel = document.getElementById('admin-posto-tifoso')
-  sel.innerHTML = '<option value="">— Seleziona tifoso —</option>'
-  ;(membs||[])
-    .filter(m => !tifosiConPosto.has(m.tifoso_id))
-    .forEach(m => {
-      const nome = m.tifosi?.nome+' '+m.tifosi?.cognome+' ('+m.piano?.nome+')'
-      sel.innerHTML += `<option value="${m.tifoso_id}">${nome}</option>`
-    })
+function svuotaFormSponsor() {
+  ['sponsor-nome','sponsor-cognome','sponsor-azienda','sponsor-email','sponsor-note'].forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.value = ''
+  })
 }
 
 function chiudiAdminPostoModal() {
@@ -2102,29 +2101,101 @@ function chiudiAdminPostoModal() {
 
 async function assegnaPosto() {
   if (!_adminPostoCorrente) return
-  const tifosoId = document.getElementById('admin-posto-tifoso').value
-  if (!tifosoId) { toast('Seleziona un tifoso', 'error'); return }
+  const nome    = document.getElementById('sponsor-nome').value.trim()
+  const cognome = document.getElementById('sponsor-cognome').value.trim()
+  const azienda = document.getElementById('sponsor-azienda').value.trim()
+  const email   = document.getElementById('sponsor-email').value.trim()
+  const note    = document.getElementById('sponsor-note').value.trim()
+
+  if (!nome && !azienda) { toast('Inserisci almeno nome o azienda', 'error'); return }
+  if (!cognome && nome) { toast('Inserisci anche il cognome', 'error'); return }
 
   const { tribuna, fila, numero } = _adminPostoCorrente
 
-  // Recupera membership_id del tifoso
-  const { data: memb } = await sbAdmin.from('membership')
-    .select('id').eq('tifoso_id', tifosoId).eq('stato','attiva').single()
+  // Recupera id del posto
+  const { data: posto } = await sbAdmin.from('posti')
+    .select('id').eq('tribuna', tribuna).eq('fila', fila).eq('numero', numero).single()
+  if (!posto) { toast('Posto non trovato', 'error'); return }
 
+  // Genera QR code univoco: SPO + timestamp + random
+  const qr = 'SPO' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2,4).toUpperCase()
+
+  // Inserisce record sponsor
+  const { error: spErr } = await sbAdmin.from('sponsor_posti').insert({
+    posto_id: posto.id,
+    nome, cognome,
+    azienda: azienda || null,
+    email: email || null,
+    qr_code: qr,
+    note: note || null
+  })
+  if (spErr) { toast('Errore: '+spErr.message, 'error'); return }
+
+  // Aggiorna stato posto a occupato
   const { error } = await sbAdmin.from('posti')
     .update({
       stato: 'occupato',
-      tifoso_id: tifosoId,
-      membership_id: memb?.id || null,
-      note_admin: null,
+      note_admin: (azienda ? azienda+' — ' : '') + nome+' '+cognome,
       aggiornato_il: new Date().toISOString()
     })
     .eq('tribuna', tribuna).eq('fila', fila).eq('numero', numero)
 
-  if (error) { toast('Errore: '+error.message, 'error'); return }
-  toast('✅ Posto assegnato al tifoso', 'success')
+  if (error) { toast('Errore aggiornamento posto: '+error.message, 'error'); return }
+
+  toast('✅ Posto assegnato con successo', 'success')
+  svuotaFormSponsor()
   chiudiAdminPostoModal()
   loadPosti()
+
+  // Mostra modal con QR code
+  mostraQRSponsor(qr, nome, cognome, azienda, tribuna, fila, numero)
+}
+
+function mostraQRSponsor(qr, nome, cognome, azienda, tribuna, fila, numero) {
+  // Crea modal QR
+  const existing = document.getElementById('modal-qr-sponsor')
+  if (existing) existing.remove()
+
+  const postoLabel = 'Tribuna '+tribuna.charAt(0).toUpperCase()+tribuna.slice(1)+' — Fila '+fila+' Posto '+numero
+  const intestazione = azienda ? azienda : (nome+' '+cognome)
+  const nominativo = azienda ? (nome+' '+cognome) : ''
+
+  const modal = document.createElement('div')
+  modal.id = 'modal-qr-sponsor'
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.8);z-index:99999;display:flex;align-items:center;justify-content:center'
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:28px;max-width:380px;width:90%;text-align:center">
+      <div style="font-size:16px;font-weight:700;color:#1A3A6B;margin-bottom:4px">QR Accesso Sponsor</div>
+      <div style="font-size:13px;color:#666;margin-bottom:20px">${postoLabel}</div>
+      <div id="qr-sponsor-canvas" style="display:flex;justify-content:center;margin-bottom:16px"></div>
+      <div style="background:#f0f6ff;border-radius:8px;padding:12px;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:700;color:#1A3A6B">${intestazione}</div>
+        ${nominativo ? '<div style="font-size:13px;color:#666;margin-top:2px">'+nominativo+'</div>' : ''}
+        <div style="font-family:monospace;font-size:12px;color:#F57C00;margin-top:6px;letter-spacing:2px">${qr}</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button onclick="stampaSponsorQR()" class="btn btn-primary" style="font-size:13px">🖨️ Stampa</button>
+        <button onclick="document.getElementById('modal-qr-sponsor').remove()" class="btn btn-ghost" style="font-size:13px">Chiudi</button>
+      </div>
+    </div>`
+  document.body.appendChild(modal)
+
+  // Genera QR code reale
+  setTimeout(() => {
+    const qrEl = document.getElementById('qr-sponsor-canvas')
+    if (qrEl && window.QRCode) {
+      new QRCode(qrEl, { text: qr, width: 180, height: 180, colorDark: '#1A3A6B', colorLight: '#ffffff' })
+    }
+  }, 100)
+}
+
+function stampaSponsorQR() {
+  const modal = document.getElementById('modal-qr-sponsor')
+  if (!modal) return
+  const content = modal.querySelector('div').innerHTML
+  const win = window.open('', '_blank')
+  win.document.write('<html><head><title>QR Sponsor</title><style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:28px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}</style></head><body><div class="card">'+content+'</div><script>window.onload=()=>window.print()<\/script></body></html>')
+  win.document.close()
 }
 
 async function setPosto(nuovoStato) {
