@@ -527,7 +527,7 @@ async function verificaIngresso(qr) {
 
   // ── Trova tifoso per QR ──
   const { data: tifoso, error: tErr } = await sbA.from('tifosi')
-    .select('id, nome, cognome, stato, punti_saldo, auth_user_id, data_nascita')
+    .select('id, nome, cognome, stato, punti_saldo, auth_user_id')
     .eq('qr_code', qr)
     .eq('stato', 'attivo')
     .single()
@@ -601,52 +601,21 @@ async function verificaIngresso(qr) {
   const puntiMap = { 'Base': 0, 'Bronze': 3, 'Silver': 5, 'Gold': 10 }  // BASE non riceve bonus punti gara
   const puntiGara = puntiMap[pianoNome] || 3
 
-  // Controlla compleanno (solo Bronze/Silver/Gold)
-  const bonusCompleanno = { 'Bronze': 3, 'Silver': 5, 'Gold': 10 }
-  let isCompleanno = false
-  let puntiCompleanno = 0
-  if (tifoso.data_nascita && bonusCompleanno[pianoNome]) {
-    const oggi = new Date()
-    const nascita = new Date(tifoso.data_nascita)
-    if (nascita.getDate() === oggi.getDate() && nascita.getMonth() === oggi.getMonth()) {
-      isCompleanno = true
-      puntiCompleanno = bonusCompleanno[pianoNome]
-    }
-  }
-
-  const puntiTotali = puntiGara + puntiCompleanno
-
-  if (puntiTotali > 0) {
+  if (puntiGara > 0) {
     const { data: tifosoAggiornato } = await sbA.from('tifosi').select('punti_saldo').eq('id', tifoso.id).single()
-    const nuovoSaldo = (tifosoAggiornato?.punti_saldo || 0) + puntiTotali
+    const nuovoSaldo = (tifosoAggiornato?.punti_saldo || 0) + puntiGara
     await sbA.from('tifosi').update({ punti_saldo: nuovoSaldo }).eq('id', tifoso.id)
-    // Transazione presenza gara
-    if (puntiGara > 0) {
-      await sbA.from('transazioni').insert({
-        tifoso_id:   tifoso.auth_user_id,
-        tipo:        'BONUS',
-        punti_delta: puntiGara,
-        nota:        'Presenza gara: ' + garaCorrente.titolo
-      })
-    }
-    // Transazione compleanno
-    if (isCompleanno) {
-      await sbA.from('transazioni').insert({
-        tifoso_id:   tifoso.auth_user_id,
-        tipo:        'BONUS',
-        punti_delta: puntiCompleanno,
-        nota:        '🎂 Bonus compleanno'
-      })
-    }
+    await sbA.from('transazioni').insert({
+      tifoso_id:   tifoso.auth_user_id,
+      tipo:        'BONUS',
+      punti_delta: puntiGara,
+      nota:        'Presenza gara: ' + garaCorrente.titolo
+    })
   }
 
-  const titoloRisultato = isCompleanno
-    ? '🎂 Buon compleanno ' + tifoso.nome + '!'
-    : '✅ Accesso consentito'
-  const subRisultato = tifoso.nome + ' ' + tifoso.cognome + ' · Piano ' + pianoNome +
-    (isCompleanno ? '\n🎁 +' + puntiCompleanno + ' punti compleanno accreditati!' : '')
-
-  mostraRisultato('ok', isCompleanno ? '🎂' : '✅', titoloRisultato, subRisultato, pianoNome, puntiTotali)
+  mostraRisultato('ok', '✅', 'Accesso consentito',
+    tifoso.nome + ' ' + tifoso.cognome + ' · Piano ' + pianoNome,
+    pianoNome, puntiGara)
 
   await loadLog()
   avviaRealtime()
