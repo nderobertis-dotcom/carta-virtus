@@ -185,6 +185,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 }
 </style>
   <script src="https://js.stripe.com/v3/"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=AXmqt2tfdCpl1F1latg1zMn8VcujvcKq0vic3955bSf2q7yvN47UJbavPs5ajAQWQFFwvetBnT_XII3Z&currency=EUR&locale=it_IT"></script>
 </head>
 <body>
 
@@ -535,9 +536,15 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
           <strong>Riepilogo:</strong> <span id="ricarica-riepilogo-testo"></span>
         </div>
 
-        <button class="btn-hero btn-hero-primary" style="width:100%;font-size:14px" id="btn-ricarica" onclick="inviaRichiestaricarica()" disabled>
-          Richiedi ricarica
-        </button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0">
+          <button class="btn-hero btn-hero-primary" style="font-size:13px" id="btn-ricarica" onclick="inviaRichiestaricarica()" disabled>
+            💳 Paga con Stripe
+          </button>
+          <button class="btn-hero" id="btn-ricarica-paypal" onclick="inviaRicaricaPaypal()" disabled
+            style="font-size:13px;background:#003087;color:#fff;border:none;border-radius:var(--radius-lg);cursor:pointer;padding:14px">
+            🅿 Paga con PayPal
+          </button>
+        </div>
         <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">Riceverai conferma dopo la verifica del pagamento da parte della società.</div>
       </div>
     </div>
@@ -779,6 +786,78 @@ async function loadCampagneTifoso() {
   }).join('')
 }
 
+// ── PAYPAL ──
+let _paypalCtx = null
+
+function apriPaypalModal(ctx) {
+  _paypalCtx = ctx
+  const existing = document.getElementById('modal-paypal')
+  if (existing) existing.remove()
+
+  const descr = ctx.tipoAcquisto === 'membership'
+    ? 'Virtus Fan Card ' + ctx.pianoNome
+    : 'Ricarica ' + ctx.punti + ' punti'
+  const importo = ctx.tipoAcquisto === 'membership'
+    ? { 'base': '10.00', 'bronze': '30.00', 'silver': '50.00', 'gold': '100.00' }[ctx.pianoNome?.toLowerCase()] || '10.00'
+    : parseFloat(ctx.importo).toFixed(2)
+
+  const modal = document.createElement('div')
+  modal.id = 'modal-paypal'
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.8);z-index:9999;display:flex;align-items:center;justify-content:center'
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:28px;max-width:400px;width:90%;text-align:center">
+      <div style="font-size:16px;font-weight:700;color:#1A3A6B;margin-bottom:4px">Pagamento PayPal</div>
+      <div style="font-size:13px;color:#666;margin-bottom:4px">${descr}</div>
+      <div style="font-size:22px;font-weight:700;color:#F57C00;margin-bottom:20px">€ ${importo}</div>
+      <div id="paypal-button-container"></div>
+      <button onclick="document.getElementById('modal-paypal').remove()" style="margin-top:14px;background:none;border:none;color:#999;font-size:12px;cursor:pointer">Annulla</button>
+    </div>`
+  document.body.appendChild(modal)
+
+  // Render PayPal button
+  paypal.Buttons({
+    createOrder: async function() {
+      const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create-paypal-order',
+          ..._paypalCtx
+        })
+      })
+      const data = await resp.json()
+      if (data.error) throw new Error(data.error)
+      return data.orderId
+    },
+    onApprove: async function(data) {
+      document.getElementById('paypal-button-container').innerHTML = '<div style="padding:20px;color:#2e7d32;font-size:14px">⏳ Completamento pagamento...</div>'
+      const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'capture-paypal-order', orderId: data.orderID })
+      })
+      const result = await resp.json()
+      document.getElementById('modal-paypal').remove()
+      if (result.success) {
+        window.history.replaceState({}, '', window.location.pathname)
+        toast('🎉 Pagamento PayPal completato! Il tuo account è stato attivato.', 'success')
+        setTimeout(() => window.location.reload(), 2000)
+      } else {
+        toast('Errore: ' + (result.error || 'Pagamento non completato'), 'error')
+      }
+    },
+    onError: function(err) {
+      document.getElementById('modal-paypal').remove()
+      toast('Errore PayPal: ' + err, 'error')
+    },
+    onCancel: function() {
+      document.getElementById('modal-paypal').remove()
+      toast('Pagamento annullato', 'error')
+    },
+    style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay' }
+  }).render('#paypal-button-container')
+}
+
 // ── RICARICA PUNTI ──
 let PUNTI_PER_EURO = 10  // valore default, aggiornato da Supabase
 let _ricaricaSelezionata = { punti: 0, importo: 0 }
@@ -834,10 +913,29 @@ function aggiornaRiepilogoRicarica() {
     document.getElementById('ricarica-riepilogo-testo').textContent =
       _ricaricaSelezionata.punti + ' punti per € ' + _ricaricaSelezionata.importo.toFixed(2).replace('.', ',')
     box.style.display = 'block'
-    btn.disabled = false
+        btn.disabled = false
+    const btnPP = document.getElementById('btn-ricarica-paypal')
+    if (btnPP) btnPP.disabled = false
   } else {
     box.style.display = 'none'
     btn.disabled = true
+  }
+}
+
+async function inviaRicaricaPaypal() {
+  if (!_ricaricaSelezionata.punti || !currentAuthUserId) return
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    const email = session?.user?.email || ''
+    apriPaypalModal({
+      tipoAcquisto: 'ricarica',
+      userId: currentAuthUserId,
+      email,
+      punti: _ricaricaSelezionata.punti,
+      importo: _ricaricaSelezionata.importo
+    })
+  } catch(err) {
+    toast('Errore: ' + err.message, 'error')
   }
 }
 
@@ -852,7 +950,20 @@ async function inviaRichiestaricarica() {
     const { data: { session } } = await sb.auth.getSession()
     const email = session?.user?.email || ''
 
-    // Crea checkout Stripe per la ricarica
+    // Ricarica: Stripe o PayPal
+    const metodoRicarica = document.getElementById('ricarica-metodo-paypal')?.classList.contains('selected') ? 'paypal' : 'stripe'
+
+    if (metodoRicarica === 'paypal') {
+      apriPaypalModal({
+        tipoAcquisto: 'ricarica',
+        userId: currentAuthUserId,
+        email,
+        punti: _ricaricaSelezionata.punti,
+        importo: _ricaricaSelezionata.importo
+      })
+      return
+    }
+
     const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1364,8 +1475,25 @@ async function completaRegistrazione() {
       })
       const checkoutJson = await checkoutResp.json()
       if (checkoutJson.error) throw new Error(checkoutJson.error)
-      // Redirect su Stripe
       window.location.href = checkoutJson.url
+      return
+    }
+
+    if (metodoPagamento === 'paypal') {
+      // Avvia flusso PayPal — mostra bottone PayPal in un modal
+      const pianoNomeCap = pianoSelezionato.nome.charAt(0).toUpperCase() + pianoSelezionato.nome.slice(1)
+      apriPaypalModal({
+        tipoAcquisto: 'membership',
+        pianoNome: pianoNomeCap,
+        userId: authData.user.id,
+        email,
+        magliaData: pianoSelezionato.richiedeMaglia ? JSON.stringify({
+          maglia_taglia: document.getElementById('reg-taglia')?.value,
+          maglia_cognome: document.getElementById('reg-maglia-cognome')?.value?.toUpperCase(),
+          maglia_numero: parseInt(document.getElementById('reg-maglia-numero')?.value)
+        }) : null,
+        postoData: _postoSelezionato ? JSON.stringify(_postoSelezionato) : null
+      })
       return
     }
 
