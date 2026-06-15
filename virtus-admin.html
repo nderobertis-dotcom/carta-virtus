@@ -1305,7 +1305,7 @@ async function loadPartnerList() {
   const { data } = await sbAdmin.from('partner').select('id, nome_negozio').eq('attivo', true)
   allPartner = data || []
   const opts = allPartner.map(p => `<option value="${p.id}">${p.nome_negozio}</option>`).join('')
-  document.getElementById('pr-partner').innerHTML = opts
+  document.getElementById('pr-partner').innerHTML = '<option value="">— Nessun partner (premio Virtus) —</option>' + opts
   document.getElementById('c-partner').innerHTML = '<option value="">— Tutti i partner —</option>' + opts
 }
 
