@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Area Merchant — Virtus Fan Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --blu:#1A3A6B;--blu2:#1565C0;--arancio:#F57C00;--arancio2:#FF8F00;
+  --gold:#F9A825;--verde:#2E7D32;--verde2:#43A047;
+  --giallo:#F9A825;--rosso:#C62828;--grigio:#546E7A;
+  --bg:#F0F6FF;--card:#fff;--border:#DDEEFF;
+  --radius:14px;--shadow:0 2px 16px rgba(26,58,107,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:#1a2740;min-height:100vh}
+
+/* ── HEADER ── */
+.header{background:var(--blu);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+.header-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.header-logo img{height:40px;width:40px;object-fit:contain}
+.header-brand{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:.06em}
+.header-brand span{color:var(--arancio)}
+.header-right{display:flex;align-items:center;gap:12px}
+.header-user{color:rgba(255,255,255,.7);font-size:13px}
+.btn-logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s}
+.btn-logout:hover{background:rgba(255,255,255,.2)}
+
+/* ── LOGIN ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 64px);padding:24px}
+.login-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:40px;max-width:400px;width:100%;border:1px solid var(--border)}
+.login-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;color:var(--blu);margin-bottom:6px}
+.login-sub{font-size:14px;color:var(--grigio);margin-bottom:28px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--blu);margin-bottom:6px}
+.form-group input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:.2s}
+.form-group input:focus{border-color:var(--blu2)}
+.btn-primary{width:100%;background:var(--blu);color:#fff;border:none;padding:12px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;font-family:'Inter',sans-serif}
+.btn-primary:hover{background:var(--blu2)}
+.login-err{background:#fdecea;border:1px solid #f5c6c6;color:#c62828;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:12px;display:none}
+
+/* ── APP ── */
+#app-screen{display:none}
+.app-wrap{max-width:1200px;margin:0 auto;padding:32px 24px}
+
+/* ── STATS BANNER ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:20px;text-align:center;box-shadow:var(--shadow)}
+.stat-num{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--blu)}
+.stat-num.verde{color:var(--verde2)}
+.stat-num.arancio{color:var(--arancio)}
+.stat-num.rosso{color:var(--rosso)}
+.stat-label{font-size:12px;color:var(--grigio);font-weight:600;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;background:rgba(26,58,107,.06);border-radius:12px;padding:4px;margin-bottom:28px;flex-wrap:wrap}
+.tab{flex:1;min-width:140px;padding:10px 16px;border:none;background:transparent;border-radius:10px;font-size:13px;font-weight:600;color:var(--grigio);cursor:pointer;transition:.2s;font-family:'Inter',sans-serif;text-align:center}
+.tab.active{background:#fff;color:var(--blu);box-shadow:0 2px 8px rgba(26,58,107,.12)}
+.tab:hover:not(.active){color:var(--blu)}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── SECTION TITLE ── */
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--blu);margin-bottom:16px}
+.section-sub{font-size:13px;color:var(--grigio);margin-bottom:20px;margin-top:-10px}
+
+/* ── PRODOTTI GRID ── */
+.prodotti-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.prodotto-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow);transition:.2s}
+.prodotto-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(26,58,107,.14)}
+.prodotto-card.riservato{opacity:.6;pointer-events:none}
+.prodotto-top{padding:16px 20px 12px;border-bottom:1px solid var(--border)}
+.prodotto-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.06em;margin-bottom:8px}
+.badge-lbd{background:#E3F2FD;color:#1565C0}
+.badge-lw{background:#E8F5E9;color:#2E7D32}
+.badge-sb{background:#FFF3E0;color:#E65100}
+.badge-riservato{background:#FAFAFA;color:#9E9E9E}
+.prodotto-nome{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--blu);margin-bottom:4px}
+.prodotto-desc{font-size:12px;color:var(--grigio);line-height:1.5}
+.prodotto-bottom{padding:12px 20px 16px}
+.prodotto-specs{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+.spec{font-size:11px;color:var(--grigio)}
+.spec strong{color:var(--blu);display:block;font-size:13px}
+.prodotto-prezzo{display:flex;align-items:baseline;gap:6px;margin-bottom:12px}
+.prezzo-mese{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;color:var(--blu)}
+.prezzo-periodo{font-size:12px;color:var(--grigio)}
+.prezzo-stagione{font-size:12px;color:var(--verde2);font-weight:600}
+.prezzo-riservato{font-size:14px;color:var(--grigio);font-style:italic}
+.disponibilita{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--grigio);margin-bottom:12px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-verde{background:var(--verde2)}
+.dot-giallo{background:var(--giallo)}
+.dot-rosso{background:var(--rosso)}
+.btn-vendi{width:100%;background:var(--blu2);color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;font-family:'Inter',sans-serif}
+.btn-vendi:hover{background:var(--blu)}
+.btn-vendi:disabled{background:#B0BEC5;cursor:not-allowed}
+
+/* ── PIANTA ── */
+.pianta-wrap{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;box-shadow:var(--shadow)}
+.pianta-legend{display:flex;gap:20px;margin-bottom:16px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--grigio);font-weight:600}
+.legend-dot{width:14px;height:14px;border-radius:4px}
+.ld-verde{background:#43A047}
+.ld-giallo{background:#F9A825}
+.ld-rosso{background:#E53935}
+.ld-grigio{background:#90A4AE}
+.pianta-filtro{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filtro-btn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:var(--grigio);transition:.2s}
+.filtro-btn.active{background:var(--blu);color:#fff;border-color:var(--blu)}
+#svg-pianta{width:100%;overflow-x:auto;display:block}
+#svg-pianta svg{width:100%;height:auto}
+.slot-pianta{cursor:pointer;transition:.2s}
+.slot-pianta:hover rect{filter:brightness(1.1)}
+.slot-tooltip{position:fixed;background:var(--blu);color:#fff;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;pointer-events:none;z-index:1000;display:none;line-height:1.5}
+
+/* ── CONTRATTI ── */
+.contratti-filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.contratti-table-wrap{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--blu);color:#fff;padding:10px 14px;text-align:left;font-size:12px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(26,58,107,.02)}
+.badge-stato{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.stato-bozza{background:#EEF2FF;color:#3949AB}
+.stato-proposta{background:#FFF3E0;color:#E65100}
+.stato-approvato{background:#E8F5E9;color:#2E7D32}
+.stato-annullato{background:#FFEBEE;color:#C62828}
+.btn-sm{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.2s;font-family:'Inter',sans-serif}
+.btn-sm-blu{background:var(--blu2);color:#fff}
+.btn-sm-blu:hover{background:var(--blu)}
+.btn-sm-ghost{background:transparent;border:1.5px solid var(--border);color:var(--grigio)}
+.btn-sm-ghost:hover{border-color:var(--blu);color:var(--blu)}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);max-width:640px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.2)}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--blu)}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--grigio);padding:4px}
+.modal-body{padding:24px}
+.modal-footer-btns{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-row.single{grid-template-columns:1fr}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--blu);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:.2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blu2)}
+.field textarea{resize:vertical;min-height:70px}
+.prezzo-preview{background:var(--bg);border-radius:10px;padding:14px 16px;margin:14px 0}
+.prezzo-preview-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.prezzo-preview-row.total{font-weight:700;font-size:16px;color:var(--blu);border-top:1px solid var(--border);padding-top:8px;margin-top:8px}
+.sconto-warning{background:#FFF3E0;border:1px solid #FFB74D;border-radius:8px;padding:10px 14px;font-size:12px;color:#E65100;margin-top:8px;display:none}
+.prodotto-selezionato{background:var(--bg);border-radius:10px;padding:14px;margin-bottom:14px;border:1.5px solid var(--border)}
+.prod-sel-nome{font-weight:700;color:var(--blu);font-size:15px}
+.prod-sel-det{font-size:12px;color:var(--grigio);margin-top:3px}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 24px;color:var(--grigio)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-text{font-size:15px;font-weight:600}
+.empty-sub{font-size:13px;margin-top:6px}
+
+/* ── LOADING ── */
+.loading{text-align:center;padding:40px;color:var(--grigio);font-size:14px}
+
+@media(max-width:768px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .form-row{grid-template-columns:1fr}
+  .tabs{gap:2px}
+  .tab{min-width:0;padding:8px 10px;font-size:12px}
+}
+@media(max-width:480px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .app-wrap{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <a href="index.html" class="header-logo">
+    <img src="https://virtusfanmolfetta.com/logo-virtus.png" onerror="this.style.display='none'" alt="Virtus"/>
+    <span class="header-brand">VIRTUS <span>FAN CARD</span></span>
+  </a>
+  <div class="header-right">
+    <span class="header-user" id="header-nome">💼 Area Merchant</span>
+    <button class="btn-logout" id="btn-logout">Esci</button>
+  </div>
+</div>
+
+<!-- TOOLTIP PIANTA -->
+<div class="slot-tooltip" id="slot-tooltip"></div>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-title">💼 Area Merchant</div>
+    <div class="login-sub">Accedi per gestire le opportunità commerciali al PalaPoli</div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="merchant@virtusmolfetta.com" autocomplete="email"/>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="login-pwd" placeholder="••••••••"/>
+    </div>
+    <button class="btn-primary" id="btn-login">Accedi</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app-screen">
+  <div class="app-wrap">
+
+    <!-- STATS -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card">
+        <div class="stat-num verde" id="stat-contratti">—</div>
+        <div class="stat-label">Miei Contratti</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num arancio" id="stat-valore">—</div>
+        <div class="stat-label">Valore Totale €</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-approvati">—</div>
+        <div class="stat-label">Approvati</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-sconto-max">—</div>
+        <div class="stat-label">Sconto Max %</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" data-tab="catalogo">📋 Catalogo Spazi</button>
+      <button class="tab" data-tab="pianta">🗺️ Pianta PalaPoli</button>
+      <button class="tab" data-tab="contratti">📄 Miei Contratti</button>
+    </div>
+
+    <!-- ── TAB: CATALOGO ── -->
+    <div class="tab-panel active" id="tab-catalogo">
+      <div class="section-title">Catalogo Spazi Pubblicitari</div>
+      <div class="section-sub">Stagione 2026/2027 · Contratto 10 mesi · Pagamento unico alla firma</div>
+      <div class="prodotti-grid" id="prodotti-grid">
+        <div class="loading">Caricamento catalogo...</div>
+      </div>
+    </div>
+
+    <!-- ── TAB: PIANTA ── -->
+    <div class="tab-panel" id="tab-pianta">
+      <div class="section-title">Pianta PalaPoli — Slot Cartellonistica</div>
+      <div class="section-sub">Clicca su uno slot disponibile (verde) per opzionarlo e procedere con il contratto</div>
+      <div class="pianta-wrap">
+        <div class="pianta-legend">
+          <div class="legend-item"><div class="legend-dot ld-verde"></div>Disponibile</div>
+          <div class="legend-item"><div class="legend-dot ld-giallo"></div>Opzionato</div>
+          <div class="legend-item"><div class="legend-dot ld-rosso"></div>Venduto</div>
+          <div class="legend-item"><div class="legend-dot ld-grigio"></div>Riservato</div>
+        </div>
+        <div class="pianta-filtro">
+          <button class="filtro-btn active" data-filtro="tutti">Tutti gli slot</button>
+          <button class="filtro-btn" data-filtro="SB_LIGHT">SB Light (1-28)</button>
+          <button class="filtro-btn" data-filtro="SB_CORPORATE">SB Corporate (A-Z)</button>
+        </div>
+        <div id="svg-pianta">
+          <div class="loading">Caricamento pianta...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: CONTRATTI ── -->
+    <div class="tab-panel" id="tab-contratti">
+      <div class="section-title">I Miei Contratti</div>
+      <div class="section-sub">Storico delle proposte commerciali della stagione 2026/2027</div>
+      <div class="contratti-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente / Azienda</th>
+              <th>Prodotto</th>
+              <th>Slot</th>
+              <th>Prezzo</th>
+              <th>Sconto</th>
+              <th>Stato</th>
+              <th>Data</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="contratti-tbody">
+            <tr><td colspan="8" class="loading">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ MODAL: Nuovo Contratto ═══ -->
+<div class="modal-overlay" id="modal-contratto">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📄 Nuova Proposta Commerciale</div>
+      <button class="modal-close" id="modal-close-contratto">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Prodotto selezionato (read-only) -->
+      <div class="prodotto-selezionato" id="prod-sel-info">
+        <div class="prod-sel-nome" id="prod-sel-nome">—</div>
+        <div class="prod-sel-det" id="prod-sel-det">—</div>
+      </div>
+
+      <!-- Dati cliente -->
+      <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Dati Cliente</div>
+      <div class="form-row">
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" id="c-nome" placeholder="Mario"/>
+        </div>
+        <div class="field">
+          <label>Cognome / Ragione Sociale</label>
+          <input type="text" id="c-azienda" placeholder="Rossi / Rossi Srl"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="c-email" placeholder="info@azienda.it"/>
+        </div>
+        <div class="field">
+          <label>Telefono</label>
+          <input type="tel" id="c-tel" placeholder="+39 080 000 0000"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>P.IVA / C.F.</label>
+          <input type="text" id="c-piva" placeholder="IT12345678901"/>
+        </div>
+        <div class="field">
+          <label>Indirizzo</label>
+          <input type="text" id="c-indirizzo" placeholder="Via Roma 1, Molfetta"/>
+        </div>
+      </div>
+
+      <!-- Slot (solo se SB) -->
+      <div id="campo-slot" style="display:none">
+        <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;margin-top:6px">Posizione sulla Pianta</div>
+        <div class="field">
+          <label>Slot selezionato</label>
+          <input type="text" id="c-slot-display" readonly style="background:var(--bg);cursor:not-allowed"/>
+        </div>
+      </div>
+
+      <!-- Prezzo e sconto -->
+      <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;margin-top:6px">Condizioni Economiche</div>
+      <div class="form-row">
+        <div class="field">
+          <label>Prezzo di listino (stagione)</label>
+          <input type="text" id="c-prezzo-listino" readonly style="background:var(--bg);cursor:not-allowed"/>
+        </div>
+        <div class="field">
+          <label>Sconto applicato (%)</label>
+          <input type="number" id="c-sconto" min="0" max="50" step="0.5" value="0" placeholder="0"/>
+        </div>
+      </div>
+
+      <div class="prezzo-preview">
+        <div class="prezzo-preview-row"><span>Prezzo listino</span><span id="prev-listino">€ 0,00</span></div>
+        <div class="prezzo-preview-row"><span>Sconto</span><span id="prev-sconto" style="color:var(--verde2)">— € 0,00</span></div>
+        <div class="prezzo-preview-row total"><span>Totale da contratto</span><span id="prev-totale">€ 0,00</span></div>
+      </div>
+
+      <div class="sconto-warning" id="sconto-warning">
+        ⚠️ Sconto superiore al limite autorizzato (<span id="sconto-max-display">10</span>%). La proposta richiederà approvazione admin prima di essere confermata.
+      </div>
+
+      <div class="field" id="campo-sconto-note" style="display:none">
+        <label>Motivazione sconto (obbligatoria)</label>
+        <textarea id="c-sconto-note" placeholder="Es: cliente storico, pacchetto multiplo, trattativa particolare..."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Note aggiuntive</label>
+        <textarea id="c-note" placeholder="Eventuali informazioni utili per la proposta..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer-btns">
+      <button class="btn-sm btn-sm-ghost" id="modal-cancel-contratto">Annulla</button>
+      <button class="btn-sm btn-sm-blu" id="btn-salva-contratto">Salva come Proposta</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────
+const SUPABASE_URL = 'https://brwkwlyxkptzmkzkvava.supabase.co'
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
+
+// ── STATE ────────────────────────────────────────────────
+let currentUser = null
+let currentMerchant = null
+let prodotti = []
+let slotsData = []
+let contratti = []
+let selectedProdotto = null
+let selectedSlot = null
+let filtroCorrente = 'tutti'
+
+// ── INIT ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await sb.auth.getSession()
+  if (session) await initApp(session.user)
+  else showLogin()
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN') initApp(session.user)
+    if (event === 'SIGNED_OUT') showLogin()
+  })
+
+  // Login
+  document.getElementById('btn-login').addEventListener('click', doLogin)
+  document.getElementById('login-pwd').addEventListener('keydown', e => { if (e.key==='Enter') doLogin() })
+  document.getElementById('btn-logout').addEventListener('click', () => sb.auth.signOut())
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)))
+
+  // Filtro pianta
+  document.querySelectorAll('.filtro-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.filtro-btn').forEach(x => x.classList.remove('active'))
+    b.classList.add('active')
+    filtroCorrente = b.dataset.filtro
+    renderPianta()
+  }))
+
+  // Modal contratto
+  document.getElementById('modal-close-contratto').addEventListener('click', closeModal)
+  document.getElementById('modal-cancel-contratto').addEventListener('click', closeModal)
+  document.getElementById('btn-salva-contratto').addEventListener('click', salvaContratto)
+  document.getElementById('c-sconto').addEventListener('input', aggiornaPreview)
+})
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim()
+  const pwd = document.getElementById('login-pwd').value
+  const errEl = document.getElementById('login-err')
+  errEl.style.display = 'none'
+  document.getElementById('btn-login').textContent = 'Accesso in corso...'
+
+  const { error } = await sb.auth.signInWithPassword({ email, password: pwd })
+  document.getElementById('btn-login').textContent = 'Accedi'
+
+  if (error) {
+    errEl.textContent = 'Credenziali non valide. Riprova.'
+    errEl.style.display = 'block'
+    return
+  }
+  // onAuthStateChange gestisce il resto
+}
+
+async function initApp(user) {
+  currentUser = user
+
+  // Verifica ruolo merchant
+  const { data: merchant, error } = await sb.from('merchants')
+    .select('*')
+    .eq('auth_user_id', user.id)
+    .eq('attivo', true)
+    .single()
+
+  if (error || !merchant) {
+    // Controlla se è admin (può accedere come admin)
+    const ruolo = user.user_metadata?.ruolo
+    if (ruolo !== 'admin') {
+      await sb.auth.signOut()
+      showLoginError('Account non autorizzato come merchant. Contatta l\'amministratore.')
+      return
+    }
+    // Admin: usa sconto max dal sistema
+    currentMerchant = { nome: 'Admin', cognome: '', sconto_max_pct: 50, id: null }
+  } else {
+    currentMerchant = merchant
+  }
+
+  document.getElementById('header-nome').textContent =
+    `💼 ${currentMerchant.nome} ${currentMerchant.cognome}`
+  document.getElementById('login-screen').style.display = 'none'
+  document.getElementById('app-screen').style.display = 'block'
+
+  await Promise.all([loadProdotti(), loadSlots(), loadContratti()])
+  aggiornaStats()
+}
+
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex'
+  document.getElementById('app-screen').style.display = 'none'
+}
+
+function showLoginError(msg) {
+  showLogin()
+  const errEl = document.getElementById('login-err')
+  errEl.textContent = msg
+  errEl.style.display = 'block'
+}
+
+// ── TABS ─────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name))
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${name}`))
+  if (name === 'pianta') renderPianta()
+}
+
+// ── LOAD DATA ────────────────────────────────────────────
+async function loadProdotti() {
+  const { data } = await sb.from('fop_prodotti').select('*').order('categoria')
+  prodotti = data || []
+  renderCatalogo()
+}
+
+async function loadSlots() {
+  const { data } = await sb.from('fop_slot_pianta')
+    .select('*, fop_prodotti(categoria, nome)')
+    .order('codice')
+  slotsData = data || []
+}
+
+async function loadContratti() {
+  let q = sb.from('fop_contratti')
+    .select('*, fop_prodotti(nome, categoria), fop_slot_pianta(codice)')
+    .order('creato_il', { ascending: false })
+
+  if (currentMerchant.id) {
+    q = q.eq('merchant_id', currentMerchant.id)
+  }
+
+  const { data } = await q
+  contratti = data || []
+  renderContratti()
+}
+
+// ── STATS ────────────────────────────────────────────────
+function aggiornaStats() {
+  document.getElementById('stat-contratti').textContent = contratti.length
+  const tot = contratti.reduce((s, c) => s + parseFloat(c.prezzo_finale || 0), 0)
+  document.getElementById('stat-valore').textContent = '€ ' + tot.toLocaleString('it-IT', {minimumFractionDigits:0})
+  document.getElementById('stat-approvati').textContent = contratti.filter(c => c.stato === 'approvato').length
+  document.getElementById('stat-sconto-max').textContent = currentMerchant.sconto_max_pct + '%'
+}
+
+// ── CATALOGO ─────────────────────────────────────────────
+function badgeCategoria(cat) {
+  if (cat.startsWith('LBD')) return `<span class="prodotto-badge badge-lbd">LED Bordo Campo</span>`
+  if (cat.startsWith('LW'))  return `<span class="prodotto-badge badge-lw">MaxiLedwall</span>`
+  return `<span class="prodotto-badge badge-sb">Cartellonistica</span>`
+}
+
+function renderCatalogo() {
+  const grid = document.getElementById('prodotti-grid')
+  if (!prodotti.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Nessun prodotto disponibile</div></div>'
+    return
+  }
+
+  // Calcola disponibilità reale per LBD/LW (slot_totali - contratti attivi)
+  const usatiPerProdotto = {}
+  contratti.forEach(c => {
+    if (c.stato !== 'annullato') {
+      usatiPerProdotto[c.prodotto_id] = (usatiPerProdotto[c.prodotto_id] || 0) + 1
+    }
+  })
+
+  grid.innerHTML = prodotti.map(p => {
+    const usati = usatiPerProdotto[p.id] || 0
+    const disponibili = p.slot_totali - usati
+    const pienaOccupazione = disponibili <= 0
+
+    let dotClass = 'dot-verde', dotLabel = `${disponibili} disponibili`
+    if (p.riservato_sponsor) { dotClass = 'dot-grigio'; dotLabel = 'Riservato sponsor' }
+    else if (pienaOccupazione) { dotClass = 'dot-rosso'; dotLabel = 'Esaurito' }
+    else if (disponibili <= Math.ceil(p.slot_totali * 0.2)) { dotClass = 'dot-giallo'; dotLabel = `Solo ${disponibili} disponibili` }
+
+    const specsHtml = [
+      p.dimensioni ? `<div class="spec"><strong>${p.dimensioni}</strong>Dimensioni</div>` : '',
+      p.durata_sec ? `<div class="spec"><strong>${p.durata_sec} sec</strong>Durata spot</div>` : '',
+      p.ciclo_min  ? `<div class="spec"><strong>${p.ciclo_min} min</strong>Ciclo</div>` : '',
+      `<div class="spec"><strong>${p.slot_totali}</strong>Slot totali</div>`
+    ].filter(Boolean).join('')
+
+    const prezzoHtml = p.riservato_sponsor
+      ? `<div class="prezzo-riservato">Prezzo su richiesta — contatta l'ufficio commerciale</div>`
+      : `<div class="prodotto-prezzo">
+           <span class="prezzo-mese">€ ${parseFloat(p.prezzo_mese).toLocaleString('it-IT')}</span>
+           <span class="prezzo-periodo">/mese</span>
+         </div>
+         <div class="prezzo-stagione">€ ${parseFloat(p.prezzo_stagione).toLocaleString('it-IT')} stagione (10 mesi)</div>`
+
+    const btnDisabled = p.riservato_sponsor || pienaOccupazione
+    const btnText = p.riservato_sponsor ? 'Riservato Sponsor' : pienaOccupazione ? 'Esaurito' : 'Crea Proposta'
+
+    return `<div class="prodotto-card${p.riservato_sponsor ? ' riservato' : ''}">
+      <div class="prodotto-top">
+        ${badgeCategoria(p.categoria)}
+        ${p.riservato_sponsor ? '<span class="prodotto-badge badge-riservato">⭐ RISERVATO</span>' : ''}
+        <div class="prodotto-nome">${p.nome}</div>
+        <div class="prodotto-desc">${p.descrizione || ''}</div>
+      </div>
+      <div class="prodotto-bottom">
+        <div class="prodotto-specs">${specsHtml}</div>
+        ${prezzoHtml}
+        <div class="disponibilita">
+          <div class="dot ${dotClass}"></div>
+          <span>${dotLabel}</span>
+        </div>
+        <button class="btn-vendi" ${btnDisabled ? 'disabled' : ''} onclick="apriModalContratto('${p.id}', null)">
+          ${btnText}
+        </button>
+      </div>
+    </div>`
+  }).join('')
+}
+
+// ── PIANTA SVG ───────────────────────────────────────────
+function coloreSlot(s) {
+  if (s.stato === 'venduto')      return '#E53935'
+  if (s.stato === 'riservato')    return '#90A4AE'
+  if (s.stato === 'opzionato') {
+    // Verifica se l'opzione è scaduta
+    if (s.opzione_scade_il && new Date(s.opzione_scade_il) < new Date()) return '#43A047'
+    return '#F9A825'
+  }
+  return '#43A047'
+}
+
+function renderPianta() {
+  const wrap = document.getElementById('svg-pianta')
+  const tooltip = document.getElementById('slot-tooltip')
+
+  const slotFiltrati = filtroCorrente === 'tutti'
+    ? slotsData
+    : slotsData.filter(s => s.fop_prodotti?.categoria === filtroCorrente)
+
+  if (!slotFiltrati.length) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🗺️</div><div class="empty-text">Nessuno slot per questo filtro</div></div>'
+    return
+  }
+
+  // ViewBox della pianta: 1000 x 600
+  // Tribuna numerata: bordo superiore (y ≈ 70-100)
+  // Lato A-M: bordo sinistro (x ≈ 40-80)
+  // Lato N-Z: bordo destro (x ≈ 920-960)
+
+  const slotW = 28, slotH = 18, r = 4
+
+  const slotsSVG = slotFiltrati.map(s => {
+    const col = coloreSlot(s)
+    const x = parseFloat(s.posizione_x) - slotW/2
+    const y = parseFloat(s.posizione_y) - slotH/2
+    const cliccabile = s.stato === 'disponibile'
+    const oraStr = s.opzione_scade_il ? ` · scade ${new Date(s.opzione_scade_il).toLocaleDateString('it-IT')}` : ''
+    const tooltipText = `${s.fop_prodotti?.nome || ''} · Slot ${s.codice} · ${s.stato.toUpperCase()}${oraStr}`
+
+    return `<g class="slot-pianta" data-id="${s.id}" data-tooltip="${tooltipText}" style="cursor:${cliccabile ? 'pointer' : 'default'}">
+      <rect x="${x}" y="${y}" width="${slotW}" height="${slotH}" rx="${r}" fill="${col}" stroke="#fff" stroke-width="1.5" opacity="${cliccabile ? 1 : 0.75}"/>
+      <text x="${parseFloat(s.posizione_x)}" y="${parseFloat(s.posizione_y)+5}" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="Inter,sans-serif">${s.codice}</text>
+    </g>`
+  }).join('')
+
+  // Campo basket semplificato (sfondo)
+  wrap.innerHTML = `
+  <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;border-radius:10px">
+    <!-- Sfondo arena -->
+    <rect width="1000" height="600" fill="#EEF2F7" rx="10"/>
+
+    <!-- Campo da gioco -->
+    <rect x="100" y="120" width="800" height="400" fill="#D4A96A" rx="4"/>
+    <rect x="100" y="120" width="800" height="400" fill="none" stroke="#fff" stroke-width="2" rx="4"/>
+
+    <!-- Linee campo -->
+    <line x1="500" y1="120" x2="500" y2="520" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="500" cy="320" r="60" fill="none" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="500" cy="320" r="6" fill="#fff"/>
+    <!-- Area sinistra -->
+    <rect x="100" y="220" width="160" height="200" fill="none" stroke="#fff" stroke-width="1.5"/>
+    <ellipse cx="260" cy="320" rx="60" ry="60" fill="none" stroke="#fff" stroke-width="1.5" clip-path="url(#cp-sx)"/>
+    <!-- Area destra -->
+    <rect x="740" y="220" width="160" height="200" fill="none" stroke="#fff" stroke-width="1.5"/>
+    <ellipse cx="740" cy="320" rx="60" ry="60" fill="none" stroke="#fff" stroke-width="1.5" clip-path="url(#cp-dx)"/>
+
+    <!-- Clippath per semicerchi area -->
+    <defs>
+      <clipPath id="cp-sx"><rect x="100" y="220" width="160" height="200"/></clipPath>
+      <clipPath id="cp-dx"><rect x="740" y="220" width="160" height="200"/></clipPath>
+    </defs>
+
+    <!-- Logo centro campo -->
+    <circle cx="500" cy="320" r="40" fill="rgba(26,58,107,.15)"/>
+    <text x="500" y="315" text-anchor="middle" font-size="11" font-weight="700" fill="rgba(26,58,107,.5)" font-family="Inter,sans-serif">VIRTUS</text>
+    <text x="500" y="328" text-anchor="middle" font-size="9" fill="rgba(26,58,107,.4)" font-family="Inter,sans-serif">MOLFETTA</text>
+
+    <!-- Tribuna centrale (sopra) -->
+    <rect x="0" y="0" width="1000" height="115" fill="#1A3A6B" opacity=".12" rx="10"/>
+    <text x="500" y="55" text-anchor="middle" font-size="13" font-weight="700" fill="#1A3A6B" font-family="Inter,sans-serif" opacity=".7">TRIBUNA CENTRALE · 600 posti</text>
+
+    <!-- Tribuna numerata (sotto) -->
+    <rect x="0" y="525" width="1000" height="75" fill="#1A3A6B" opacity=".08" rx="10"/>
+    <text x="500" y="563" text-anchor="middle" font-size="12" font-weight="700" fill="#1A3A6B" font-family="Inter,sans-serif" opacity=".6">TRIBUNA NUMERATA · 350 posti</text>
+
+    <!-- LED Bordo Campo (indicativo) -->
+    <rect x="130" y="510" width="330" height="12" fill="#1565C0" opacity=".3" rx="3"/>
+    <rect x="540" y="510" width="330" height="12" fill="#1565C0" opacity=".3" rx="3"/>
+    <text x="295" y="519" text-anchor="middle" font-size="8" fill="#1565C0" font-weight="700" font-family="Inter,sans-serif">LED BORDO CAMPO</text>
+    <text x="705" y="519" text-anchor="middle" font-size="8" fill="#1565C0" font-weight="700" font-family="Inter,sans-serif">LED BORDO CAMPO</text>
+
+    <!-- MaxiLedwall (indicativo) -->
+    <rect x="30" y="280" width="55" height="80" fill="#2E7D32" opacity=".25" rx="4"/>
+    <text x="57" y="318" text-anchor="middle" font-size="7" fill="#2E7D32" font-weight="700" font-family="Inter,sans-serif" transform="rotate(-90 57 318)">LEDWALL</text>
+    <rect x="915" y="280" width="55" height="80" fill="#2E7D32" opacity=".25" rx="4"/>
+    <text x="942" y="318" text-anchor="middle" font-size="7" fill="#2E7D32" font-weight="700" font-family="Inter,sans-serif" transform="rotate(90 942 318)">LEDWALL</text>
+
+    <!-- SLOT PIANTA -->
+    ${slotsSVG}
+  </svg>`
+
+  // Event delegation per tooltip e click
+  wrap.querySelectorAll('.slot-pianta').forEach(el => {
+    el.addEventListener('mouseenter', e => {
+      tooltip.textContent = el.dataset.tooltip
+      tooltip.style.display = 'block'
+    })
+    el.addEventListener('mousemove', e => {
+      tooltip.style.left = (e.clientX + 12) + 'px'
+      tooltip.style.top = (e.clientY - 10) + 'px'
+    })
+    el.addEventListener('mouseleave', () => { tooltip.style.display = 'none' })
+    el.addEventListener('click', () => {
+      const slot = slotsData.find(s => s.id === el.dataset.id)
+      if (slot && slot.stato === 'disponibile') {
+        apriModalContratto(slot.prodotto_id, slot)
+      }
+    })
+  })
+}
+
+// ── CONTRATTI ────────────────────────────────────────────
+function renderContratti() {
+  const tbody = document.getElementById('contratti-tbody')
+  if (!contratti.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">📄</div><div class="empty-text">Nessun contratto ancora</div><div class="empty-sub">Seleziona un prodotto dal catalogo per creare la prima proposta</div></div></td></tr>`
+    return
+  }
+  tbody.innerHTML = contratti.map(c => {
+    const badgeClasse = `badge-stato stato-${c.stato}`
+    const statoLabel = { bozza:'Bozza', proposta:'Proposta', approvato:'Approvato', annullato:'Annullato' }[c.stato] || c.stato
+    const sconto = parseFloat(c.sconto_pct) > 0 ? `<span style="color:var(--verde2)">-${c.sconto_pct}%</span>` : '—'
+    return `<tr>
+      <td><strong>${c.cliente_nome || ''}</strong><br><span style="font-size:11px;color:var(--grigio)">${c.cliente_azienda || ''}</span></td>
+      <td>${c.fop_prodotti?.nome || '—'}</td>
+      <td>${c.fop_slot_pianta?.codice || '—'}</td>
+      <td><strong>€ ${parseFloat(c.prezzo_finale).toLocaleString('it-IT', {minimumFractionDigits:2})}</strong></td>
+      <td>${sconto}</td>
+      <td><span class="${badgeClasse}">${statoLabel}</span>${c.richiede_approvazione && c.stato==='proposta' ? '<br><span style="font-size:10px;color:var(--arancio)">⏳ In attesa admin</span>' : ''}</td>
+      <td style="font-size:11px;color:var(--grigio)">${new Date(c.creato_il).toLocaleDateString('it-IT')}</td>
+      <td>${c.stato === 'bozza' ? `<button class="btn-sm btn-sm-blu" onclick="inviaPropostaAdmin('${c.id}')">Invia</button>` : ''}</td>
+    </tr>`
+  }).join('')
+  aggiornaStats()
+}
+
+// ── MODAL CONTRATTO ──────────────────────────────────────
+function apriModalContratto(prodottoId, slot) {
+  selectedProdotto = prodotti.find(p => p.id === prodottoId)
+  selectedSlot = slot
+
+  if (!selectedProdotto) return
+
+  // Info prodotto
+  document.getElementById('prod-sel-nome').textContent = selectedProdotto.nome
+  const detParts = []
+  if (selectedProdotto.dimensioni) detParts.push(selectedProdotto.dimensioni)
+  if (selectedProdotto.durata_sec) detParts.push(`Spot ${selectedProdotto.durata_sec}sec`)
+  if (selectedProdotto.ciclo_min)  detParts.push(`Ciclo ${selectedProdotto.ciclo_min}min`)
+  document.getElementById('prod-sel-det').textContent = detParts.join(' · ')
+
+  // Prezzo listino
+  const prezzoStagione = parseFloat(selectedProdotto.prezzo_stagione || 0)
+  document.getElementById('c-prezzo-listino').value = `€ ${prezzoStagione.toLocaleString('it-IT', {minimumFractionDigits:2})}`
+
+  // Slot fisico
+  const campoSlot = document.getElementById('campo-slot')
+  if (slot) {
+    campoSlot.style.display = 'block'
+    document.getElementById('c-slot-display').value = `Slot ${slot.codice} — ${selectedProdotto.nome}`
+  } else {
+    campoSlot.style.display = 'none'
+  }
+
+  // Reset form
+  document.getElementById('c-nome').value = ''
+  document.getElementById('c-azienda').value = ''
+  document.getElementById('c-email').value = ''
+  document.getElementById('c-tel').value = ''
+  document.getElementById('c-piva').value = ''
+  document.getElementById('c-indirizzo').value = ''
+  document.getElementById('c-sconto').value = 0
+  document.getElementById('c-note').value = ''
+  document.getElementById('c-sconto-note').value = ''
+  document.getElementById('sconto-warning').style.display = 'none'
+  document.getElementById('campo-sconto-note').style.display = 'none'
+
+  aggiornaPreview()
+  document.getElementById('modal-contratto').classList.add('open')
+}
+
+function closeModal() {
+  document.getElementById('modal-contratto').classList.remove('open')
+  selectedProdotto = null
+  selectedSlot = null
+}
+
+function aggiornaPreview() {
+  if (!selectedProdotto) return
+  const prezzoListino = parseFloat(selectedProdotto.prezzo_stagione || 0)
+  const scontoPct = parseFloat(document.getElementById('c-sconto').value || 0)
+  const scontoEur = prezzoListino * (scontoPct / 100)
+  const totale = prezzoListino - scontoEur
+  const maxPct = parseFloat(currentMerchant.sconto_max_pct || 10)
+
+  document.getElementById('prev-listino').textContent = `€ ${prezzoListino.toLocaleString('it-IT', {minimumFractionDigits:2})}`
+  document.getElementById('prev-sconto').textContent = `— € ${scontoEur.toLocaleString('it-IT', {minimumFractionDigits:2})}`
+  document.getElementById('prev-totale').textContent = `€ ${totale.toLocaleString('it-IT', {minimumFractionDigits:2})}`
+
+  const superaLimite = scontoPct > maxPct && scontoPct > 0
+  document.getElementById('sconto-max-display').textContent = maxPct
+  document.getElementById('sconto-warning').style.display = superaLimite ? 'block' : 'none'
+  document.getElementById('campo-sconto-note').style.display = scontoPct > 0 ? 'block' : 'none'
+}
+
+async function salvaContratto() {
+  if (!selectedProdotto) return
+
+  const nome = document.getElementById('c-nome').value.trim()
+  const azienda = document.getElementById('c-azienda').value.trim()
+  if (!nome) { alert('Inserisci il nome del cliente.'); return }
+
+  const scontoPct = parseFloat(document.getElementById('c-sconto').value || 0)
+  const maxPct = parseFloat(currentMerchant.sconto_max_pct || 10)
+  const scontoNote = document.getElementById('c-sconto-note').value.trim()
+
+  if (scontoPct > 0 && !scontoNote) {
+    alert('Inserisci la motivazione per lo sconto applicato.')
+    return
+  }
+
+  const prezzoListino = parseFloat(selectedProdotto.prezzo_stagione || 0)
+  const scontoEur = prezzoListino * (scontoPct / 100)
+  const prezzoFinale = prezzoListino - scontoEur
+  const richiede = scontoPct > maxPct
+
+  const btn = document.getElementById('btn-salva-contratto')
+  btn.textContent = 'Salvataggio...'
+  btn.disabled = true
+
+  // Se c'è uno slot, opzionarlo prima
+  if (selectedSlot) {
+    const oreOpzione = 72 // default, idealmente da impostazioni
+    const scadeIl = new Date(Date.now() + oreOpzione * 3600 * 1000).toISOString()
+    const { error: slotErr } = await sb.from('fop_slot_pianta').update({
+      stato: 'opzionato',
+      opzionato_da: currentMerchant.id,
+      opzionato_il: new Date().toISOString(),
+      opzione_scade_il: scadeIl
+    }).eq('id', selectedSlot.id).eq('stato', 'disponibile')
+
+    if (slotErr) {
+      alert('Slot non più disponibile. Aggiorna la pianta e riprova.')
+      btn.textContent = 'Salva come Proposta'
+      btn.disabled = false
+      return
+    }
+  }
+
+  const { error } = await sb.from('fop_contratti').insert({
+    merchant_id: currentMerchant.id,
+    cliente_nome: nome,
+    cliente_azienda: azienda || null,
+    cliente_piva: document.getElementById('c-piva').value.trim() || null,
+    cliente_email: document.getElementById('c-email').value.trim() || null,
+    cliente_telefono: document.getElementById('c-tel').value.trim() || null,
+    cliente_indirizzo: document.getElementById('c-indirizzo').value.trim() || null,
+    prodotto_id: selectedProdotto.id,
+    slot_id: selectedSlot?.id || null,
+    prezzo_listino: prezzoListino,
+    sconto_pct: scontoPct,
+    prezzo_finale: prezzoFinale,
+    sconto_note: scontoNote || null,
+    stato: 'proposta',
+    richiede_approvazione: richiede,
+    note_merchant: document.getElementById('c-note').value.trim() || null
+  })
+
+  btn.textContent = 'Salva come Proposta'
+  btn.disabled = false
+
+  if (error) {
+    alert('Errore durante il salvataggio: ' + error.message)
+    return
+  }
+
+  closeModal()
+  await Promise.all([loadContratti(), loadSlots()])
+  renderPianta()
+  switchTab('contratti')
+}
+
+async function inviaPropostaAdmin(id) {
+  if (!confirm('Inviare questa proposta all\'admin per approvazione?')) return
+  await sb.from('fop_contratti').update({ stato: 'proposta' }).eq('id', id)
+  await loadContratti()
+}
+</script>
+</body>
+</html>
