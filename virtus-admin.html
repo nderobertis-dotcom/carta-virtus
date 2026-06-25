@@ -2728,7 +2728,7 @@ async function toggleMerchant(id, attivo) {
 async function loadFopContratti() {
   const filtro = document.getElementById('fop-filtro-stato')?.value || ''
   let q = sb.from('fop_contratti')
-    .select('*, merchants(nome, cognome), fop_prodotti(nome, categoria), fop_slot_pianta(codice)')
+    .select('*, merchants(nome, cognome), fop_prodotti(nome, categoria), fop_slot_pianta!fop_contratti_slot_id_fkey(codice)')
     .order('creato_il', { ascending: false })
   if (filtro) q = q.eq('stato', filtro)
 
