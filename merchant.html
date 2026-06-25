@@ -166,8 +166,12 @@ tr:hover td{background:rgba(26,58,107,.02)}
 .empty-text{font-size:15px;font-weight:600}
 .empty-sub{font-size:13px;margin-top:6px}
 
-/* ── LOADING ── */
-.loading{text-align:center;padding:40px;color:var(--grigio);font-size:14px}
+/* ── SLOT PICKER ── */
+.slot-chip{display:inline-flex;align-items:center;justify-content:center;width:42px;height:32px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:.15s;user-select:none}
+.slot-chip.disponibile{background:#E8F5E9;color:var(--verde2);border-color:#A5D6A7}
+.slot-chip.disponibile:hover{background:var(--verde2);color:#fff;border-color:var(--verde2)}
+.slot-chip.selezionato{background:var(--blu);color:#fff;border-color:var(--blu)}
+.slot-chip.non-disponibile{background:#ECEFF1;color:#B0BEC5;border-color:#CFD8DC;cursor:not-allowed}
 
 @media(max-width:768px){
   .stats-row{grid-template-columns:repeat(2,1fr)}
@@ -364,18 +368,34 @@ tr:hover td{background:rgba(26,58,107,.02)}
 
       <!-- Quantità slot (solo per prodotti slot_variabile) -->
       <div id="campo-quantita-slot" style="display:none">
-        <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;margin-top:6px">Quantità Slot</div>
+        <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;margin-top:6px">Quantità e Selezione Slot</div>
         <div class="form-row">
           <div class="field">
             <label>Numero slot da acquistare</label>
             <input type="number" id="c-quantita-slot" min="1" value="2" placeholder="2"/>
           </div>
           <div class="field">
-            <label>Disponibili</label>
+            <label>Selezionati / Disponibili</label>
             <input type="text" id="c-slot-disponibili" readonly style="background:var(--bg);cursor:not-allowed"/>
           </div>
         </div>
-        <div style="font-size:11px;color:var(--grigio);margin-top:-8px;margin-bottom:10px" id="c-slot-min-nota"></div>
+        <div style="font-size:11px;color:var(--grigio);margin-top:-8px;margin-bottom:12px" id="c-slot-min-nota"></div>
+        <!-- Griglia slot selezionabili -->
+        <div style="font-size:12px;font-weight:600;color:var(--blu);margin-bottom:8px">
+          Seleziona gli slot desiderati <span style="color:var(--grigio);font-weight:400">(clicca per selezionare/deselezionare)</span>
+        </div>
+        <div id="slot-picker-grid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+        <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--grigio)">
+            <div style="width:12px;height:12px;background:var(--verde2);border-radius:3px"></div>Disponibile
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--grigio)">
+            <div style="width:12px;height:12px;background:var(--blu);border-radius:3px"></div>Selezionato
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--grigio)">
+            <div style="width:12px;height:12px;background:#B0BEC5;border-radius:3px"></div>Non disponibile
+          </div>
+        </div>
       </div>
 
       <!-- Prezzo e sconto -->
@@ -432,6 +452,7 @@ let slotsData = []
 let contratti = []
 let selectedProdotto = null
 let selectedSlot = null
+let selectedSlots = []   // slot multipli selezionati per SB variabile
 let filtroCorrente = 'tutti'
 
 // ── INIT ─────────────────────────────────────────────────
@@ -837,15 +858,19 @@ function apriModalContratto(prodottoId, slot) {
   if (selectedProdotto.slot_variabile) {
     campoQta.style.display = 'block'
     const min = selectedProdotto.vendita_minima_slot || 1
-    const disp = selectedProdotto.slot_totali  // idealmente calcolato dai contratti attivi
+    selectedSlots = []
     document.getElementById('c-quantita-slot').min   = min
     document.getElementById('c-quantita-slot').value = min
-    document.getElementById('c-slot-disponibili').value = `${disp} totali`
-    document.getElementById('c-slot-min-nota').textContent = `Vendita minima: ${min} slot · Prezzo: € ${parseFloat(selectedProdotto.prezzo_unitario_slot).toLocaleString('it-IT')}/slot/mese × 10 mesi`
-    // Aggiorna prezzo listino in base alla quantità
-    document.getElementById('c-quantita-slot').addEventListener('input', aggiornaPreview)
+    document.getElementById('c-slot-min-nota').textContent =
+      `Vendita minima: ${min} slot · € ${parseFloat(selectedProdotto.prezzo_unitario_slot).toLocaleString('it-IT')}/slot/mese × 10 mesi`
+    renderSlotPicker(selectedProdotto.id)
+    document.getElementById('c-quantita-slot').oninput = () => {
+      aggiornaPreview()
+      aggiornaSlotCounter()
+    }
   } else {
     campoQta.style.display = 'none'
+    selectedSlots = []
   }
 
   // Prezzo listino
@@ -881,10 +906,76 @@ function aggiornaListino() {
   return prezzoListino
 }
 
+function renderSlotPicker(prodottoId) {
+  const grid = document.getElementById('slot-picker-grid')
+  const slotDelProdotto = slotsData.filter(s => s.prodotto_id === prodottoId)
+
+  if (!slotDelProdotto.length) {
+    grid.innerHTML = '<span style="font-size:12px;color:var(--grigio)">Nessuno slot fisico associato a questo prodotto.</span>'
+    return
+  }
+
+  // Ordina: numerici prima, poi lettere
+  slotDelProdotto.sort((a, b) => {
+    const aNum = parseInt(a.codice), bNum = parseInt(b.codice)
+    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum
+    return a.codice.localeCompare(b.codice)
+  })
+
+  grid.innerHTML = slotDelProdotto.map(s => {
+    const disponibile = s.stato === 'disponibile'
+    const cls = disponibile ? 'disponibile' : 'non-disponibile'
+    const title = disponibile ? `Slot ${s.codice} — clicca per selezionare` : `Slot ${s.codice} — ${s.stato}`
+    return `<div class="slot-chip ${cls}" data-slot-id="${s.id}" data-codice="${s.codice}"
+              title="${title}" onclick="toggleSlotChip(this, ${disponibile})">${s.codice}</div>`
+  }).join('')
+
+  aggiornaSlotCounter()
+}
+
+function toggleSlotChip(el, disponibile) {
+  if (!disponibile) return
+  const slotId = el.dataset.slotId
+  const codice = el.dataset.codice
+
+  if (el.classList.contains('selezionato')) {
+    // Deseleziona
+    el.classList.remove('selezionato')
+    el.classList.add('disponibile')
+    selectedSlots = selectedSlots.filter(s => s.id !== slotId)
+  } else {
+    // Controlla limite quantità
+    const max = parseInt(document.getElementById('c-quantita-slot').value || 2)
+    if (selectedSlots.length >= max) {
+      // Deseleziona il primo selezionato per fare spazio (FIFO)
+      const primo = selectedSlots.shift()
+      const chipPrimo = document.querySelector(`.slot-chip[data-slot-id="${primo.id}"]`)
+      if (chipPrimo) { chipPrimo.classList.remove('selezionato'); chipPrimo.classList.add('disponibile') }
+    }
+    el.classList.remove('disponibile')
+    el.classList.add('selezionato')
+    selectedSlots.push({ id: slotId, codice })
+  }
+
+  aggiornaSlotCounter()
+  // Aggiorna il campo quantità se il merchant seleziona più slot del valore impostato
+  if (selectedSlots.length > parseInt(document.getElementById('c-quantita-slot').value || 2)) {
+    document.getElementById('c-quantita-slot').value = selectedSlots.length
+    aggiornaPreview()
+  }
+}
+
+function aggiornaSlotCounter() {
+  const selezionati = selectedSlots.length
+  const totaleDisp = slotsData.filter(s => s.prodotto_id === selectedProdotto?.id && s.stato === 'disponibile').length
+  document.getElementById('c-slot-disponibili').value = `${selezionati} selezionati / ${totaleDisp} disponibili`
+}
+
 function closeModal() {
   document.getElementById('modal-contratto').classList.remove('open')
   selectedProdotto = null
   selectedSlot = null
+  selectedSlots = []
 }
 
 function aggiornaPreview() {
@@ -929,11 +1020,16 @@ async function salvaContratto() {
     ? parseInt(document.getElementById('c-quantita-slot').value || selectedProdotto.vendita_minima_slot || 1)
     : 1
 
-  // Validazione quantità minima
+  // Validazione slot variabile
   if (selectedProdotto.slot_variabile) {
     const min = selectedProdotto.vendita_minima_slot || 1
-    if (quantitaSlot < min) {
-      alert(`Vendita minima: ${min} slot.`)
+    if (quantitaSlot < min) { alert(`Vendita minima: ${min} slot.`); return }
+    if (selectedSlots.length < min) {
+      alert(`Seleziona almeno ${min} slot dalla griglia.`)
+      return
+    }
+    if (selectedSlots.length !== quantitaSlot) {
+      alert(`Hai impostato ${quantitaSlot} slot ma ne hai selezionati ${selectedSlots.length}. Allinea i due valori.`)
       return
     }
   }
@@ -942,26 +1038,7 @@ async function salvaContratto() {
   btn.textContent = 'Salvataggio...'
   btn.disabled = true
 
-  // Se c'è uno slot, opzionarlo prima
-  if (selectedSlot) {
-    const oreOpzione = 72 // default, idealmente da impostazioni
-    const scadeIl = new Date(Date.now() + oreOpzione * 3600 * 1000).toISOString()
-    const { error: slotErr } = await sb.from('fop_slot_pianta').update({
-      stato: 'opzionato',
-      opzionato_da: currentMerchant.id,
-      opzionato_il: new Date().toISOString(),
-      opzione_scade_il: scadeIl
-    }).eq('id', selectedSlot.id).eq('stato', 'disponibile')
-
-    if (slotErr) {
-      alert('Slot non più disponibile. Aggiorna la pianta e riprova.')
-      btn.textContent = 'Salva come Proposta'
-      btn.disabled = false
-      return
-    }
-  }
-
-  const { error } = await sb.from('fop_contratti').insert({
+  const datiBase = {
     merchant_id: currentMerchant.id,
     cliente_nome: nome,
     cliente_azienda: azienda || null,
@@ -970,8 +1047,6 @@ async function salvaContratto() {
     cliente_telefono: document.getElementById('c-tel').value.trim() || null,
     cliente_indirizzo: document.getElementById('c-indirizzo').value.trim() || null,
     prodotto_id: selectedProdotto.id,
-    slot_id: selectedSlot?.id || null,
-    quantita_slot: quantitaSlot,
     prezzo_listino: prezzoListino,
     sconto_pct: scontoPct,
     prezzo_finale: prezzoFinale,
@@ -979,16 +1054,63 @@ async function salvaContratto() {
     stato: 'proposta',
     richiede_approvazione: richiede,
     note_merchant: document.getElementById('c-note').value.trim() || null
-  })
+  }
+
+  const oreOpzione = 72
+  const scadeIl = new Date(Date.now() + oreOpzione * 3600 * 1000).toISOString()
+
+  if (selectedProdotto.slot_variabile && selectedSlots.length > 0) {
+    // Crea un contratto per ogni slot selezionato e opziona ciascuno
+    let errore = null
+    const prezzoPerSlot = parseFloat(selectedProdotto.prezzo_unitario_slot || 0) * 10
+    const scontoPerSlot = prezzoPerSlot * (scontoPct / 100)
+    const totalePerSlot = prezzoPerSlot - scontoPerSlot
+
+    for (const slot of selectedSlots) {
+      // Opziona lo slot
+      const { error: slotErr } = await sb.from('fop_slot_pianta').update({
+        stato: 'opzionato',
+        opzionato_da: currentMerchant.id,
+        opzionato_il: new Date().toISOString(),
+        opzione_scade_il: scadeIl
+      }).eq('id', slot.id).eq('stato', 'disponibile')
+
+      if (slotErr) { errore = `Slot ${slot.codice} non più disponibile.`; break }
+
+      // Crea contratto per questo slot
+      const { error: cErr } = await sb.from('fop_contratti').insert({
+        ...datiBase,
+        slot_id: slot.id,
+        quantita_slot: 1,
+        prezzo_listino: prezzoPerSlot,
+        prezzo_finale: totalePerSlot
+      })
+      if (cErr) { errore = cErr.message; break }
+    }
+
+    if (errore) { alert('Errore: ' + errore); btn.textContent = 'Salva come Proposta'; btn.disabled = false; return }
+
+  } else {
+    // Prodotto non variabile o slot da pianta
+    if (selectedSlot) {
+      const { error: slotErr } = await sb.from('fop_slot_pianta').update({
+        stato: 'opzionato',
+        opzionato_da: currentMerchant.id,
+        opzionato_il: new Date().toISOString(),
+        opzione_scade_il: scadeIl
+      }).eq('id', selectedSlot.id).eq('stato', 'disponibile')
+      if (slotErr) { alert('Slot non più disponibile. Aggiorna la pianta e riprova.'); btn.textContent = 'Salva come Proposta'; btn.disabled = false; return }
+    }
+    const { error } = await sb.from('fop_contratti').insert({
+      ...datiBase,
+      slot_id: selectedSlot?.id || null,
+      quantita_slot: quantitaSlot
+    })
+    if (error) { alert('Errore: ' + error.message); btn.textContent = 'Salva come Proposta'; btn.disabled = false; return }
+  }
 
   btn.textContent = 'Salva come Proposta'
   btn.disabled = false
-
-  if (error) {
-    alert('Errore durante il salvataggio: ' + error.message)
-    return
-  }
-
   closeModal()
   await Promise.all([loadContratti(), loadSlots()])
   renderPianta()
