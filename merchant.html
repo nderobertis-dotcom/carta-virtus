@@ -417,8 +417,8 @@ tr:hover td{background:rgba(26,58,107,.02)}
         <div class="prezzo-preview-row total"><span>Totale da contratto</span><span id="prev-totale">€ 0,00</span></div>
       </div>
 
-      <div class="sconto-warning" id="sconto-warning">
-        ⚠️ Sconto superiore al limite autorizzato (<span id="sconto-max-display">10</span>%). La proposta richiederà approvazione admin prima di essere confermata.
+      <div style="background:#E3F2FD;border:1px solid #90CAF9;border-radius:8px;padding:10px 14px;font-size:12px;color:#1565C0;margin-bottom:12px">
+        ℹ️ Tutte le proposte sono soggette ad approvazione admin prima di diventare definitive.
       </div>
 
       <div class="field" id="campo-sconto-note" style="display:none">
@@ -876,6 +876,15 @@ function apriModalContratto(prodottoId, slot) {
   // Prezzo listino
   aggiornaListino()
 
+  // Imposta max sconto sull'input
+  const maxPct = parseFloat(currentMerchant.sconto_max_pct || 0)
+  const scontoInput = document.getElementById('c-sconto')
+  scontoInput.max = maxPct
+  scontoInput.title = `Massimo consentito: ${maxPct}%`
+  // Aggiorna label con il limite
+  const scontoLabel = scontoInput.closest('.field')?.querySelector('label')
+  if (scontoLabel) scontoLabel.textContent = `Sconto applicato (max ${maxPct}%)`
+
   // Reset form
   document.getElementById('c-nome').value = ''
   document.getElementById('c-azienda').value = ''
@@ -980,19 +989,27 @@ function closeModal() {
 
 function aggiornaPreview() {
   if (!selectedProdotto) return
+  const maxPct = parseFloat(currentMerchant.sconto_max_pct || 0)
+
+  // Blocca input al massimo consentito
+  const scontoInput = document.getElementById('c-sconto')
+  scontoInput.max = maxPct
+  let scontoPct = parseFloat(scontoInput.value || 0)
+  if (scontoPct > maxPct) {
+    scontoPct = maxPct
+    scontoInput.value = maxPct
+  }
+
   const prezzoListino = aggiornaListino()
-  const scontoPct = parseFloat(document.getElementById('c-sconto').value || 0)
   const scontoEur = prezzoListino * (scontoPct / 100)
   const totale = prezzoListino - scontoEur
-  const maxPct = parseFloat(currentMerchant.sconto_max_pct || 10)
 
   document.getElementById('prev-listino').textContent = `€ ${prezzoListino.toLocaleString('it-IT', {minimumFractionDigits:2})}`
   document.getElementById('prev-sconto').textContent = `— € ${scontoEur.toLocaleString('it-IT', {minimumFractionDigits:2})}`
   document.getElementById('prev-totale').textContent = `€ ${totale.toLocaleString('it-IT', {minimumFractionDigits:2})}`
 
-  const superaLimite = scontoPct > maxPct && scontoPct > 0
-  document.getElementById('sconto-max-display').textContent = maxPct
-  document.getElementById('sconto-warning').style.display = superaLimite ? 'block' : 'none'
+  // Nasconde warning (non più necessario — lo sconto è già bloccato)
+  document.getElementById('sconto-warning').style.display = 'none'
   document.getElementById('campo-sconto-note').style.display = scontoPct > 0 ? 'block' : 'none'
 }
 
@@ -1015,7 +1032,7 @@ async function salvaContratto() {
   const prezzoListino = aggiornaListino()
   const scontoEur = prezzoListino * (scontoPct / 100)
   const prezzoFinale = prezzoListino - scontoEur
-  const richiede = scontoPct > maxPct
+  const richiede = true  // tutte le proposte richiedono approvazione admin
   const quantitaSlot = selectedProdotto.slot_variabile
     ? parseInt(document.getElementById('c-quantita-slot').value || selectedProdotto.vendita_minima_slot || 1)
     : 1
