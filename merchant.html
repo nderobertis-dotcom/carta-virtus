@@ -895,8 +895,8 @@ function apriModalContratto(prodottoId, slot) {
   document.getElementById('c-sconto').value = 0
   document.getElementById('c-note').value = ''
   document.getElementById('c-sconto-note').value = ''
-  document.getElementById('sconto-warning').style.display = 'none'
-  document.getElementById('campo-sconto-note').style.display = 'none'
+  const campoScontoNote = document.getElementById('campo-sconto-note')
+  if (campoScontoNote) campoScontoNote.style.display = 'none'
 
   aggiornaPreview()
   document.getElementById('modal-contratto').classList.add('open')
@@ -1009,8 +1009,8 @@ function aggiornaPreview() {
   document.getElementById('prev-totale').textContent = `€ ${totale.toLocaleString('it-IT', {minimumFractionDigits:2})}`
 
   // Nasconde warning (non più necessario — lo sconto è già bloccato)
-  document.getElementById('sconto-warning').style.display = 'none'
-  document.getElementById('campo-sconto-note').style.display = scontoPct > 0 ? 'block' : 'none'
+  const campoScontoNote2 = document.getElementById('campo-sconto-note')
+  if (campoScontoNote2) campoScontoNote2.style.display = scontoPct > 0 ? 'block' : 'none'
 }
 
 async function salvaContratto() {
