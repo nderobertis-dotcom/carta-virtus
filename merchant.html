@@ -919,7 +919,6 @@ async function salvaContratto() {
   }
 
   const prezzoListino = aggiornaListino()
-  const scontoPct = parseFloat(document.getElementById('c-sconto').value || 0)
   const scontoEur = prezzoListino * (scontoPct / 100)
   const prezzoFinale = prezzoListino - scontoEur
   const richiede = scontoPct > maxPct
