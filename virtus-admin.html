@@ -2931,40 +2931,62 @@ async function resetOpzione(slotId) {
 function apriModalProdotto(id) {
   editingProdottoId = id || null
   const p = id ? fopProdotti.find(x => x.id === id) : null
-  document.getElementById('fp-nome').value        = p?.nome || ''
-  document.getElementById('fp-descrizione').value = p?.descrizione || ''
-  document.getElementById('fp-dimensioni').value  = p?.dimensioni || ''
-  document.getElementById('fp-durata').value      = p?.durata_sec || ''
-  document.getElementById('fp-ciclo').value       = p?.ciclo_min || ''
-  document.getElementById('fp-prezzo').value      = p?.prezzo_mese || ''
-  document.getElementById('fp-slot').value        = p?.slot_totali || ''
-  document.getElementById('fp-riservato').checked = p?.riservato_sponsor || false
-  document.getElementById('fp-visibile').checked  = p?.visibile_merchant !== false
+  document.getElementById('fp-nome').value           = p?.nome || ''
+  document.getElementById('fp-descrizione').value    = p?.descrizione || ''
+  document.getElementById('fp-dimensioni').value     = p?.dimensioni || ''
+  document.getElementById('fp-durata').value         = p?.durata_sec || ''
+  document.getElementById('fp-ciclo').value          = p?.ciclo_min || ''
+  document.getElementById('fp-prezzo').value         = p?.prezzo_mese || ''
+  document.getElementById('fp-slot').value           = p?.slot_totali || ''
+  document.getElementById('fp-prezzo-unit').value    = p?.prezzo_unitario_slot || ''
+  document.getElementById('fp-vendita-min').value    = p?.vendita_minima_slot || 1
+  document.getElementById('fp-slot-var').checked     = p?.slot_variabile || false
+  document.getElementById('fp-riservato').checked    = p?.riservato_sponsor || false
+  document.getElementById('fp-visibile').checked     = p?.visibile_merchant !== false
+  // Nascondi categoria se modifica
+  document.getElementById('fp-cat-row').style.display = id ? 'none' : 'block'
   document.getElementById('modal-prodotto-title').textContent = id ? 'Modifica Prodotto' : 'Nuovo Prodotto'
   openModal('modal-fop-prodotto')
 }
 
 async function salvaFopProdotto() {
-  const payload = {
-    nome: document.getElementById('fp-nome').value.trim(),
-    descrizione: document.getElementById('fp-descrizione').value.trim() || null,
-    dimensioni: document.getElementById('fp-dimensioni').value.trim() || null,
-    durata_sec: parseInt(document.getElementById('fp-durata').value) || null,
-    ciclo_min: parseInt(document.getElementById('fp-ciclo').value) || null,
-    prezzo_mese: parseFloat(document.getElementById('fp-prezzo').value) || null,
-    slot_totali: parseInt(document.getElementById('fp-slot').value) || 0,
-    riservato_sponsor: document.getElementById('fp-riservato').checked,
-    visibile_merchant: document.getElementById('fp-visibile').checked
-  }
-  if (!payload.nome || !payload.slot_totali) return showToast('Nome e slot totali sono obbligatori', true)
+  const nome = document.getElementById('fp-nome').value.trim()
+  const slot = parseInt(document.getElementById('fp-slot').value) || 0
+  if (!nome || !slot) return showToast('Nome e slot totali sono obbligatori', true)
 
-  if (editingProdottoId) {
-    await sb.from('fop_prodotti').update(payload).eq('id', editingProdottoId)
-  } else {
-    // Categoria va impostata dall'admin — serve un select nel modal
-    payload.categoria = document.getElementById('fp-categoria').value
-    await sb.from('fop_prodotti').insert(payload)
+  const payload = {
+    nome,
+    descrizione:          document.getElementById('fp-descrizione').value.trim() || null,
+    dimensioni:           document.getElementById('fp-dimensioni').value.trim() || null,
+    durata_sec:           parseInt(document.getElementById('fp-durata').value) || null,
+    ciclo_min:            parseInt(document.getElementById('fp-ciclo').value) || null,
+    prezzo_mese:          parseFloat(document.getElementById('fp-prezzo').value) || null,
+    slot_totali:          slot,
+    prezzo_unitario_slot: parseFloat(document.getElementById('fp-prezzo-unit').value) || null,
+    vendita_minima_slot:  parseInt(document.getElementById('fp-vendita-min').value) || 1,
+    slot_variabile:       document.getElementById('fp-slot-var').checked,
+    riservato_sponsor:    document.getElementById('fp-riservato').checked,
+    visibile_merchant:    document.getElementById('fp-visibile').checked
   }
+
+  const btnSalva = document.querySelector('#modal-fop-prodotto .btn-primary')
+  btnSalva.textContent = 'Salvataggio...'
+  btnSalva.disabled = true
+
+  let error
+  if (editingProdottoId) {
+    const res = await sb.from('fop_prodotti').update(payload).eq('id', editingProdottoId)
+    error = res.error
+  } else {
+    payload.categoria = document.getElementById('fp-categoria').value
+    const res = await sb.from('fop_prodotti').insert(payload)
+    error = res.error
+  }
+
+  btnSalva.textContent = 'Salva Prodotto'
+  btnSalva.disabled = false
+
+  if (error) return showToast('Errore: ' + error.message, true)
 
   closeModal('modal-fop-prodotto')
   showToast('Prodotto salvato ✓')
@@ -3023,6 +3045,11 @@ async function salvaFopProdotto() {
         <div class="form-group"><label>Ciclo (min)</label><input class="form-input" id="fp-ciclo" type="number" placeholder="5"/></div>
         <div class="form-group"><label>Prezzo/Mese €</label><input class="form-input" id="fp-prezzo" type="number" placeholder="50"/></div>
         <div class="form-group"><label>Slot totali *</label><input class="form-input" id="fp-slot" type="number" placeholder="40"/></div>
+        <div class="form-group"><label>Prezzo unitario slot €</label><input class="form-input" id="fp-prezzo-unit" type="number" placeholder="25" title="Per prodotti a slot variabile"/></div>
+        <div class="form-group"><label>Vendita minima slot</label><input class="form-input" id="fp-vendita-min" type="number" min="1" placeholder="2"/></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding-top:20px">
+          <input type="checkbox" id="fp-slot-var"/> <label for="fp-slot-var" style="font-size:13px">Slot variabile (merchant sceglie quantità)</label>
+        </div>
         <div class="form-group" style="display:flex;align-items:center;gap:10px;padding-top:20px">
           <input type="checkbox" id="fp-riservato"/> <label for="fp-riservato" style="font-size:13px">Riservato Sponsor</label>
         </div>
