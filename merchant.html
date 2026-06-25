@@ -1126,17 +1126,9 @@ async function salvaContratto() {
 
   btn.textContent = 'Salva come Proposta'
   btn.disabled = false
-  closeModal()
-  await Promise.all([loadContratti(), loadSlots()])
-  renderPianta()
-  switchTab('contratti')
 
-  // Genera documento di sintesi per il cliente
-  const slotsLabel = selectedProdotto.slot_variabile && selectedSlots.length
-    ? selectedSlots.map(s => s.codice)
-    : selectedSlot ? [selectedSlot.codice] : []
-
-  stampaProposta({
+  // Salvo i dati per la stampa PRIMA di closeModal (che azzera selectedProdotto)
+  const datiStampa = {
     cliente:       datiBase.cliente_nome,
     azienda:       datiBase.cliente_azienda,
     piva:          datiBase.cliente_piva,
@@ -1144,14 +1136,22 @@ async function salvaContratto() {
     tel:           datiBase.cliente_telefono,
     indirizzo:     datiBase.cliente_indirizzo,
     prodotto:      selectedProdotto.nome,
-    slots:         slotsLabel,
-    prezzoListino: prezzoListino,
-    scontoPct:     scontoPct,
-    prezzoFinale:  prezzoFinale,
+    slots:         selectedProdotto.slot_variabile && selectedSlots.length
+                     ? selectedSlots.map(s => s.codice)
+                     : selectedSlot ? [selectedSlot.codice] : [],
+    prezzoListino,
+    scontoPct,
+    prezzoFinale,
     merchant:      `${currentMerchant.nome} ${currentMerchant.cognome}`,
     stagione:      '2026/2027',
     dataOggi:      new Date().toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' })
-  })
+  }
+
+  closeModal()
+  await Promise.all([loadContratti(), loadSlots()])
+  renderPianta()
+  switchTab('contratti')
+  stampaProposta(datiStampa)
 }
 
 async function inviaPropostaAdmin(id) {
