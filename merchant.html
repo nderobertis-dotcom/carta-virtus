@@ -166,6 +166,18 @@ tr:hover td{background:rgba(26,58,107,.02)}
 .empty-text{font-size:15px;font-weight:600}
 .empty-sub{font-size:13px;margin-top:6px}
 
+/* ── STAMPA PDF ── */
+@media print {
+  body * { visibility: hidden !important }
+  #print-area, #print-area * { visibility: visible !important }
+  #print-area {
+    position: fixed; inset: 0; background: #fff;
+    padding: 32px 40px; font-family: 'Inter', sans-serif;
+    color: #111; font-size: 13px; line-height: 1.6;
+  }
+}
+#print-area { display: none }
+
 /* ── SLOT PICKER ── */
 .slot-chip{display:inline-flex;align-items:center;justify-content:center;width:42px;height:32px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:.15s;user-select:none}
 .slot-chip.disponibile{background:#E8F5E9;color:var(--verde2);border-color:#A5D6A7}
@@ -437,6 +449,9 @@ tr:hover td{background:rgba(26,58,107,.02)}
     </div>
   </div>
 </div>
+
+<!-- AREA STAMPA PDF — invisibile a schermo, visibile solo in stampa -->
+<div id="print-area"></div>
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────
@@ -1115,12 +1130,153 @@ async function salvaContratto() {
   await Promise.all([loadContratti(), loadSlots()])
   renderPianta()
   switchTab('contratti')
+
+  // Genera documento di sintesi per il cliente
+  const slotsLabel = selectedProdotto.slot_variabile && selectedSlots.length
+    ? selectedSlots.map(s => s.codice)
+    : selectedSlot ? [selectedSlot.codice] : []
+
+  stampaProposta({
+    cliente:       datiBase.cliente_nome,
+    azienda:       datiBase.cliente_azienda,
+    piva:          datiBase.cliente_piva,
+    email:         datiBase.cliente_email,
+    tel:           datiBase.cliente_telefono,
+    indirizzo:     datiBase.cliente_indirizzo,
+    prodotto:      selectedProdotto.nome,
+    slots:         slotsLabel,
+    prezzoListino: prezzoListino,
+    scontoPct:     scontoPct,
+    prezzoFinale:  prezzoFinale,
+    merchant:      `${currentMerchant.nome} ${currentMerchant.cognome}`,
+    stagione:      '2026/2027',
+    dataOggi:      new Date().toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' })
+  })
 }
 
 async function inviaPropostaAdmin(id) {
   if (!confirm('Inviare questa proposta all\'admin per approvazione?')) return
   await sb.from('fop_contratti').update({ stato: 'proposta' }).eq('id', id)
   await loadContratti()
+}
+
+function stampaProposta(dati) {
+  // dati: { cliente, azienda, piva, email, tel, indirizzo,
+  //         prodotto, slots, prezzoListino, scontoPct, prezzoFinale,
+  //         merchant, stagione, dataOggi }
+  const {
+    cliente, azienda, piva, email, tel, indirizzo,
+    prodotto, slots, prezzoListino, scontoPct, prezzoFinale,
+    merchant, stagione, dataOggi
+  } = dati
+
+  const scontoRiga = scontoPct > 0 ? `
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #eee;color:#555">Sconto applicato</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;color:#2e7d32">
+        -${scontoPct}% (— € ${(prezzoListino * scontoPct / 100).toLocaleString('it-IT', {minimumFractionDigits:2})})
+      </td>
+    </tr>` : ''
+
+  const slotsRiga = slots?.length
+    ? `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;color:#555">Slot selezionati</td>
+       <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;font-weight:600">${slots.join(', ')}</td></tr>`
+    : ''
+
+  const html = `
+    <div style="max-width:700px;margin:0 auto">
+
+      <!-- INTESTAZIONE -->
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #1A3A6B;padding-bottom:16px;margin-bottom:24px">
+        <div>
+          <div style="font-size:20px;font-weight:800;color:#1A3A6B;letter-spacing:.04em">SSD POL. VIRTUS 2014 SRL</div>
+          <div style="font-size:12px;color:#546E7A;margin-top:3px">Via Martiri di Via Fani · 70056 Molfetta (BA)</div>
+          <div style="font-size:12px;color:#546E7A">info@virtusmolfetta.com · marketing@virtusmolfetta.com</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:#546E7A">Data proposta</div>
+          <div style="font-weight:700;color:#1A3A6B">${dataOggi}</div>
+          <div style="font-size:11px;color:#546E7A;margin-top:4px">Stagione</div>
+          <div style="font-weight:700;color:#1A3A6B">${stagione}</div>
+        </div>
+      </div>
+
+      <!-- TITOLO -->
+      <div style="background:#1A3A6B;color:#fff;padding:12px 20px;border-radius:8px;margin-bottom:24px">
+        <div style="font-size:16px;font-weight:700;letter-spacing:.04em">PROPOSTA COMMERCIALE</div>
+        <div style="font-size:12px;opacity:.8;margin-top:2px">Field of Play (FOP) Branding · PalaPoli Molfetta</div>
+      </div>
+
+      <!-- DATI CLIENTE -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:11px;font-weight:700;color:#1A3A6B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Dati Cliente</div>
+        <table style="width:100%;border-collapse:collapse">
+          <tr>
+            <td style="padding:6px 0;border-bottom:1px solid #eee;color:#555;width:40%">Nominativo</td>
+            <td style="padding:6px 0;border-bottom:1px solid #eee;font-weight:600">${cliente}${azienda ? ' — ' + azienda : ''}</td>
+          </tr>
+          ${piva ? `<tr><td style="padding:6px 0;border-bottom:1px solid #eee;color:#555">P.IVA / C.F.</td><td style="padding:6px 0;border-bottom:1px solid #eee">${piva}</td></tr>` : ''}
+          ${email ? `<tr><td style="padding:6px 0;border-bottom:1px solid #eee;color:#555">Email</td><td style="padding:6px 0;border-bottom:1px solid #eee">${email}</td></tr>` : ''}
+          ${tel ? `<tr><td style="padding:6px 0;border-bottom:1px solid #eee;color:#555">Telefono</td><td style="padding:6px 0;border-bottom:1px solid #eee">${tel}</td></tr>` : ''}
+          ${indirizzo ? `<tr><td style="padding:6px 0;border-bottom:1px solid #eee;color:#555">Indirizzo</td><td style="padding:6px 0;border-bottom:1px solid #eee">${indirizzo}</td></tr>` : ''}
+        </table>
+      </div>
+
+      <!-- DETTAGLIO PROPOSTA -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:11px;font-weight:700;color:#1A3A6B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Dettaglio Proposta</div>
+        <table style="width:100%;border-collapse:collapse">
+          <tr>
+            <td style="padding:8px 0;border-bottom:1px solid #eee;color:#555">Prodotto</td>
+            <td style="padding:8px 0;border-bottom:1px solid #eee;font-weight:600">${prodotto}</td>
+          </tr>
+          ${slotsRiga}
+          <tr>
+            <td style="padding:8px 0;border-bottom:1px solid #eee;color:#555">Durata contratto</td>
+            <td style="padding:8px 0;border-bottom:1px solid #eee">10 mesi · stagione ${stagione}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;border-bottom:1px solid #eee;color:#555">Prezzo di listino</td>
+            <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">€ ${prezzoListino.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
+          </tr>
+          ${scontoRiga}
+          <tr style="background:#F0F6FF">
+            <td style="padding:12px 8px;font-weight:700;color:#1A3A6B;font-size:15px">TOTALE PROPOSTA</td>
+            <td style="padding:12px 8px;font-weight:800;color:#1A3A6B;font-size:15px;text-align:right">€ ${prezzoFinale.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- NOTE LEGALI -->
+      <div style="background:#F8F9FA;border-radius:6px;padding:12px 16px;font-size:11px;color:#546E7A;margin-bottom:24px;line-height:1.7">
+        Il pagamento verrà corrisposto in unica soluzione all'atto della sottoscrizione del contratto pubblicitario.
+        La presente proposta ha validità di 72 ore dalla data di emissione. Scaduto tale termine lo spazio tornerà disponibile.
+        Questa proposta non costituisce contratto vincolante fino alla firma delle parti.
+      </div>
+
+      <!-- FIRMA -->
+      <div style="display:flex;justify-content:space-between;margin-top:40px;gap:40px">
+        <div style="flex:1;border-top:1px solid #ccc;padding-top:8px;text-align:center;font-size:11px;color:#546E7A">
+          SSD Pol. Virtus 2014 Srl<br>Firma e timbro
+        </div>
+        <div style="flex:1;border-top:1px solid #ccc;padding-top:8px;text-align:center;font-size:11px;color:#546E7A">
+          Cliente<br>Firma per accettazione
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div style="text-align:center;margin-top:32px;font-size:10px;color:#9E9E9E;border-top:1px solid #eee;padding-top:12px">
+        Proposta redatta da ${merchant} · SSD Pol. Virtus 2014 Srl · PalaPoli, Via Martiri di Via Fani, 70056 Molfetta (BA)
+      </div>
+
+    </div>`
+
+  document.getElementById('print-area').innerHTML = html
+  setTimeout(() => {
+    window.print()
+    // Dopo la stampa ripulisci
+    setTimeout(() => { document.getElementById('print-area').innerHTML = '' }, 1000)
+  }, 300)
 }
 </script>
 </body>
