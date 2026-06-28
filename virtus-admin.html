@@ -834,6 +834,13 @@ select.form-input:focus{border-color:var(--accent)}
         <div class="form-group"><label>Referente email</label><input class="form-input" id="p-ref-email" type="email" placeholder="mario@negozio.it"/></div>
         <div class="form-group"><label>Referente tel</label><input class="form-input" id="p-ref-tel" placeholder="333..."/></div>
         <div class="full form-group"><label>Indirizzo</label><input class="form-input" id="p-indirizzo" placeholder="Via Roma 12, Molfetta"/></div>
+        <div id="p-credenziali-row" class="full" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+          <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Credenziali accesso pannello partner</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="form-group"><label>Email accesso *</label><input class="form-input" id="p-email" type="email" placeholder="negozio@email.it"/></div>
+            <div class="form-group"><label>Password *</label><input class="form-input" id="p-pwd" type="password" placeholder="Minimo 8 caratteri"/></div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1419,6 +1426,12 @@ function apriModalPartner(id) {
   document.getElementById('p-ref-email').value = p?.referente_email || ''
   document.getElementById('p-ref-tel').value   = p?.referente_tel || ''
   document.getElementById('p-indirizzo').value = p?.indirizzo || ''
+  // Credenziali: visibili solo su nuovo partner
+  document.getElementById('p-credenziali-row').style.display = id ? 'none' : 'block'
+  if (!id) {
+    document.getElementById('p-email').value = ''
+    document.getElementById('p-pwd').value = ''
+  }
   openModal('modal-partner')
 }
 
@@ -1438,21 +1451,46 @@ async function salvaPartner() {
     indirizzo:       document.getElementById('p-indirizzo').value.trim() || null,
   }
 
-  let error
+  const btnSalva = document.querySelector('#modal-partner .btn-primary')
+  btnSalva.textContent = 'Salvataggio...'
+  btnSalva.disabled = true
+
   if (editingPartnerId) {
-    const res = await sbAdmin.from('partner').update(payload).eq('id', editingPartnerId)
-    error = res.error
+    // Modifica via Edge Function
+    payload.partner_id = editingPartnerId
   } else {
-    const res = await sbAdmin.from('partner').insert(payload)
-    error = res.error
+    // Nuovo partner: aggiungi credenziali
+    const email = document.getElementById('p-email').value.trim()
+    const pwd   = document.getElementById('p-pwd').value
+    if (!email) { toast('Inserisci l\'email di accesso', 'error'); btnSalva.textContent = 'Salva partner'; btnSalva.disabled = false; return }
+    if (!pwd || pwd.length < 8) { toast('Password minimo 8 caratteri', 'error'); btnSalva.textContent = 'Salva partner'; btnSalva.disabled = false; return }
+    payload.email    = email
+    payload.password = pwd
   }
 
-  if (error) { toast('Errore: ' + error.message, 'error'); return }
-  toast(editingPartnerId ? 'Partner aggiornato!' : 'Partner aggiunto!', 'success')
-  editingPartnerId = null
-  closeModal('modal-partner')
-  loadPartner()
-  loadPartnerList()
+  try {
+    const res = await fetch(
+      'https://brwkwlyxkptzmkzkvava.supabase.co/functions/v1/crea-partner',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PASSWORD },
+        body: JSON.stringify(payload)
+      }
+    )
+    const data = await res.json()
+    if (!res.ok || data.error) { toast('Errore: ' + (data.error || 'Risposta non valida'), 'error'); return }
+
+    toast(editingPartnerId ? 'Partner aggiornato ✓' : 'Partner creato ✓', 'success')
+    editingPartnerId = null
+    closeModal('modal-partner')
+    loadPartner()
+    loadPartnerList()
+  } catch(err) {
+    toast('Errore di rete: ' + err.message, 'error')
+  } finally {
+    btnSalva.textContent = 'Salva partner'
+    btnSalva.disabled = false
+  }
 }
 
 function generaAccordoPartner(id) {
