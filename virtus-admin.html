@@ -424,11 +424,11 @@ select.form-input:focus{border-color:var(--accent)}
       <div class="card">
         <div class="card-header">
           <div class="card-title">Partner attivi</div>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-partner')">+ Aggiungi partner</button>
+          <button class="btn btn-primary btn-sm" onclick="apriModalPartner(null)">+ Aggiungi partner</button>
         </div>
         <div class="card-body">
           <table>
-            <thead><tr><th>Negozio</th><th>Categoria</th><th>Referente</th><th>Punti/€</th><th>Stato</th><th></th></tr></thead>
+            <thead><tr><th>Negozio</th><th>Categoria</th><th>CF / P.IVA</th><th>Referente</th><th>Punti/€</th><th>Stato</th><th></th></tr></thead>
             <tbody id="partner-list"></tbody>
           </table>
         </div>
@@ -806,16 +806,16 @@ select.form-input:focus{border-color:var(--accent)}
   </div><!-- /content -->
 </div><!-- /main -->
 
-<!-- MODAL: Nuovo Partner -->
+<!-- MODAL: Nuovo/Modifica Partner -->
 <div class="modal-overlay" id="modal-partner">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Nuovo partner</div>
+      <div class="modal-title" id="modal-partner-title">Nuovo partner</div>
       <button class="modal-close" onclick="closeModal('modal-partner')">×</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="full form-group"><label>Nome negozio</label><input class="form-input" id="p-nome" placeholder="Bar dello Sport"/></div>
+        <div class="full form-group"><label>Nome negozio *</label><input class="form-input" id="p-nome" placeholder="Bar dello Sport"/></div>
         <div class="form-group"><label>Categoria</label>
           <select class="form-input" id="p-cat">
             <option value="ristorazione">Ristorazione</option>
@@ -828,6 +828,8 @@ select.form-input:focus{border-color:var(--accent)}
           </select>
         </div>
         <div class="form-group"><label>Punti per €</label><input class="form-input" id="p-punti" type="number" value="1" min="0.1" step="0.5"/></div>
+        <div class="form-group"><label>Codice Fiscale</label><input class="form-input" id="p-cf" placeholder="RSSMRA80A01F205X"/></div>
+        <div class="form-group"><label>Partita IVA</label><input class="form-input" id="p-piva" placeholder="IT12345678901"/></div>
         <div class="form-group"><label>Referente nome</label><input class="form-input" id="p-ref-nome" placeholder="Mario Rossi"/></div>
         <div class="form-group"><label>Referente email</label><input class="form-input" id="p-ref-email" type="email" placeholder="mario@negozio.it"/></div>
         <div class="form-group"><label>Referente tel</label><input class="form-input" id="p-ref-tel" placeholder="333..."/></div>
@@ -1375,6 +1377,8 @@ function filterTifosi() {
 }
 
 // ── PARTNER ──
+let editingPartnerId = null
+
 async function loadPartner() {
   const { data } = await sbAdmin.from('partner').select('*').order('nome_negozio')
   allPartner = data || []
@@ -1382,37 +1386,76 @@ async function loadPartner() {
     <tr>
       <td><strong>${p.nome_negozio}</strong>${p.indirizzo ? `<br><span style="color:var(--muted);font-size:11px">${p.indirizzo}</span>` : ''}</td>
       <td><span class="badge badge-gray">${p.categoria}</span></td>
+      <td style="font-size:11px;color:var(--muted)">
+        ${p.codice_fiscale ? `<div>CF: ${p.codice_fiscale}</div>` : ''}
+        ${p.partita_iva ? `<div>PI: ${p.partita_iva}</div>` : ''}
+        ${!p.codice_fiscale && !p.partita_iva ? '—' : ''}
+      </td>
       <td style="font-size:12px">${p.referente_nome || '—'}<br><span style="color:var(--muted);font-size:11px">${p.referente_email || ''}</span></td>
       <td><span class="pts">${p.punti_per_euro}</span>/€</td>
       <td><span class="badge badge-${p.attivo ? 'green' : 'red'}">${p.attivo ? 'attivo' : 'inattivo'}</span></td>
-      <td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick='apriModalPartner("${p.id}")'>✏️</button>
         <button class="btn btn-danger btn-sm" onclick='togglePartner("${p.id}", ${p.attivo})'>${p.attivo ? 'Sospendi' : 'Riattiva'}</button>
+        <button class="btn btn-danger btn-sm" onclick='eliminaPartner("${p.id}", "${p.nome_negozio.replace(/"/g,"&quot;")}")'>🗑️</button>
       </td>
-    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Nessun partner</td></tr>'
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessun partner</td></tr>'
 }
 
-async function loadPartnerList() {
-  const { data } = await sbAdmin.from('partner').select('id, nome_negozio').eq('attivo', true)
-  allPartner = data || []
-  const opts = allPartner.map(p => `<option value="${p.id}">${p.nome_negozio}</option>`).join('')
-  document.getElementById('pr-partner').innerHTML = '<option value="">— Nessun partner (premio Virtus) —</option>' + opts
-  document.getElementById('c-partner').innerHTML = '<option value="">— Tutti i partner —</option>' + opts
+function apriModalPartner(id) {
+  editingPartnerId = id || null
+  const p = id ? allPartner.find(x => x.id === id) : null
+  document.getElementById('modal-partner-title').textContent = id ? 'Modifica partner' : 'Nuovo partner'
+  document.getElementById('p-nome').value      = p?.nome_negozio || ''
+  document.getElementById('p-cat').value       = p?.categoria || 'ristorazione'
+  document.getElementById('p-punti').value     = p?.punti_per_euro ?? 1
+  document.getElementById('p-cf').value        = p?.codice_fiscale || ''
+  document.getElementById('p-piva').value      = p?.partita_iva || ''
+  document.getElementById('p-ref-nome').value  = p?.referente_nome || ''
+  document.getElementById('p-ref-email').value = p?.referente_email || ''
+  document.getElementById('p-ref-tel').value   = p?.referente_tel || ''
+  document.getElementById('p-indirizzo').value = p?.indirizzo || ''
+  openModal('modal-partner')
 }
 
 async function salvaPartner() {
+  const nome = document.getElementById('p-nome').value.trim()
+  if (!nome) { toast('Inserisci il nome del negozio', 'error'); return }
+
   const payload = {
-    nome_negozio:   document.getElementById('p-nome').value,
-    categoria:      document.getElementById('p-cat').value,
-    punti_per_euro: parseFloat(document.getElementById('p-punti').value),
-    referente_nome:  document.getElementById('p-ref-nome').value,
-    referente_email: document.getElementById('p-ref-email').value,
-    referente_tel:   document.getElementById('p-ref-tel').value,
-    indirizzo:       document.getElementById('p-indirizzo').value,
+    nome_negozio:    nome,
+    categoria:       document.getElementById('p-cat').value,
+    punti_per_euro:  parseFloat(document.getElementById('p-punti').value) || 1,
+    codice_fiscale:  document.getElementById('p-cf').value.trim() || null,
+    partita_iva:     document.getElementById('p-piva').value.trim() || null,
+    referente_nome:  document.getElementById('p-ref-nome').value.trim() || null,
+    referente_email: document.getElementById('p-ref-email').value.trim() || null,
+    referente_tel:   document.getElementById('p-ref-tel').value.trim() || null,
+    indirizzo:       document.getElementById('p-indirizzo').value.trim() || null,
   }
-  const { error } = await sbAdmin.from('partner').insert(payload)
+
+  let error
+  if (editingPartnerId) {
+    const res = await sbAdmin.from('partner').update(payload).eq('id', editingPartnerId)
+    error = res.error
+  } else {
+    const res = await sbAdmin.from('partner').insert(payload)
+    error = res.error
+  }
+
   if (error) { toast('Errore: ' + error.message, 'error'); return }
-  toast('Partner aggiunto!', 'success')
+  toast(editingPartnerId ? 'Partner aggiornato!' : 'Partner aggiunto!', 'success')
+  editingPartnerId = null
   closeModal('modal-partner')
+  loadPartner()
+  loadPartnerList()
+}
+
+async function eliminaPartner(id, nome) {
+  if (!confirm(`Eliminare definitivamente il partner "${nome}"?\nQuesta azione non può essere annullata.`)) return
+  const { error } = await sbAdmin.from('partner').delete().eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Partner eliminato', 'success')
   loadPartner()
   loadPartnerList()
 }
@@ -1421,6 +1464,14 @@ async function togglePartner(id, attivo) {
   await sbAdmin.from('partner').update({ attivo: !attivo }).eq('id', id)
   toast(attivo ? 'Partner sospeso' : 'Partner riattivato', 'success')
   loadPartner()
+}
+
+async function loadPartnerList() {
+  const { data } = await sbAdmin.from('partner').select('id, nome_negozio').eq('attivo', true)
+  allPartner = data || []
+  const opts = allPartner.map(p => `<option value="${p.id}">${p.nome_negozio}</option>`).join('')
+  document.getElementById('pr-partner').innerHTML = '<option value="">— Nessun partner (premio Virtus) —</option>' + opts
+  document.getElementById('c-partner').innerHTML = '<option value="">— Tutti i partner —</option>' + opts
 }
 
 // ── PREMI ──
