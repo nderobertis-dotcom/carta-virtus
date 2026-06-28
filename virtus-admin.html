@@ -806,6 +806,34 @@ select.form-input:focus{border-color:var(--accent)}
   </div><!-- /content -->
 </div><!-- /main -->
 
+<!-- MODAL: Crea accesso partner esistente -->
+<div class="modal-overlay" id="modal-crea-accesso">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">🔑 Crea accesso partner</div>
+      <button class="modal-close" onclick="closeModal('modal-crea-accesso')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#EEF4FF;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#1A3A6B">
+        Stai creando le credenziali di accesso al pannello partner per:<br>
+        <strong id="ca-partner-nome" style="font-size:14px"></strong>
+      </div>
+      <input type="hidden" id="ca-partner-id"/>
+      <div class="form-group"><label>Email di accesso *</label>
+        <input class="form-input" id="ca-email" type="email" placeholder="negozio@email.it"/>
+      </div>
+      <div class="form-group"><label>Password *</label>
+        <input class="form-input" id="ca-pwd" type="password" placeholder="Minimo 8 caratteri"/>
+      </div>
+      <div id="ca-error" style="display:none;background:#FFEBEE;border:1px solid #EF9A9A;border-radius:6px;padding:10px 14px;font-size:12px;color:#C62828"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-crea-accesso')">Annulla</button>
+      <button class="btn btn-primary" onclick="creaAccessoPartner()">Crea accesso</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Nuovo/Modifica Partner -->
 <div class="modal-overlay" id="modal-partner">
   <div class="modal">
@@ -1407,6 +1435,7 @@ async function loadPartner() {
       <td style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick='apriModalPartner("${p.id}")'>✏️</button>
         <button class="btn btn-primary btn-sm" onclick='generaAccordoPartner("${p.id}")'>📄</button>
+        ${!p.auth_user_id ? `<button class="btn btn-primary btn-sm" onclick='apriModalCreaAccesso("${p.id}")'>🔑</button>` : ''}
         <button class="btn btn-danger btn-sm" onclick='togglePartner("${p.id}", ${p.attivo})'>${p.attivo ? 'Sospendi' : 'Riattiva'}</button>
         <button class="btn btn-danger btn-sm" onclick='eliminaPartner("${p.id}", "${p.nome_negozio.replace(/"/g,"&quot;")}")'>🗑️</button>
       </td>
@@ -1608,6 +1637,58 @@ async function eliminaPartner(id, nome) {
   toast('Partner eliminato', 'success')
   loadPartner()
   loadPartnerList()
+}
+
+function apriModalCreaAccesso(id) {
+  const p = allPartner.find(x => x.id === id)
+  if (!p) return
+  document.getElementById('ca-partner-nome').textContent = p.nome_negozio
+  document.getElementById('ca-partner-id').value = id
+  document.getElementById('ca-email').value = p.referente_email || ''
+  document.getElementById('ca-pwd').value = ''
+  document.getElementById('ca-error').style.display = 'none'
+  openModal('modal-crea-accesso')
+}
+
+async function creaAccessoPartner() {
+  const id    = document.getElementById('ca-partner-id').value
+  const email = document.getElementById('ca-email').value.trim()
+  const pwd   = document.getElementById('ca-pwd').value
+  const errEl = document.getElementById('ca-error')
+  errEl.style.display = 'none'
+
+  if (!email) { errEl.textContent = 'Inserisci l\'email di accesso'; errEl.style.display = 'block'; return }
+  if (!pwd || pwd.length < 8) { errEl.textContent = 'Password minimo 8 caratteri'; errEl.style.display = 'block'; return }
+
+  const btnSalva = document.querySelector('#modal-crea-accesso .btn-primary')
+  btnSalva.textContent = 'Creazione...'
+  btnSalva.disabled = true
+
+  try {
+    const res = await fetch(
+      'https://brwkwlyxkptzmkzkvava.supabase.co/functions/v1/crea-partner',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PASSWORD },
+        body: JSON.stringify({ partner_id: id, email, password: pwd, crea_accesso: true })
+      }
+    )
+    const data = await res.json()
+    if (!res.ok || data.error) {
+      errEl.textContent = data.error || 'Errore sconosciuto'
+      errEl.style.display = 'block'
+      return
+    }
+    toast('Accesso creato per ' + document.getElementById('ca-partner-nome').textContent + ' ✓', 'success')
+    closeModal('modal-crea-accesso')
+    loadPartner()
+  } catch(err) {
+    errEl.textContent = 'Errore di rete: ' + err.message
+    errEl.style.display = 'block'
+  } finally {
+    btnSalva.textContent = 'Crea accesso'
+    btnSalva.disabled = false
+  }
 }
 
 async function togglePartner(id, attivo) {
