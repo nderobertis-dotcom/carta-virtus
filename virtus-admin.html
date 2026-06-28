@@ -1435,6 +1435,7 @@ async function loadPartner() {
       <td style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick='apriModalPartner("${p.id}")'>✏️</button>
         <button class="btn btn-primary btn-sm" onclick='generaAccordoPartner("${p.id}")'>📄</button>
+        <button class="btn btn-ghost btn-sm" title="Invia mail di benvenuto" onclick='inviaMailBenvenutoPartner("${p.id}")'>📧</button>
         ${!p.auth_user_id ? `<button class="btn btn-primary btn-sm" onclick='apriModalCreaAccesso("${p.id}")'>🔑</button>` : ''}
         <button class="btn btn-danger btn-sm" onclick='togglePartner("${p.id}", ${p.attivo})'>${p.attivo ? 'Sospendi' : 'Riattiva'}</button>
         <button class="btn btn-danger btn-sm" onclick='eliminaPartner("${p.id}", "${p.nome_negozio.replace(/"/g,"&quot;")}")'>🗑️</button>
@@ -1637,6 +1638,77 @@ async function eliminaPartner(id, nome) {
   toast('Partner eliminato', 'success')
   loadPartner()
   loadPartnerList()
+}
+
+async function inviaMailBenvenutoPartner(id) {
+  const p = allPartner.find(x => x.id === id)
+  if (!p) return
+
+  const email = p.referente_email
+  if (!email) {
+    toast('Nessuna email referente per questo partner', 'error')
+    return
+  }
+
+  if (!confirm(`Inviare la mail di benvenuto a ${p.nome_negozio} (${email})?`)) return
+
+  // Chiedi la password da includere nella mail
+  const pwd = prompt(`Inserisci la password di accesso da comunicare a ${p.nome_negozio}:`)
+  if (!pwd) return
+
+  const btnLabel = 'Invio in corso...'
+  toast(btnLabel, 'info')
+
+  const htmlBody = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#111">
+  <div style="background:#1A3A6B;padding:28px 32px;border-radius:10px 10px 0 0;text-align:center">
+    <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:.06em">VIRTUS FAN CARD</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px">Programma Partner — Stagione 2026/2027</div>
+  </div>
+  <div style="background:#fff;padding:32px;border:1px solid #E0E0E0;border-top:none">
+    <p style="font-size:15px;margin-bottom:20px">Gentile <strong>${p.nome_negozio}</strong>,</p>
+    <p style="margin-bottom:16px;line-height:1.7">siamo lieti di darti il benvenuto nel programma <strong>Virtus Fan Card</strong> come partner ufficiale della stagione sportiva 2026/2027. Da oggi fai parte della rete commerciale che supporta la Virtus Basket Molfetta e che offre vantaggi esclusivi ai nostri tifosi.</p>
+    <div style="background:#F0F6FF;border-radius:8px;padding:20px 24px;margin:24px 0;border-left:4px solid #1A3A6B">
+      <div style="font-size:12px;font-weight:700;color:#1A3A6B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Le tue credenziali di accesso</div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td style="padding:6px 0;font-size:13px;color:#546E7A;width:40%">Indirizzo pannello</td><td style="padding:6px 0;font-size:13px;font-weight:600"><a href="https://virtusfanmolfetta.com/partner.html" style="color:#1A3A6B">virtusfanmolfetta.com/partner.html</a></td></tr>
+        <tr><td style="padding:6px 0;font-size:13px;color:#546E7A">Email</td><td style="padding:6px 0;font-size:13px;font-weight:600">${email}</td></tr>
+        <tr><td style="padding:6px 0;font-size:13px;color:#546E7A">Password</td><td style="padding:6px 0;font-size:13px;font-weight:600">${pwd}</td></tr>
+        <tr><td style="padding:6px 0;font-size:13px;color:#546E7A">Punti per € speso</td><td style="padding:6px 0;font-size:13px;font-weight:600">${p.punti_per_euro} punto/i</td></tr>
+      </table>
+    </div>
+    <div style="margin:24px 0">
+      <div style="font-size:13px;font-weight:700;color:#1A3A6B;margin-bottom:12px">Come funziona il pannello partner</div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr style="background:#F8F9FA"><td style="padding:10px 12px;font-size:13px;width:32px;text-align:center">1️⃣</td><td style="padding:10px 12px;font-size:13px"><strong>Accedi</strong> al pannello con le credenziali qui sopra</td></tr>
+        <tr><td style="padding:10px 12px;font-size:13px;text-align:center">2️⃣</td><td style="padding:10px 12px;font-size:13px"><strong>Accetta</strong> l'accordo di partnership alla prima accettazione</td></tr>
+        <tr style="background:#F8F9FA"><td style="padding:10px 12px;font-size:13px;text-align:center">3️⃣</td><td style="padding:10px 12px;font-size:13px">Quando un tifoso acquista, <strong>scansiona il suo QR code</strong> Virtus Fan Card tramite il pannello</td></tr>
+        <tr><td style="padding:10px 12px;font-size:13px;text-align:center">4️⃣</td><td style="padding:10px 12px;font-size:13px">I punti vengono <strong>accreditati automaticamente</strong> al tifoso in base all'importo della spesa</td></tr>
+        <tr style="background:#F8F9FA"><td style="padding:10px 12px;font-size:13px;text-align:center">5️⃣</td><td style="padding:10px 12px;font-size:13px">Dal pannello puoi monitorare <strong>tutte le scansioni</strong> effettuate e le statistiche del tuo negozio</td></tr>
+      </table>
+    </div>
+    <div style="background:#FFF3E0;border-radius:8px;padding:14px 16px;font-size:12px;color:#E65100;margin:20px 0">🔒 Per motivi di sicurezza ti consigliamo di cambiare la password al primo accesso. Conserva queste credenziali in modo riservato.</div>
+    <p style="font-size:13px;line-height:1.7;margin-top:20px">Per qualsiasi dubbio o necessità di supporto rispondi direttamente a questa email — saremo felici di aiutarti.</p>
+    <p style="font-size:13px;margin-top:20px">Grazie per la fiducia e buona stagione!<br><br><strong>Il team Virtus Fan Card</strong><br><span style="color:#546E7A;font-size:12px">SSD Pol. Virtus 2014 Srl · marketing@virtusmolfetta.com</span></p>
+  </div>
+  <div style="background:#F8F9FA;padding:16px 32px;border-radius:0 0 10px 10px;text-align:center;font-size:11px;color:#9E9E9E;border:1px solid #E0E0E0;border-top:none">SSD Pol. Virtus 2014 Srl · Via Martiri di Via Fani, c/o PalaPoli · 70056 Molfetta (BA)</div>
+</div>`
+
+  try {
+    await emailjs.send('service_56o6ajc', 'template_382bqdi', {
+      to_email:        email,
+      to_name:         p.nome_negozio,
+      nome_negozio:    p.nome_negozio,
+      email_accesso:   email,
+      password_accesso: pwd,
+      punti_per_euro:  p.punti_per_euro,
+      message_html:    htmlBody,
+      subject:         'Benvenuto nel programma Virtus Fan Card — Credenziali di accesso'
+    })
+    toast(`Mail di benvenuto inviata a ${email} ✓`, 'success')
+  } catch(err) {
+    console.error('EmailJS error:', err)
+    toast('Errore invio mail: ' + (err?.text || err?.message || JSON.stringify(err)), 'error')
+  }
 }
 
 function apriModalCreaAccesso(id) {
