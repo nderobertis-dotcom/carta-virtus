@@ -49,7 +49,39 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 .step p{font-size:13px;color:var(--muted);line-height:1.5}
 .piani-bg{background:linear-gradient(180deg,#fff 0%,#f0f6ff 100%);padding:80px 0}
 .piani-inner{max-width:1100px;margin:0 auto;padding:0 24px}
-.piani-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+/* ── BASE: 4 colonne desktop ── */
+.piani-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:48px}
+
+/* ── TABLET (≤1024px): 2 colonne ── */
+@media(max-width:1024px){
+  .piani-grid{grid-template-columns:repeat(2,1fr) !important}
+  .hero-inner{grid-template-columns:1fr;gap:40px}
+  .steps{grid-template-columns:repeat(2,1fr)}
+}
+
+/* ── MOBILE (≤768px): colonna singola ── */
+@media(max-width:768px){
+  .piani-grid{display:flex !important;flex-direction:column !important;gap:16px !important}
+  .piani-grid .piano{width:100% !important;max-width:100% !important}
+  .piani-base-info-grid{grid-template-columns:1fr !important}
+  .hero-inner{grid-template-columns:1fr;gap:32px}
+  .hero-card{display:none}
+  .steps{grid-template-columns:1fr 1fr}
+  .tifoso-grid{grid-template-columns:1fr}
+  .form-grid-2{grid-template-columns:1fr}
+  .pagamento-grid{grid-template-columns:1fr}
+  .piano-header{padding:20px 20px 14px}
+  .piano-body{padding:0 20px 20px}
+  .piano-prezzo{font-size:44px}
+  .section{padding:48px 16px}
+}
+
+/* ── SMALL MOBILE (≤420px) ── */
+@media(max-width:420px){
+  .piano-prezzo{font-size:38px}
+  .piano-benefits li{font-size:13px}
+  .btn-piano{font-size:13px;padding:12px}
+}
 .piano{background:#fff;border:2px solid var(--border);border-radius:20px;overflow:hidden;transition:transform .2s,box-shadow .2s;position:relative}
 .piano:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(21,101,192,.12)}
 .piano.featured{border-color:var(--arancio);box-shadow:0 8px 32px rgba(245,124,0,.15)}
@@ -172,16 +204,6 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 #toast.show{transform:translateY(0);opacity:1}
 #toast.error{background:var(--rosso)}
 #toast.success{background:#2e7d32}
-@media(max-width:768px){
-  .hero-inner{grid-template-columns:1fr;gap:40px}
-  .piani-base-info-grid{grid-template-columns:1fr !important}
-  .hero-card{display:none}
-  .steps{grid-template-columns:1fr 1fr}
-  .piani-grid{grid-template-columns:1fr 1fr}
-  .piani-grid .piano:first-child{grid-column:1/-1}
-  .tifoso-grid{grid-template-columns:1fr}
-  .form-grid-2{grid-template-columns:1fr}
-  .pagamento-grid{grid-template-columns:1fr}
 }
 </style>
   <script src="https://js.stripe.com/v3/"></script>
@@ -239,7 +261,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     <div class="section-label">I nostri piani</div>
     <div class="section-title">Scegli il tuo livello</div>
     <div class="section-sub">4 livelli per ogni tipo di tifoso. Il piano <strong>Base</strong> è la porta d'ingresso — tienici il tuo accredito attivo. I piani <strong>Bronze, Silver e Gold</strong> ti danno accesso completo al programma fedeltà con accumulo punti, premi e benefit esclusivi.</div>
-    <div class="piani-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="piani-grid">
 
       <!-- BASE (entry level) -->
       <div class="piano">
@@ -402,9 +424,6 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     </a>
     <a href="virtus-admin.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.7)'" onmouseout="this.style.background='rgba(255,255,255,.07)';this.style.color='rgba(255,255,255,.4)'">
       ⚙️ Admin
-    </a>
-    <a href="merchant.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.7)'" onmouseout="this.style.background='rgba(255,255,255,.07)';this.style.color='rgba(255,255,255,.4)'">
-      💼 Merchant
     </a>
   </div>
 </footer>
