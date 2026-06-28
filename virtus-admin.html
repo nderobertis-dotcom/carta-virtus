@@ -1698,14 +1698,10 @@ async function inviaMailBenvenutoPartner(id) {
 
   try {
     await emailjs.send('service_56o6ajc', 'template_382bqdi', {
-      to_email:        email,
-      to_name:         p.nome_negozio,
-      nome_negozio:    p.nome_negozio,
-      email_accesso:   email,
-      password_accesso: pwd,
-      punti_per_euro:  p.punti_per_euro,
-      message_html:    htmlBody,
-      subject:         'Benvenuto nel programma Virtus Fan Card — Credenziali di accesso'
+      to_email:     email,
+      subject:      'Benvenuto nel programma Virtus Fan Card — Credenziali di accesso',
+      reply_to:     'marketing@virtusmolfetta.com',
+      message_html: htmlBody
     }, 'vAwWF1wWz1OelPU0q')
     toast(`Mail di benvenuto inviata a ${email} ✓`, 'success')
   } catch(err) {
@@ -2605,17 +2601,39 @@ async function assegnaPosto() {
   // Invia email se presente
   if (email) {
     const qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=1A3A6B&data=' + encodeURIComponent(qr)
+    const htmlTifoso = `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto">
+      <div style="background:#1A3A6B;padding:24px;text-align:center;border-radius:12px 12px 0 0">
+        <h1 style="color:#fff;margin:0;font-size:22px">VIRTUS FAN CARD</h1>
+        <p style="color:#F57C00;margin:4px 0 0;font-size:13px">Accesso Sponsor / Ospite</p>
+      </div>
+      <div style="background:#fff;padding:24px;border:1px solid #e0e0e0;border-top:none">
+        <p>Gentile <strong>${nomeCognome}</strong>,</p>
+        <p>di seguito il tuo QR code personale per accedere alle gare casalinghe della <strong>Nuova Virtus Basket Molfetta</strong>.</p>
+        <div style="text-align:center;margin:24px 0">
+          <img src="${qrImageUrl}" width="180" height="180" alt="QR Code"/>
+        </div>
+        <div style="background:#f0f6ff;border-radius:8px;padding:16px;text-align:center">
+          <div style="font-size:18px;font-weight:700;color:#1A3A6B">${azienda || nomeCognome}</div>
+          <div style="font-size:14px;color:#555;margin-top:4px">${nomeCognome}</div>
+          <div style="font-size:13px;color:#F57C00;margin-top:8px;font-weight:600">${postoLabel}</div>
+          <div style="font-family:monospace;font-size:12px;color:#999;margin-top:6px;letter-spacing:2px">${qr}</div>
+        </div>
+        <p style="font-size:12px;color:#999;margin-top:20px">Mostra questo QR code all'operatore all'ingresso. Non condividerlo con altri.</p>
+      </div>
+      <div style="background:#f8f9fa;padding:16px;text-align:center;font-size:11px;color:#9E9E9E;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 12px 12px">
+        SSD Pol. Virtus 2014 Srl · Via Martiri di Via Fani, c/o PalaPoli · 70056 Molfetta (BA)
+      </div>
+    </div>`
+
     emailjs.send('service_56o6ajc', 'template_382bqdi', {
       to_email:     email,
-      nome_cognome: nomeCognome,
-      azienda:      azienda || nomeCognome,
-      posto_label:  postoLabel,
-      qr_code:      qr,
-      qr_image_url: qrImageUrl
-    }).then(() => {
+      subject:      'Il tuo accesso — ' + postoLabel,
+      reply_to:     'marketing@virtusmolfetta.com',
+      message_html: htmlTifoso
+    }, 'vAwWF1wWz1OelPU0q').then(() => {
       toast('📧 Email con QR inviata a '+email, 'success')
     }).catch(err => {
-      toast('Email non inviata: '+err.text, 'error')
+      toast('Email non inviata: '+(err.text||err.message), 'error')
     })
   }
 }
