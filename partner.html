@@ -178,6 +178,75 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 </div>
 
 <!-- APP -->
+<!-- ACCORDO -->
+<div id="accordo-screen" style="display:none;min-height:100vh;background:linear-gradient(135deg,#0d2147,#1a3a6b);padding:24px;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:20px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3)">
+    <div style="padding:28px 32px 0">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:11px;font-weight:700;color:#F57C00;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Prima di accedere</div>
+        <div style="font-size:22px;font-weight:800;color:#1A3A6B">Accordo di Partnership</div>
+        <div style="font-size:13px;color:#546E7A;margin-top:4px">Virtus Fan Card · Stagione 2026/2027</div>
+      </div>
+
+      <!-- Testo accordo scrollabile -->
+      <div id="accordo-testo" style="background:#F8F9FA;border-radius:10px;padding:20px 24px;font-size:12.5px;line-height:1.8;color:#222;max-height:380px;overflow-y:auto;border:1px solid #E0E0E0">
+
+        <p style="margin-bottom:12px"><strong>Tra</strong> SSD Pol. Virtus 2014 Srl, Via Martiri di Via Fani, c/o PalaPoli, 70056 Molfetta (BA), P.IVA 07659340728, rappresentata dal Presidente Andrea Bellifemmine — <strong>e</strong> il Partner commerciale identificato al momento della registrazione.</p>
+
+        <p style="font-weight:700;color:#1A3A6B;margin:16px 0 6px">Oggetto</p>
+        <p style="margin-bottom:12px">Il presente accordo formalizza la partecipazione del Partner al programma <strong>Virtus Fan Card</strong> per la stagione sportiva 2026/2027, a titolo completamente <strong>gratuito</strong> per entrambe le parti.</p>
+
+        <p style="font-weight:700;color:#1A3A6B;margin:16px 0 6px">La Virtus si impegna a:</p>
+        <ul style="padding-left:18px;margin-bottom:12px">
+          <li style="margin-bottom:5px">Inserire il Partner nel catalogo ufficiale dei partner attivi sulla piattaforma Virtus Fan Card</li>
+          <li style="margin-bottom:5px">Fornire un QR code personale per la scansione e l&#39;accredito automatico dei punti ai tifosi</li>
+          <li style="margin-bottom:5px">Garantire accesso a un pannello partner dedicato per il monitoraggio in tempo reale</li>
+          <li style="margin-bottom:5px">Promuovere il Partner attraverso i canali ufficiali della Virtus (social media, newsletter, comunicazioni)</li>
+          <li style="margin-bottom:5px">Offrire la possibilità di attivare campagne promozionali personalizzate visibili ai tifosi</li>
+          <li style="margin-bottom:5px">Fornire supporto tecnico per l&#39;utilizzo della piattaforma</li>
+        </ul>
+
+        <p style="font-weight:700;color:#1A3A6B;margin:16px 0 6px">Il Partner si impegna a:</p>
+        <ul style="padding-left:18px;margin-bottom:12px">
+          <li style="margin-bottom:5px">Accettare il QR code Virtus Fan Card presentato dai tifosi e procedere alla scansione tramite il pannello dedicato</li>
+          <li style="margin-bottom:5px">Riconoscere ai tifosi il numero di punti per euro speso concordato con la Virtus</li>
+          <li style="margin-bottom:5px">Esporre il materiale informativo sulla Virtus Fan Card fornito dalla società</li>
+          <li style="margin-bottom:5px">Segnalare tempestivamente eventuali problemi tecnici o difficoltà nell&#39;utilizzo della piattaforma</li>
+          <li style="margin-bottom:5px">Mantenere un comportamento in linea con i valori del club e con l&#39;immagine del programma</li>
+        </ul>
+
+        <p style="font-weight:700;color:#1A3A6B;margin:16px 0 6px">Durata e Recesso</p>
+        <p style="margin-bottom:12px">Il presente accordo ha durata pari alla stagione sportiva <strong>2026/2027</strong> e si rinnova automaticamente per le stagioni successive, salvo comunicazione scritta di recesso. Il recesso è esercitabile in qualsiasi momento con effetto immediato, via email a info@virtusmolfetta.com.</p>
+
+        <p style="font-weight:700;color:#1A3A6B;margin:16px 0 6px">Trattamento dei Dati</p>
+        <p style="margin-bottom:4px">Le parti si impegnano al rispetto del GDPR (Reg. UE 2016/679). I dati trattati nell&#39;ambito del programma non saranno ceduti a terzi.</p>
+      </div>
+
+      <!-- Checkbox conferma -->
+      <div style="display:flex;align-items:flex-start;gap:12px;margin:20px 0 16px;padding:14px 16px;background:#E8F5E9;border-radius:8px;border:1px solid #A5D6A7">
+        <input type="checkbox" id="accordo-check" style="margin-top:3px;width:18px;height:18px;flex-shrink:0;cursor:pointer"/>
+        <label for="accordo-check" style="font-size:13px;color:#2E7D32;cursor:pointer;line-height:1.6">
+          Ho letto e compreso il presente accordo di partnership e accetto integralmente le condizioni indicate. Confermo che i dati del mio negozio sono corretti e che sono autorizzato ad agire per conto dell&#39;attività commerciale.
+        </label>
+      </div>
+
+      <div id="accordo-error" style="display:none;background:#FFEBEE;border:1px solid #EF9A9A;border-radius:6px;padding:10px 14px;font-size:12px;color:#C62828;margin-bottom:12px">
+        Devi accettare le condizioni dell&#39;accordo per accedere al pannello.
+      </div>
+    </div>
+
+    <div style="padding:16px 32px 28px;display:flex;gap:12px;justify-content:flex-end">
+      <button onclick="doLogout()" style="background:transparent;border:1.5px solid #CFD8DC;color:#546E7A;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+        Esci
+      </button>
+      <button onclick="accettaAccordo()" style="background:#1A3A6B;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
+        ✅ Accetto e accedo al pannello
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
 <div id="app">
   <div class="header">
     <div class="header-logo">
@@ -399,17 +468,52 @@ async function doLogin() {
     if (error || !partner) throw new Error('Account non associato a nessun partner')
 
     currentPartner = partner
-    document.getElementById('partner-chip').textContent = partner.nome_negozio
     document.getElementById('login-screen').style.display = 'none'
-    document.getElementById('app').style.display = 'flex'
-    loadStorico()
-    loadReport()
-    loadCampagne()
+
+    // Controlla se l'accordo è già stato accettato
+    if (!partner.accordo_accettato_il) {
+      document.getElementById('accordo-screen').style.display = 'flex'
+    } else {
+      avviaApp()
+    }
 
   } catch(err) {
     errEl.textContent = err.message
     errEl.style.display = 'block'
   }
+}
+
+async function accettaAccordo() {
+  const check = document.getElementById('accordo-check')
+  const errEl = document.getElementById('accordo-error')
+  if (!check.checked) {
+    errEl.style.display = 'block'
+    return
+  }
+  errEl.style.display = 'none'
+
+  // Salva accettazione nel DB con timestamp
+  const { error } = await sb.from('partner').update({
+    accordo_accettato_il: new Date().toISOString()
+  }).eq('id', currentPartner.id)
+
+  if (error) {
+    errEl.textContent = 'Errore nel salvataggio: ' + error.message
+    errEl.style.display = 'block'
+    return
+  }
+
+  currentPartner.accordo_accettato_il = new Date().toISOString()
+  document.getElementById('accordo-screen').style.display = 'none'
+  avviaApp()
+}
+
+function avviaApp() {
+  document.getElementById('partner-chip').textContent = currentPartner.nome_negozio
+  document.getElementById('app').style.display = 'flex'
+  loadStorico()
+  loadReport()
+  loadCampagne()
 }
 
 async function doLogout() {
@@ -418,6 +522,7 @@ async function doLogout() {
   currentPartner = null
   currentTifoso = null
   document.getElementById('app').style.display = 'none'
+  document.getElementById('accordo-screen').style.display = 'none'
   document.getElementById('login-screen').style.display = 'flex'
 }
 
