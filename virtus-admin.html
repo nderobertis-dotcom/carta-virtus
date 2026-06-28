@@ -1654,7 +1654,10 @@ async function inviaMailBenvenutoPartner(id) {
 
   // Chiedi la password da includere nella mail
   const pwd = prompt(`Inserisci la password di accesso da comunicare a ${p.nome_negozio}:`)
-  if (!pwd) return
+  if (!pwd || !pwd.trim()) {
+    toast('Password non inserita — mail non inviata', 'error')
+    return
+  }
 
   const btnLabel = 'Invio in corso...'
   toast(btnLabel, 'info')
