@@ -709,7 +709,7 @@ select.form-input:focus{border-color:var(--accent)}
         </div>
         <div class="card-body">
           <table>
-            <thead><tr><th>Nome</th><th>Email</th><th>Telefono</th><th>Sconto Max %</th><th>Contratti</th><th>Valore Tot.</th><th>Stato</th><th></th></tr></thead>
+            <thead><tr><th>Nome</th><th>Email</th><th>Telefono</th><th>Tipo</th><th>Sconto/Limite</th><th>Contratti</th><th>Valore Tot.</th><th>Stato</th><th></th></tr></thead>
             <tbody id="merchants-list"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Caricamento...</td></tr></tbody>
           </table>
         </div>
@@ -3088,6 +3088,12 @@ let editingMerchantId = null
 let editingProdottoId = null
 
 // ── MERCHANTS ────────────────────────────────────────────
+function toggleScontoMerchant() {
+  const tipo = document.getElementById('m-tipo')?.value
+  const scontoRow = document.getElementById('m-sconto-row')
+  if (scontoRow) scontoRow.style.display = tipo === 'vip' ? 'none' : 'block'
+}
+
 async function loadMerchants() {
   const { data } = await sb.from('merchants').select('*').order('cognome')
   fopMerchants = data || []
@@ -3106,11 +3112,15 @@ async function loadMerchants() {
   tbody.innerHTML = fopMerchants.map(m => {
     const mc = (contratti || []).filter(c => c.merchant_id === m.id)
     const valTot = mc.reduce((s, c) => s + parseFloat(c.prezzo_finale || 0), 0)
+    const tipoBadge = m.tipo === 'vip'
+      ? '<span class="badge" style="background:#FFF3E0;color:#E65100;border:1px solid #FFB74D">⭐ VIP</span>'
+      : '<span class="badge badge-gray" style="font-size:10px">Normale</span>'
     return `<tr>
       <td><strong>${m.nome} ${m.cognome}</strong></td>
       <td>${m.email}</td>
       <td>${m.telefono || '—'}</td>
-      <td><strong>${m.sconto_max_pct}%</strong></td>
+      <td>${tipoBadge}</td>
+      <td><strong>${m.tipo === 'vip' ? '∞' : m.sconto_max_pct + '%'}</strong></td>
       <td>${mc.length}</td>
       <td>€ ${valTot.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
       <td><span class="badge ${m.attivo ? 'badge-active' : 'badge-inactive'}">${m.attivo ? 'Attivo' : 'Sospeso'}</span></td>
@@ -3130,6 +3140,8 @@ function apriModalNuovoMerchant(id) {
   document.getElementById('m-email').value      = m?.email || ''
   document.getElementById('m-tel').value        = m?.telefono || ''
   document.getElementById('m-sconto').value     = m?.sconto_max_pct ?? 10
+  document.getElementById('m-tipo').value       = m?.tipo || 'normale'
+  toggleScontoMerchant()
   document.getElementById('m-note').value       = m?.note_admin || ''
   document.getElementById('m-pwd').value        = ''
   document.getElementById('m-pwd-row').style.display = id ? 'none' : 'block'
@@ -3143,6 +3155,7 @@ async function salvaMerchant() {
   const email  = document.getElementById('m-email').value.trim()
   const tel    = document.getElementById('m-tel').value.trim()
   const sconto = parseFloat(document.getElementById('m-sconto').value || 10)
+  const tipo   = document.getElementById('m-tipo').value || 'normale'
   const note   = document.getElementById('m-note').value.trim()
   const pwd    = document.getElementById('m-pwd').value
 
@@ -3159,7 +3172,8 @@ async function salvaMerchant() {
     telefono: tel || null,
     sconto_max_pct: sconto,
     note_admin: note || null,
-    ...(editingMerchantId ? { merchant_id: editingMerchantId } : { password: pwd })
+    ...(editingMerchantId ? { merchant_id: editingMerchantId } : { password: pwd }),
+    tipo
   }
 
   try {
@@ -3483,7 +3497,13 @@ async function salvaFopProdotto() {
         <div class="form-group"><label>Cognome *</label><input class="form-input" id="m-cognome" placeholder="Rossi"/></div>
         <div class="full form-group"><label>Email *</label><input class="form-input" id="m-email" type="email" placeholder="merchant@virtusmolfetta.com"/></div>
         <div class="form-group"><label>Telefono</label><input class="form-input" id="m-tel" placeholder="+39 333..."/></div>
-        <div class="form-group"><label>Sconto Max % *</label><input class="form-input" id="m-sconto" type="number" min="0" max="50" step="0.5" value="10" placeholder="10"/></div>
+        <div class="form-group"><label>Tipo Merchant</label>
+          <select class="form-input" id="m-tipo" onchange="toggleScontoMerchant()">
+            <option value="normale">Normale</option>
+            <option value="vip">⭐ VIP — prezzo libero</option>
+          </select>
+        </div>
+        <div class="form-group" id="m-sconto-row"><label>Sconto Max %</label><input class="form-input" id="m-sconto" type="number" min="0" max="50" step="0.5" value="10" placeholder="10"/></div>
         <div id="m-pwd-row" class="full form-group"><label>Password accesso *</label><input class="form-input" id="m-pwd" type="password" placeholder="Minimo 8 caratteri"/></div>
         <div class="full form-group"><label>Note admin</label><textarea class="form-input" id="m-note" rows="2" placeholder="Note interne..."></textarea></div>
       </div>
