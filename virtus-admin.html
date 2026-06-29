@@ -384,6 +384,7 @@ select.form-input:focus{border-color:var(--accent)}
             <span id="tifosi-count" style="font-size:11px;color:var(--muted)"></span>
             <button class="btn btn-ghost btn-sm" onclick="switchTifosiTab('ricariche')">⚡ Ricariche</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-ricarica-diretta')">+ Ricarica diretta</button>
+            <button class="btn btn-ghost btn-sm" onclick="openModal('modal-nuovo-sponsor');caricaPostiSponsor()">⭐ Nuovo Sponsor</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-emetti-fancard')">🎫 Emetti Fan Card</button>
           </div>
         </div>
@@ -411,7 +412,7 @@ select.form-input:focus{border-color:var(--accent)}
         <div id="tifosi-tab-lista">
         <div class="card-body">
           <table>
-            <thead><tr><th>Nome</th><th>Email</th><th>Residenza</th><th>Sesso</th><th>Punti</th><th>Stato</th><th>Iscritto il</th><th></th></tr></thead>
+            <thead><tr><th>Nome</th><th>Email</th><th>Tipo</th><th>Residenza</th><th>Sesso</th><th>Punti</th><th>Stato</th><th>Iscritto il</th><th></th></tr></thead>
             <tbody id="tifosi-list"></tbody>
           </table>
         </div>
@@ -1104,6 +1105,41 @@ select.form-input:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- MODAL: Nuovo Sponsor -->
+<div class="modal-overlay" id="modal-nuovo-sponsor">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div class="modal-title">⭐ Nuovo Sponsor</div>
+      <button class="modal-close" onclick="closeModal('modal-nuovo-sponsor')">×</button>
+    </div>
+    <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="grid-column:1/-1;background:#FFF3E0;border-radius:8px;padding:10px 14px;font-size:12px;color:#E65100;border:1px solid #FFB74D">
+        ⭐ Lo sponsor accede all'app tifoso con QR e posto assegnato, ma <strong>senza punti, premi o ricariche</strong>.
+      </div>
+      <div class="form-group"><label>Nome *</label><input class="form-input" id="sp-nome" placeholder="Mario"/></div>
+      <div class="form-group"><label>Cognome *</label><input class="form-input" id="sp-cognome" placeholder="Rossi"/></div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Email *</label>
+        <input class="form-input" id="sp-email" type="email" placeholder="mario.rossi@azienda.it"/>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Riceverà un link per impostare la password</div>
+      </div>
+      <div class="form-group"><label>Telefono</label><input class="form-input" id="sp-telefono" type="tel" placeholder="+39 320 000 0000"/></div>
+      <div class="form-group"><label>Azienda</label><input class="form-input" id="sp-azienda" placeholder="Nome azienda"/></div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Posto assegnato</label>
+        <select class="form-input" id="sp-posto">
+          <option value="">— Nessun posto fisso (hospitality) —</option>
+        </select>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Lascia vuoto per accesso hospitality generico</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-nuovo-sponsor')">Annulla</button>
+      <button class="btn btn-primary" id="sp-submit-btn" onclick="creaProfiloSponsor()">⭐ Crea profilo sponsor</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Emetti Fan Card -->
 <div class="modal-overlay" id="modal-emetti-fancard">
   <div class="modal" style="max-width:540px">
@@ -1380,7 +1416,7 @@ async function loadTifosi() {
 function renderTifosi(list) {
   const tbody = document.getElementById('tifosi-list')
   if (!list || !list.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Nessun tifoso</td></tr>'
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Nessun tifoso</td></tr>'
     return
   }
   tbody.innerHTML = list.map(t => {
@@ -1388,16 +1424,21 @@ function renderTifosi(list) {
     const sesso = t.sesso === 'M' ? 'M' : t.sesso === 'F' ? 'F' : t.sesso || '&mdash;'
     const stato_badge = t.stato === 'attivo' ? 'green' : 'red'
     const data = new Date(t.creato_il).toLocaleDateString('it-IT')
+    const isSponsor = t.tipo === 'sponsor'
+    const tipoBadge = isSponsor
+      ? '<span class="badge" style="background:#FFF3E0;color:#E65100;border:1px solid #FFB74D">⭐ Sponsor</span>'
+      : '<span class="badge badge-gray" style="font-size:10px">Tifoso</span>'
     return `<tr>
       <td><strong>${t.nome} ${t.cognome}</strong><br><span class="qr-code" style="font-size:10px">${t.qr_code}</span></td>
       <td style="color:var(--muted);font-size:12px">${t.email}<br><span style="font-size:11px">${t.telefono||''}</span></td>
+      <td>${tipoBadge}</td>
       <td style="font-size:11px;color:var(--muted)">${residenza}</td>
       <td style="font-size:12px;text-align:center">${sesso}</td>
-      <td><span class="pts">${t.punti_saldo}</span></td>
+      <td>${isSponsor ? '<span style="color:var(--muted);font-size:11px">—</span>' : `<span class="pts">${t.punti_saldo}</span>`}</td>
       <td><span class="badge badge-${stato_badge}">${t.stato}</span></td>
       <td style="color:var(--muted);font-size:11px">${data}</td>
       <td style="display:flex;gap:4px">
-        <button class="btn btn-ghost btn-sm" data-id="${t.id}" data-nome="${t.nome} ${t.cognome}" onclick="openBonus(this.dataset.id,this.dataset.nome)">+ Bonus</button>
+        ${!isSponsor ? `<button class="btn btn-ghost btn-sm" data-id="${t.id}" data-nome="${t.nome} ${t.cognome}" onclick="openBonus(this.dataset.id,this.dataset.nome)">+ Bonus</button>` : ''}
         <button class="btn btn-ghost btn-sm" data-id="${t.id}" onclick="openDettaglioTifoso(this.dataset.id)">Info</button>
       </td>
     </tr>`
@@ -2885,6 +2926,63 @@ async function loadTifosiSelectRicarica() {
 // ── EMETTI FAN CARD ──
 const PIANI_PREZZI = { base: 10, bronze: 30, silver: 50, gold: 100 }
 const PIANI_PUNTI_BENVENUTO = { base: 10, bronze: 30, silver: 50, gold: 100 }
+
+async function creaProfiloSponsor() {
+  const nome     = document.getElementById('sp-nome').value.trim()
+  const cognome  = document.getElementById('sp-cognome').value.trim()
+  const email    = document.getElementById('sp-email').value.trim()
+  const telefono = document.getElementById('sp-telefono').value.trim()
+  const azienda  = document.getElementById('sp-azienda').value.trim()
+  const postoId  = document.getElementById('sp-posto').value
+
+  if (!nome || !cognome || !email) {
+    toast('Nome, cognome ed email sono obbligatori', 'error'); return
+  }
+
+  const btn = document.getElementById('sp-submit-btn')
+  btn.disabled = true; btn.textContent = 'Elaborazione...'
+
+  try {
+    const { data: inviteData, error: inviteErr } = await sbAdmin.auth.admin.inviteUserByEmail(email, {
+      data: { ruolo: 'tifoso', nome, cognome, tipo: 'sponsor' }
+    })
+    if (inviteErr) throw new Error('Errore invito: ' + inviteErr.message)
+    const uid = inviteData.user.id
+
+    const { error: tifErr } = await sbAdmin.from('tifosi').insert({
+      id: uid, nome, cognome, email,
+      telefono: telefono || null,
+      punti_saldo: 0, stato: 'attivo', tipo: 'sponsor',
+      note: azienda ? `Azienda: ${azienda}` : null
+    })
+    if (tifErr) throw new Error('Errore profilo: ' + tifErr.message)
+
+    if (postoId) {
+      await sbAdmin.from('posti').update({ stato: 'assegnato', tifoso_id: uid }).eq('id', postoId)
+    }
+
+    toast(`✅ Profilo sponsor creato! Email inviata a ${email}`, 'success')
+    closeModal('modal-nuovo-sponsor')
+    ;['sp-nome','sp-cognome','sp-email','sp-telefono','sp-azienda'].forEach(id => document.getElementById(id).value = '')
+    document.getElementById('sp-posto').value = ''
+    loadTifosi()
+  } catch(err) {
+    toast('Errore: ' + err.message, 'error')
+  } finally {
+    btn.disabled = false; btn.textContent = '⭐ Crea profilo sponsor'
+  }
+}
+
+async function caricaPostiSponsor() {
+  const { data: posti } = await sbAdmin.from('posti')
+    .select('id, settore, numero, fila').eq('stato', 'disponibile')
+    .order('settore').order('numero')
+  const sel = document.getElementById('sp-posto')
+  sel.innerHTML = '<option value="">— Nessun posto fisso (hospitality) —</option>'
+    + (posti || []).map(p =>
+        `<option value="${p.id}">${p.settore?.toUpperCase() || ''} · Fila ${p.fila || '—'} · N° ${p.numero}</option>`
+      ).join('')
+}
 
 async function emettiFantCard() {
   const nome    = document.getElementById('fc-nome').value.trim()
