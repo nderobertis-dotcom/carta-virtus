@@ -468,7 +468,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     </div>
   </div>
   <div class="tifoso-content">
-    <div class="saldo-card">
+    <div class="saldo-card" id="sponsor-hide-saldo">
       <div style="position:relative;z-index:1">
         <div class="saldo-label">I tuoi punti</div>
         <div class="saldo-value"><span id="t-punti">0</span> <span style="font-size:18px;font-weight:300;color:rgba(255,255,255,.6)">pt</span></div>
@@ -488,7 +488,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         </div>
         <div id="t-membership-chip"></div>
       </div>
-      <div class="t-card">
+      <div class="t-card" id="sponsor-hide-transazioni">
         <div class="t-card-title">&#128202; Ultime transazioni</div>
         <div id="t-transazioni-list"><div class="empty-state">Nessuna transazione ancora</div></div>
       </div>
@@ -498,7 +498,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         <div class="t-card-title">&#127978; Partner aderenti</div>
         <div id="t-partner-list"><div class="empty-state">Caricamento...</div></div>
       </div>
-      <div class="t-card">
+      <div class="t-card" id="sponsor-hide-riscatti">
         <div class="t-card-title">🎁 I miei riscatti</div>
         <div id="t-coupon-list"><div class="empty-state">Nessun riscatto ancora</div></div>
       </div>
@@ -511,7 +511,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     </div>
   </div>
   <!-- RICARICA PUNTI -->
-  <div class="tifoso-content" style="padding-top:0;padding-bottom:0">
+  <div class="tifoso-content" id="sponsor-hide-ricarica" style="padding-top:0;padding-bottom:0">
     <div style="max-width:1100px;margin:0 auto;padding:0 24px 32px">
       <div class="t-card">
         <div class="t-card-title">⚡ Ricarica punti</div>
@@ -573,7 +573,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
   </div>
 
   <!-- CATALOGO PREMI AREA TIFOSO -->
-  <div class="tifoso-content" style="padding-top:0">
+  <div class="tifoso-content" id="sponsor-hide-premi" style="padding-top:0">
     <div style="max-width:1100px;margin:0 auto;padding:0 24px 60px">
       <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blu2);margin-bottom:8px">Catalogo premi</div>
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(24px,4vw,36px);font-weight:800;color:var(--blu);margin-bottom:6px;text-transform:uppercase">Cosa puoi riscattare</div>
@@ -1632,6 +1632,39 @@ async function caricaAreaTifoso(user) {
   currentTifosoId = tifoso.id
   currentAuthUserId = user.id
   currentPuntiSaldo = tifoso.punti_saldo
+
+  // ── SPONSOR: nascondi sezioni punti/premi/ricariche ──────
+  const isSponsor = tifoso.tipo === 'sponsor'
+  const elementiSponsor = [
+    'sponsor-hide-saldo',
+    'sponsor-hide-transazioni',
+    'sponsor-hide-riscatti',
+    'sponsor-hide-ricarica',
+    'sponsor-hide-premi'
+  ]
+  elementiSponsor.forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.style.display = isSponsor ? 'none' : ''
+  })
+
+  // Aggiorna testo QR per sponsor
+  if (isSponsor) {
+    const qrSub = document.querySelector('.qr-sub')
+    if (qrSub) qrSub.textContent = 'Mostralo all\'operatore all\'ingresso per accedere alle gare'
+    // Banner sponsor
+    let banner = document.getElementById('sponsor-banner')
+    if (!banner) {
+      banner = document.createElement('div')
+      banner.id = 'sponsor-banner'
+      banner.style.cssText = 'background:linear-gradient(135deg,#FFF3E0,#FFF8E1);border:1px solid #FFB74D;border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#E65100;display:flex;align-items:center;gap:10px'
+      banner.innerHTML = '<span style="font-size:20px">⭐</span><div><strong>Accesso Sponsor</strong><br>Il tuo profilo include accesso alle gare. Per informazioni contatta lo staff Virtus.</div>'
+      const saldoCard = document.getElementById('sponsor-hide-saldo')
+      if (saldoCard) saldoCard.parentNode.insertBefore(banner, saldoCard)
+    }
+  } else {
+    const banner = document.getElementById('sponsor-banner')
+    if (banner) banner.remove()
+  }
 
   // Carica riscatti personali
   await loadMieiRiscatti(user.id)
