@@ -398,11 +398,11 @@ tr:hover td{background:rgba(26,58,107,.02)}
         </div>
       </div>
 
-      <!-- Prezzo e sconto -->
+      <!-- Prezzo e sconto — normale vede listino+sconto, VIP vede solo prezzo libero -->
       <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;margin-top:6px">Condizioni Economiche</div>
 
-      <!-- Sezione prezzi NORMALE -->
-      <div id="prezzi-normale">
+      <!-- NORMALE: prezzo listino + sconto -->
+      <div id="campi-prezzo-normale">
         <div class="form-row">
           <div class="field">
             <label>Prezzo di listino (stagione)</label>
@@ -410,28 +410,29 @@ tr:hover td{background:rgba(26,58,107,.02)}
           </div>
           <div class="field">
             <label>Sconto applicato (%)</label>
-            <input type="number" id="c-sconto" min="0" max="50" step="0.5" value="0" placeholder="0"/>
+            <input type="number" id="c-sconto" min="0" step="0.5" value="0" placeholder="0"/>
           </div>
-        </div>
-        <div class="prezzo-preview">
-          <div class="prezzo-preview-row"><span>Prezzo listino</span><span id="prev-listino">€ 0,00</span></div>
-          <div class="prezzo-preview-row"><span>Sconto</span><span id="prev-sconto" style="color:var(--verde2)">— € 0,00</span></div>
-          <div class="prezzo-preview-row total"><span>Totale da contratto</span><span id="prev-totale">€ 0,00</span></div>
         </div>
       </div>
 
-      <!-- Sezione prezzo VIP -->
-      <div id="prezzi-vip" style="display:none">
+      <!-- VIP: solo prezzo libero concordato -->
+      <div id="campi-prezzo-vip" style="display:none">
+        <div class="form-row single">
+          <div class="field">
+            <label>Prezzo concordato con il cliente (€)</label>
+            <input type="number" id="c-prezzo-vip" min="0" step="0.01" placeholder="Es: 350.00"/>
+          </div>
+        </div>
         <div class="field">
-          <label>Prezzo concordato in trattativa (€)</label>
-          <input type="number" id="c-prezzo-vip" min="0" step="0.01" placeholder="0,00" oninput="aggiornaPreviewVip()"/>
+          <label>Note commerciali (obbligatorie)</label>
+          <textarea id="c-note-vip" placeholder="Descrivi le condizioni commerciali concordate con il cliente..."></textarea>
         </div>
-        <div class="prezzo-preview">
-          <div class="prezzo-preview-row total"><span>Totale da contratto</span><span id="prev-totale-vip">€ 0,00</span></div>
-        </div>
-        <div style="background:#FFF3E0;border:1px solid #FFB74D;border-radius:8px;padding:10px 14px;font-size:12px;color:#E65100;margin-top:8px">
-          ⭐ Merchant VIP — prezzo definito liberamente in trattativa con il cliente.
-        </div>
+      </div>
+
+      <div class="prezzo-preview">
+        <div class="prezzo-preview-row"><span>Prezzo listino</span><span id="prev-listino">€ 0,00</span></div>
+        <div class="prezzo-preview-row"><span>Sconto</span><span id="prev-sconto" style="color:var(--verde2)">— € 0,00</span></div>
+        <div class="prezzo-preview-row total"><span>Totale da contratto</span><span id="prev-totale">€ 0,00</span></div>
       </div>
 
       <div style="background:#E3F2FD;border:1px solid #90CAF9;border-radius:8px;padding:10px 14px;font-size:12px;color:#1565C0;margin-bottom:12px">
@@ -610,9 +611,7 @@ function aggiornaStats() {
   const tot = contratti.reduce((s, c) => s + parseFloat(c.prezzo_finale || 0), 0)
   document.getElementById('stat-valore').textContent = '€ ' + tot.toLocaleString('it-IT', {minimumFractionDigits:0})
   document.getElementById('stat-approvati').textContent = contratti.filter(c => c.stato === 'approvato').length
-  document.getElementById('stat-sconto-max').textContent = currentMerchant.tipo === 'vip'
-    ? '⭐ VIP'
-    : currentMerchant.sconto_max_pct + '%'
+  document.getElementById('stat-sconto-max').textContent = currentMerchant.sconto_max_pct + '%'
 }
 
 // ── CATALOGO ─────────────────────────────────────────────
@@ -654,17 +653,13 @@ function renderCatalogo() {
       `<div class="spec"><strong>${p.slot_totali}</strong>Slot totali</div>`
     ].filter(Boolean).join('')
 
-    const isVip = currentMerchant.tipo === 'vip'
-
     const prezzoHtml = p.riservato_sponsor
       ? `<div class="prezzo-riservato">Prezzo su richiesta — contatta l'ufficio commerciale</div>`
-      : isVip
-        ? `<div class="prezzo-riservato" style="color:var(--arancio);font-style:normal;font-weight:600">⭐ Prezzo libero — definito in trattativa</div>`
-        : `<div class="prodotto-prezzo">
-             <span class="prezzo-mese">€ ${parseFloat(p.prezzo_mese).toLocaleString('it-IT')}</span>
-             <span class="prezzo-periodo">/mese</span>
-           </div>
-           <div class="prezzo-stagione">€ ${parseFloat(p.prezzo_stagione).toLocaleString('it-IT')} stagione (10 mesi)</div>`
+      : `<div class="prodotto-prezzo">
+           <span class="prezzo-mese">€ ${parseFloat(p.prezzo_mese).toLocaleString('it-IT')}</span>
+           <span class="prezzo-periodo">/mese</span>
+         </div>
+         <div class="prezzo-stagione">€ ${parseFloat(p.prezzo_stagione).toLocaleString('it-IT')} stagione (10 mesi)</div>`
 
     const btnDisabled = p.riservato_sponsor || pienaOccupazione
     const btnText = p.riservato_sponsor ? 'Riservato Sponsor' : pienaOccupazione ? 'Esaurito' : 'Crea Proposta'
@@ -896,23 +891,22 @@ function apriModalContratto(prodottoId, slot) {
     selectedSlots = []
   }
 
-  // Mostra/nasconde sezioni prezzo in base al tipo merchant
   const isVip = currentMerchant.tipo === 'vip'
-  document.getElementById('prezzi-normale').style.display = isVip ? 'none' : 'block'
-  document.getElementById('prezzi-vip').style.display = isVip ? 'block' : 'none'
-  if (isVip) document.getElementById('c-prezzo-vip').value = ''
+  document.getElementById('campi-prezzo-normale').style.display = isVip ? 'none' : 'block'
+  document.getElementById('campi-prezzo-vip').style.display     = isVip ? 'block' : 'none'
 
-  // Prezzo listino
-  aggiornaListino()
-
-  // Imposta max sconto sull'input
-  const maxPct = parseFloat(currentMerchant.sconto_max_pct || 0)
-  const scontoInput = document.getElementById('c-sconto')
-  scontoInput.max = maxPct
-  scontoInput.title = `Massimo consentito: ${maxPct}%`
-  // Aggiorna label con il limite
-  const scontoLabel = scontoInput.closest('.field')?.querySelector('label')
-  if (scontoLabel) scontoLabel.textContent = `Sconto applicato (max ${maxPct}%)`
+  if (!isVip) {
+    aggiornaListino()
+    const maxPct = parseFloat(currentMerchant.sconto_max_pct || 0)
+    const scontoInput = document.getElementById('c-sconto')
+    scontoInput.max = maxPct
+    scontoInput.title = `Massimo consentito: ${maxPct}%`
+    const scontoLabel = scontoInput.closest('.field')?.querySelector('label')
+    if (scontoLabel) scontoLabel.textContent = `Sconto applicato (max ${maxPct}%)`
+  } else {
+    document.getElementById('c-prezzo-vip').value = ''
+    document.getElementById('c-note-vip').value = ''
+  }
 
   // Reset form
   document.getElementById('c-nome').value = ''
@@ -921,19 +915,16 @@ function apriModalContratto(prodottoId, slot) {
   document.getElementById('c-tel').value = ''
   document.getElementById('c-piva').value = ''
   document.getElementById('c-indirizzo').value = ''
-  document.getElementById('c-sconto').value = 0
+  if (!isVip) {
+    document.getElementById('c-sconto').value = 0
+    const campoScontoNote = document.getElementById('campo-sconto-note')
+    if (campoScontoNote) campoScontoNote.style.display = 'none'
+  }
   document.getElementById('c-note').value = ''
   document.getElementById('c-sconto-note').value = ''
-  const campoScontoNote = document.getElementById('campo-sconto-note')
-  if (campoScontoNote) campoScontoNote.style.display = 'none'
 
-  aggiornaPreview()
+  if (!isVip) aggiornaPreview()
   document.getElementById('modal-contratto').classList.add('open')
-}
-
-function aggiornaPreviewVip() {
-  const val = parseFloat(document.getElementById('c-prezzo-vip').value || 0)
-  document.getElementById('prev-totale-vip').textContent = `€ ${val.toLocaleString('it-IT', {minimumFractionDigits:2})}`
 }
 
 function aggiornaListino() {
@@ -1054,25 +1045,26 @@ async function salvaContratto() {
   const azienda = document.getElementById('c-azienda').value.trim()
   if (!nome) { alert('Inserisci il nome del cliente.'); return }
 
-  const scontoNote = document.getElementById('c-sconto-note')?.value.trim() || ''
   const isVip = currentMerchant.tipo === 'vip'
-
-  let scontoPct, prezzoListino, prezzoFinale
+  let prezzoListino, scontoEur, prezzoFinale, scontoPct
 
   if (isVip) {
-    prezzoFinale = parseFloat(document.getElementById('c-prezzo-vip').value || 0)
-    if (!prezzoFinale || prezzoFinale <= 0) { alert('Inserisci il prezzo concordato con il cliente.'); return }
-    prezzoListino = prezzoFinale
-    scontoPct = 0
+    const prezzoVip = parseFloat(document.getElementById('c-prezzo-vip').value)
+    const noteVip   = document.getElementById('c-note-vip').value.trim()
+    if (!prezzoVip || prezzoVip <= 0) { alert('Inserisci il prezzo concordato con il cliente.'); return }
+    if (!noteVip) { alert('Le note commerciali sono obbligatorie per i contratti VIP.'); return }
+    prezzoListino = prezzoVip
+    scontoEur     = 0
+    prezzoFinale  = prezzoVip
+    scontoPct     = 0
   } else {
-    scontoPct = parseFloat(document.getElementById('c-sconto').value || 0)
-    const maxPct = parseFloat(currentMerchant.sconto_max_pct || 10)
-    if (scontoPct > 0 && !scontoNote) { alert('Inserisci la motivazione per lo sconto applicato.'); return }
     prezzoListino = aggiornaListino()
-    prezzoFinale = prezzoListino - (prezzoListino * scontoPct / 100)
+    scontoPct     = parseFloat(document.getElementById('c-sconto').value || 0)
+    scontoEur     = prezzoListino * (scontoPct / 100)
+    prezzoFinale  = prezzoListino - scontoEur
   }
 
-  const richiede = true
+  const richiede = true  // tutte le proposte richiedono approvazione admin
   const quantitaSlot = selectedProdotto.slot_variabile
     ? parseInt(document.getElementById('c-quantita-slot').value || selectedProdotto.vendita_minima_slot || 1)
     : 1
@@ -1186,13 +1178,12 @@ async function salvaContratto() {
     indirizzo:      datiBase.cliente_indirizzo,
     prodotto:       selectedProdotto.nome,
     dimensioni:     selectedProdotto.dimensioni,
-    slots:          isVariabile
-                      ? selectedSlots.map(s => s.codice)
-                      : selectedSlot ? [selectedSlot.codice] : [],
+    slots:          isVariabile ? selectedSlots.map(s => s.codice) : selectedSlot ? [selectedSlot.codice] : [],
     nSlot:          isVariabile ? selectedSlots.length : 1,
     prezzoListino:  isVip ? prezzoFinale : (isVariabile ? prezzoPerSlot * selectedSlots.length : prezzoListino),
     scontoPct:      isVip ? 0 : scontoPct,
     prezzoFinale:   totaleComplessivo,
+    isVip,
     merchant:       `${currentMerchant.nome} ${currentMerchant.cognome}`,
     stagione:       '2026/2027',
     dataOggi:       new Date().toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' })
@@ -1216,18 +1207,33 @@ function stampaProposta(dati) {
     cliente, azienda, piva, email, tel, indirizzo,
     prodotto, dimensioni, slots, nSlot,
     prezzoListino, scontoPct, prezzoFinale,
-    merchant, stagione, dataOggi
+    isVip, merchant, stagione, dataOggi
   } = dati
 
   const scontoEur = prezzoListino * (scontoPct / 100)
 
-  const scontoRiga = scontoPct > 0 ? `
+  const scontoRiga = (!isVip && scontoPct > 0) ? `
     <tr>
       <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#555">Sconto applicato</td>
       <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;color:#2e7d32">
         -${scontoPct}% &nbsp;(— € ${scontoEur.toLocaleString('it-IT', {minimumFractionDigits:2})})
       </td>
     </tr>` : ''
+
+  const prezzoRiga = isVip
+    ? `<tr style="background:#EEF4FF">
+        <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px">PREZZO CONCORDATO</td>
+        <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px;text-align:right">€ ${prezzoFinale.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
+       </tr>`
+    : `<tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#555">Prezzo di listino</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">€ ${prezzoListino.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
+       </tr>
+       ${scontoRiga}
+       <tr style="background:#EEF4FF">
+         <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px">TOTALE PROPOSTA</td>
+         <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px;text-align:right">€ ${prezzoFinale.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
+       </tr>`
 
   const slotsRiga = slots?.length ? `
     <tr>
@@ -1319,15 +1325,7 @@ function stampaProposta(dati) {
           <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#555">Durata contratto</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee">10 mesi · stagione ${stagione}</td>
         </tr>
-        <tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#555">Prezzo di listino</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">€ ${prezzoListino.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
-        </tr>
-        ${scontoRiga}
-        <tr style="background:#EEF4FF">
-          <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px">TOTALE PROPOSTA</td>
-          <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px;text-align:right">€ ${prezzoFinale.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
-        </tr>
+        ${prezzoRiga}
       </table>
     </div>
 
