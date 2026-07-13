@@ -1513,13 +1513,24 @@ async function gestisciNuovaCategoria(sel) {
   if (!nome || !nome.trim()) { sel.value = categoriePartner[0]?.nome || ''; return }
   const nomeClean = nome.trim().toLowerCase().replace(/\s+/g, '_')
   const emoji = prompt('Emoji per la categoria (opzionale, es: 💻):') || '🏪'
-  const { error } = await sbAdmin.from('categorie_partner').insert({
+
+  const { data, error } = await sbAdmin.from('categorie_partner').insert({
     nome: nomeClean, emoji: emoji.trim(), ordine: 99
-  })
-  if (error) { toast('Errore: ' + error.message, 'error'); sel.value = categoriePartner[0]?.nome || ''; return }
+  }).select().single()
+
+  if (error && error.code !== '23505') {
+    // 23505 = unique_violation (categoria già esistente)
+    toast('Errore: ' + error.message, 'error')
+    sel.value = categoriePartner[0]?.nome || ''
+    return
+  }
+  if (error && error.code === '23505') {
+    toast(`Categoria "${nomeClean}" già esistente — selezionata`, 'info')
+  } else {
+    toast(`Categoria "${nomeClean}" aggiunta ✓`, 'success')
+  }
   await loadCategoriePartner()
   document.getElementById('p-cat').value = nomeClean
-  toast(`Categoria "${nomeClean}" aggiunta ✓`, 'success')
 }
 
 function apriModalPartner(id) {
