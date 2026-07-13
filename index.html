@@ -1144,8 +1144,9 @@ function avantiDaPostoBack() {
 // ── PARTNER PUBBLICI ──────────────────────────────────────
 let tuttiPartner = []
 let categoriaAttiva = 'tutti'
+let categorieMap = {}
 
-const CATEGORIE_LABEL = {
+const CATEGORIE_DEFAULT = {
   ristorazione: '🍽 Ristorazione',
   abbigliamento: '👕 Abbigliamento',
   sport: '⚽ Sport',
@@ -1155,12 +1156,17 @@ const CATEGORIE_LABEL = {
   altro: '🏪 Altro'
 }
 
+function getCatLabel(cat) {
+  if (categorieMap[cat]) return (categorieMap[cat].emoji || '') + ' ' + cat.replace(/_/g,' ')
+  return CATEGORIE_DEFAULT[cat] || cat
+}
+
 function renderPartnerFiltri(categorie) {
   const cont = document.getElementById('partner-filtri')
   if (!cont) return
   const bottoni = ['tutti', ...categorie]
   cont.innerHTML = bottoni.map(cat => {
-    const label = cat === 'tutti' ? '🔍 Tutti' : (CATEGORIE_LABEL[cat] || cat)
+    const label = cat === 'tutti' ? '🔍 Tutti' : getCatLabel(cat)
     return `<button class="partner-filtro-btn${cat === categoriaAttiva ? ' attivo' : ''}"
       onclick="filtraPartner('${cat}')">${label}</button>`
   }).join('')
@@ -1187,7 +1193,7 @@ function renderPartnerCards(partners) {
     return `<div class="partner-card">
       ${logoHtml}
       <div class="partner-card-nome">${p.nome_negozio}</div>
-      <div class="partner-card-cat">${CATEGORIE_LABEL[p.categoria] || p.categoria || ''}</div>
+      <div class="partner-card-cat">${getCatLabel(p.categoria)}</div>
     </div>`
   }).join('')
 }
@@ -1195,6 +1201,11 @@ function renderPartnerCards(partners) {
 async function loadPartnerPubblici() {
   const grid = document.getElementById('partner-cards-grid')
   if (!grid) return
+
+  // Carica categorie dal DB per etichette aggiornate
+  const { data: cats } = await sb.from('categorie_partner').select('nome, emoji')
+  if (cats) cats.forEach(c => { categorieMap[c.nome] = c })
+
   const { data: partners } = await sb.from('partner')
     .select('id, nome_negozio, categoria, logo_url')
     .eq('attivo', true)
@@ -1206,7 +1217,6 @@ async function loadPartnerPubblici() {
     return
   }
   const categorie = [...new Set(tuttiPartner.map(p => p.categoria).filter(Boolean))].sort()
-  // Mostra i filtri solo se ci sono almeno 2 categorie diverse
   if (categorie.length > 1) renderPartnerFiltri(categorie)
   renderPartnerCards(tuttiPartner)
 }

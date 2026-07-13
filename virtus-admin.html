@@ -848,14 +848,8 @@ select.form-input:focus{border-color:var(--accent)}
       <div class="form-grid">
         <div class="full form-group"><label>Nome negozio *</label><input class="form-input" id="p-nome" placeholder="Bar dello Sport"/></div>
         <div class="form-group"><label>Categoria</label>
-          <select class="form-input" id="p-cat">
-            <option value="ristorazione">Ristorazione</option>
-            <option value="abbigliamento">Abbigliamento</option>
-            <option value="sport">Sport</option>
-            <option value="salute_benessere">Salute & Benessere</option>
-            <option value="intrattenimento">Intrattenimento</option>
-            <option value="servizi">Servizi</option>
-            <option value="altro">Altro</option>
+          <select class="form-input" id="p-cat" onchange="gestisciNuovaCategoria(this)">
+            <option value="">— Caricamento... —</option>
           </select>
         </div>
         <div class="form-group"><label>Punti per €</label><input class="form-input" id="p-punti" type="number" value="1" min="0.1" step="0.5"/></div>
@@ -1495,12 +1489,45 @@ function rimuoviLogo() {
   document.getElementById('p-logo-preview').style.display = 'none'
 }
 
+let categoriePartner = []
+
+async function loadCategoriePartner() {
+  const { data } = await sbAdmin.from('categorie_partner')
+    .select('*').order('ordine').order('nome')
+  categoriePartner = data || []
+  aggiornaSelectCategorie()
+}
+
+function aggiornaSelectCategorie(valoreAttuale = '') {
+  const sel = document.getElementById('p-cat')
+  if (!sel) return
+  sel.innerHTML = categoriePartner.map(c =>
+    `<option value="${c.nome}">${c.emoji ? c.emoji + ' ' : ''}${c.nome.replace(/_/g,' ')}</option>`
+  ).join('') + '<option value="__nuova__">➕ Aggiungi nuova categoria...</option>'
+  if (valoreAttuale) sel.value = valoreAttuale
+}
+
+async function gestisciNuovaCategoria(sel) {
+  if (sel.value !== '__nuova__') return
+  const nome = prompt('Nome della nuova categoria (es: elettronica, auto, benessere):')
+  if (!nome || !nome.trim()) { sel.value = categoriePartner[0]?.nome || ''; return }
+  const nomeClean = nome.trim().toLowerCase().replace(/\s+/g, '_')
+  const emoji = prompt('Emoji per la categoria (opzionale, es: 💻):') || '🏪'
+  const { error } = await sbAdmin.from('categorie_partner').insert({
+    nome: nomeClean, emoji: emoji.trim(), ordine: 99
+  })
+  if (error) { toast('Errore: ' + error.message, 'error'); sel.value = categoriePartner[0]?.nome || ''; return }
+  await loadCategoriePartner()
+  document.getElementById('p-cat').value = nomeClean
+  toast(`Categoria "${nomeClean}" aggiunta ✓`, 'success')
+}
+
 function apriModalPartner(id) {
   editingPartnerId = id || null
   const p = id ? allPartner.find(x => x.id === id) : null
   document.getElementById('modal-partner-title').textContent = id ? 'Modifica partner' : 'Nuovo partner'
   document.getElementById('p-nome').value      = p?.nome_negozio || ''
-  document.getElementById('p-cat').value       = p?.categoria || 'ristorazione'
+  aggiornaSelectCategorie(p?.categoria || '')
   document.getElementById('p-punti').value     = p?.punti_per_euro ?? 1
   document.getElementById('p-cf').value        = p?.codice_fiscale || ''
   document.getElementById('p-piva').value      = p?.partita_iva || ''
@@ -1710,6 +1737,7 @@ async function eliminaPartner(id, nome) {
   toast('Partner eliminato', 'success')
   loadPartner()
   loadPartnerList()
+  loadCategoriePartner()
 }
 
 async function inviaMailBenvenutoPartner(id) {
