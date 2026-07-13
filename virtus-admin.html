@@ -1512,23 +1512,35 @@ async function gestisciNuovaCategoria(sel) {
   const nome = prompt('Nome della nuova categoria (es: elettronica, auto, benessere):')
   if (!nome || !nome.trim()) { sel.value = categoriePartner[0]?.nome || ''; return }
   const nomeClean = nome.trim().toLowerCase().replace(/\s+/g, '_')
-  const emoji = prompt('Emoji per la categoria (opzionale, es: 💻):') || '🏪'
 
-  const { data, error } = await sbAdmin.from('categorie_partner').insert({
-    nome: nomeClean, emoji: emoji.trim(), ordine: 99
-  }).select().single()
-
-  if (error && error.code !== '23505') {
-    // 23505 = unique_violation (categoria già esistente)
-    toast('Errore: ' + error.message, 'error')
-    sel.value = categoriePartner[0]?.nome || ''
+  // Controlla se esiste già prima di inserire
+  const esistente = categoriePartner.find(c => c.nome === nomeClean)
+  if (esistente) {
+    toast(`Categoria "${nomeClean}" già presente — selezionata`, 'info')
+    await loadCategoriePartner()
+    document.getElementById('p-cat').value = nomeClean
     return
   }
-  if (error && error.code === '23505') {
-    toast(`Categoria "${nomeClean}" già esistente — selezionata`, 'info')
+
+  const emoji = prompt('Emoji per la categoria (opzionale, es: 💻):') || '🏪'
+
+  const { error } = await sbAdmin.from('categorie_partner').insert({
+    nome: nomeClean, emoji: emoji.trim(), ordine: 99
+  })
+
+  if (error) {
+    // 409 o unique violation — categoria già esistente
+    if (error.code === '23505' || error.message?.includes('unique') || error.message?.includes('duplicate')) {
+      toast(`Categoria "${nomeClean}" già esistente — selezionata`, 'info')
+    } else {
+      toast('Errore: ' + error.message, 'error')
+      sel.value = categoriePartner[0]?.nome || ''
+      return
+    }
   } else {
     toast(`Categoria "${nomeClean}" aggiunta ✓`, 'success')
   }
+
   await loadCategoriePartner()
   document.getElementById('p-cat').value = nomeClean
 }
