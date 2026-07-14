@@ -256,6 +256,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       Partner
     </div>
+    <div class="nav-item" onclick="showSection('categorie')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Categorie
+    </div>
     <div class="nav-item" onclick="showSection('premi')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
       Premi
@@ -433,6 +437,22 @@ select.form-input:focus{border-color:var(--accent)}
           <table>
             <thead><tr><th>Negozio</th><th>Categoria</th><th>CF / P.IVA</th><th>Referente</th><th>Punti/€</th><th>Accordo</th><th>Stato</th><th></th></tr></thead>
             <tbody id="partner-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATEGORIE MERCEOLOGICHE -->
+    <div class="section" id="section-categorie">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Categorie merceologiche</div>
+          <button class="btn btn-primary btn-sm" onclick="apriModalNuovaCategoria()">+ Nuova categoria</button>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Emoji</th><th>Nome</th><th>Ordine</th><th></th></tr></thead>
+            <tbody id="categorie-list"></tbody>
           </table>
         </div>
       </div>
@@ -837,6 +857,37 @@ select.form-input:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- MODAL: Nuova/Modifica Categoria -->
+<div class="modal-overlay" id="modal-categoria">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-categoria-title">Nuova categoria</div>
+      <button class="modal-close" onclick="closeModal('modal-categoria')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cat-id"/>
+      <div class="form-group">
+        <label>Emoji</label>
+        <input class="form-input" id="cat-emoji" placeholder="🏪" maxlength="4" style="font-size:24px;text-align:center;width:80px"/>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Un solo emoji che rappresenta la categoria</div>
+      </div>
+      <div class="form-group">
+        <label>Nome *</label>
+        <input class="form-input" id="cat-nome" placeholder="es: elettronica"/>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Minuscolo, senza spazi (usa _ al posto degli spazi)</div>
+      </div>
+      <div class="form-group">
+        <label>Ordine di visualizzazione</label>
+        <input class="form-input" id="cat-ordine" type="number" value="10" min="0"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-categoria')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaCategoria()">Salva</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Nuovo/Modifica Partner -->
 <div class="modal-overlay" id="modal-partner">
   <div class="modal">
@@ -848,7 +899,7 @@ select.form-input:focus{border-color:var(--accent)}
       <div class="form-grid">
         <div class="full form-group"><label>Nome negozio *</label><input class="form-input" id="p-nome" placeholder="Bar dello Sport"/></div>
         <div class="form-group"><label>Categoria</label>
-          <select class="form-input" id="p-cat" onchange="gestisciNuovaCategoria(this)">
+          <select class="form-input" id="p-cat">
             <option value="">— Caricamento... —</option>
           </select>
         </div>
@@ -1330,6 +1381,7 @@ function showSection(name) {
 
   if (name === 'tifosi')        loadTifosi()
   if (name === 'partner')       loadPartner()
+  if (name === 'categorie')     loadCategorieCRUD()
   if (name === 'premi')         loadPremi()
   if (name === 'campagne')      loadCampagne()
   if (name === 'impostazioni')  loadImpostazioni()
@@ -1489,11 +1541,82 @@ function rimuoviLogo() {
   document.getElementById('p-logo-preview').style.display = 'none'
 }
 
-let categoriePartner = []
+let editingCategoriaId = null
+
+async function loadCategorieCRUD() {
+  const tbody = document.getElementById('categorie-list')
+  if (!tbody) return
+  const { data } = await sbAdmin.from('categorie_partner').select('*').order('ordine').order('nome')
+  categoriePartner = data || []
+  aggiornaSelectCategorie()
+  tbody.innerHTML = categoriePartner.map(c => `
+    <tr>
+      <td style="font-size:24px;text-align:center">${c.emoji || '🏪'}</td>
+      <td><strong>${c.nome.replace(/_/g,' ')}</strong><br><span style="font-size:11px;color:var(--muted)">${c.nome}</span></td>
+      <td style="color:var(--muted);font-size:13px">${c.ordine}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick='apriModificaCategoria("${c.id}")'>✏️</button>
+        <button class="btn btn-danger btn-sm" onclick='eliminaCategoria("${c.id}","${c.nome}")'>🗑️</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Nessuna categoria</td></tr>'
+}
+
+function apriModalNuovaCategoria() {
+  editingCategoriaId = null
+  document.getElementById('modal-categoria-title').textContent = 'Nuova categoria'
+  document.getElementById('cat-id').value = ''
+  document.getElementById('cat-emoji').value = ''
+  document.getElementById('cat-nome').value = ''
+  document.getElementById('cat-ordine').value = '10'
+  openModal('modal-categoria')
+}
+
+function apriModificaCategoria(id) {
+  const c = categoriePartner.find(x => x.id === id)
+  if (!c) return
+  editingCategoriaId = id
+  document.getElementById('modal-categoria-title').textContent = 'Modifica categoria'
+  document.getElementById('cat-id').value = id
+  document.getElementById('cat-emoji').value = c.emoji || ''
+  document.getElementById('cat-nome').value = c.nome
+  document.getElementById('cat-ordine').value = c.ordine || 10
+  openModal('modal-categoria')
+}
+
+async function salvaCategoria() {
+  const nome = document.getElementById('cat-nome').value.trim().toLowerCase().replace(/\s+/g,'_')
+  const emoji = document.getElementById('cat-emoji').value.trim()
+  const ordine = parseInt(document.getElementById('cat-ordine').value) || 10
+  if (!nome) { toast('Inserisci il nome della categoria', 'error'); return }
+
+  let error
+  if (editingCategoriaId) {
+    const res = await sbAdmin.from('categorie_partner').update({ nome, emoji: emoji || null, ordine }).eq('id', editingCategoriaId)
+    error = res.error
+  } else {
+    const res = await sbAdmin.from('categorie_partner').insert({ nome, emoji: emoji || null, ordine })
+    error = res.error
+  }
+
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast(editingCategoriaId ? 'Categoria aggiornata ✓' : 'Categoria aggiunta ✓', 'success')
+  editingCategoriaId = null
+  closeModal('modal-categoria')
+  loadCategorieCRUD()
+  loadCategoriePartner()
+}
+
+async function eliminaCategoria(id, nome) {
+  if (!confirm(`Eliminare la categoria "${nome}"?\nI partner già assegnati a questa categoria manterranno il valore.`)) return
+  const { error } = await sbAdmin.from('categorie_partner').delete().eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Categoria eliminata', 'success')
+  loadCategorieCRUD()
+  loadCategoriePartner()
+}
 
 async function loadCategoriePartner() {
-  const { data } = await sbAdmin.from('categorie_partner')
-    .select('*').order('ordine').order('nome')
+  const { data } = await sbAdmin.from('categorie_partner').select('*').order('ordine').order('nome')
   categoriePartner = data || []
   aggiornaSelectCategorie()
 }
@@ -1501,49 +1624,15 @@ async function loadCategoriePartner() {
 function aggiornaSelectCategorie(valoreAttuale = '') {
   const sel = document.getElementById('p-cat')
   if (!sel) return
-  sel.innerHTML = categoriePartner.map(c =>
-    `<option value="${c.nome}">${c.emoji ? c.emoji + ' ' : ''}${c.nome.replace(/_/g,' ')}</option>`
-  ).join('') + '<option value="__nuova__">➕ Aggiungi nuova categoria...</option>'
+  sel.innerHTML = '<option value="">— Seleziona categoria —</option>'
+    + categoriePartner.map(c =>
+        `<option value="${c.nome}">${c.emoji ? c.emoji + ' ' : ''}${c.nome.replace(/_/g,' ')}</option>`
+      ).join('')
   if (valoreAttuale) sel.value = valoreAttuale
 }
 
-async function gestisciNuovaCategoria(sel) {
-  if (sel.value !== '__nuova__') return
-  const nome = prompt('Nome della nuova categoria (es: elettronica, auto, benessere):')
-  if (!nome || !nome.trim()) { sel.value = categoriePartner[0]?.nome || ''; return }
-  const nomeClean = nome.trim().toLowerCase().replace(/\s+/g, '_')
 
-  // Controlla se esiste già prima di inserire
-  const esistente = categoriePartner.find(c => c.nome === nomeClean)
-  if (esistente) {
-    toast(`Categoria "${nomeClean}" già presente — selezionata`, 'info')
-    await loadCategoriePartner()
-    document.getElementById('p-cat').value = nomeClean
-    return
-  }
 
-  const emoji = prompt('Emoji per la categoria (opzionale, es: 💻):') || '🏪'
-
-  const { error } = await sbAdmin.from('categorie_partner').insert({
-    nome: nomeClean, emoji: emoji.trim(), ordine: 99
-  })
-
-  if (error) {
-    // 409 o unique violation — categoria già esistente
-    if (error.code === '23505' || error.message?.includes('unique') || error.message?.includes('duplicate')) {
-      toast(`Categoria "${nomeClean}" già esistente — selezionata`, 'info')
-    } else {
-      toast('Errore: ' + error.message, 'error')
-      sel.value = categoriePartner[0]?.nome || ''
-      return
-    }
-  } else {
-    toast(`Categoria "${nomeClean}" aggiunta ✓`, 'success')
-  }
-
-  await loadCategoriePartner()
-  document.getElementById('p-cat').value = nomeClean
-}
 
 function apriModalPartner(id) {
   editingPartnerId = id || null
