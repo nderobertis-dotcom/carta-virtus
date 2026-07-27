@@ -326,6 +326,17 @@ tr:hover td{background:rgba(26,58,107,.02)}
 
       <!-- Dati cliente -->
       <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Dati Cliente</div>
+
+      <!-- Selezione cliente esistente o nuovo -->
+      <div class="form-row single" style="margin-bottom:14px">
+        <div class="field">
+          <label>Seleziona cliente</label>
+          <select id="c-cliente-select" onchange="selezionaCliente(this.value)" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
+            <option value="nuovo">✏️ Nuovo cliente...</option>
+          </select>
+        </div>
+      </div>
+
       <div class="form-row">
         <div class="field">
           <label>Nome</label>
@@ -538,7 +549,7 @@ async function initApp(user) {
   document.getElementById('login-screen').style.display = 'none'
   document.getElementById('app-screen').style.display = 'block'
 
-  await Promise.all([loadProdotti(), loadSlots(), loadContratti()])
+  await Promise.all([loadProdotti(), loadSlots(), loadContratti(), loadClientiPartner()])
   aggiornaStats()
 }
 
@@ -562,6 +573,45 @@ function switchTab(name) {
 }
 
 // ── LOAD DATA ────────────────────────────────────────────
+let allClienti = [] // partner già registrati usabili come clienti
+
+async function loadClientiPartner() {
+  const { data } = await sb.from('partner')
+    .select('id, nome_negozio, referente_nome, referente_email, referente_tel, indirizzo, partita_iva, codice_fiscale')
+    .eq('attivo', true)
+    .order('nome_negozio')
+  allClienti = data || []
+  const sel = document.getElementById('c-cliente-select')
+  if (!sel) return
+  sel.innerHTML = '<option value="nuovo">✏️ Nuovo cliente...</option>'
+    + allClienti.map(p =>
+        `<option value="${p.id}">🏪 ${p.nome_negozio}</option>`
+      ).join('')
+}
+
+function selezionaCliente(id) {
+  if (id === 'nuovo') {
+    // Pulisce i campi per inserimento manuale
+    document.getElementById('c-nome').value = ''
+    document.getElementById('c-azienda').value = ''
+    document.getElementById('c-email').value = ''
+    document.getElementById('c-tel').value = ''
+    document.getElementById('c-piva').value = ''
+    document.getElementById('c-indirizzo').value = ''
+    return
+  }
+  const p = allClienti.find(x => x.id === id)
+  if (!p) return
+  // Popola i campi con i dati del partner
+  const parti = (p.referente_nome || '').split(' ')
+  document.getElementById('c-nome').value    = parti[0] || p.nome_negozio
+  document.getElementById('c-azienda').value = parti.slice(1).join(' ') || p.nome_negozio
+  document.getElementById('c-email').value   = p.referente_email || ''
+  document.getElementById('c-tel').value     = p.referente_tel || ''
+  document.getElementById('c-piva').value    = p.partita_iva || p.codice_fiscale || ''
+  document.getElementById('c-indirizzo').value = p.indirizzo || ''
+}
+
 async function loadProdotti() {
   const { data } = await sb.from('fop_prodotti').select('*').order('categoria')
   prodotti = data || []
@@ -894,6 +944,8 @@ function apriModalContratto(prodottoId, slot) {
   document.getElementById('c-tel').value = ''
   document.getElementById('c-piva').value = ''
   document.getElementById('c-indirizzo').value = ''
+  const sel = document.getElementById('c-cliente-select')
+  if (sel) sel.value = 'nuovo'
   document.getElementById('c-sconto').value = 0
   document.getElementById('c-note').value = ''
   document.getElementById('c-sconto-note').value = ''
@@ -1063,6 +1115,27 @@ async function salvaContratto() {
   const btn = document.getElementById('btn-salva-contratto')
   btn.textContent = 'Salvataggio...'
   btn.disabled = true
+
+  // Se è un nuovo cliente (non selezionato dalla lista) lo salva come anagrafica partner
+  const clienteSelectVal = document.getElementById('c-cliente-select')?.value
+  if (clienteSelectVal === 'nuovo' && nome) {
+    const { data: partnerEsistente } = await sb.from('partner')
+      .select('id').eq('nome_negozio', azienda || nome).maybeSingle()
+    if (!partnerEsistente) {
+      await sb.from('partner').insert({
+        nome_negozio:    azienda || nome,
+        referente_nome:  nome + (azienda ? '' : ''),
+        referente_email: document.getElementById('c-email').value.trim() || null,
+        referente_tel:   document.getElementById('c-tel').value.trim() || null,
+        indirizzo:       document.getElementById('c-indirizzo').value.trim() || null,
+        partita_iva:     document.getElementById('c-piva').value.trim() || null,
+        categoria:       'altro',
+        punti_per_euro:  1,
+        attivo:          false  // non attivo finché non confermato dall'admin
+      })
+      await loadClientiPartner() // aggiorna la lista per la prossima volta
+    }
+  }
 
   const datiBase = {
     merchant_id: currentMerchant.id,
