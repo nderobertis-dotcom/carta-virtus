@@ -398,34 +398,16 @@ tr:hover td{background:rgba(26,58,107,.02)}
         </div>
       </div>
 
-      <!-- Prezzo e sconto — normale vede listino+sconto, VIP vede solo prezzo libero -->
+      <!-- Prezzo e sconto -->
       <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;margin-top:6px">Condizioni Economiche</div>
-
-      <!-- NORMALE: prezzo listino + sconto -->
-      <div id="campi-prezzo-normale">
-        <div class="form-row">
-          <div class="field">
-            <label>Prezzo di listino (stagione)</label>
-            <input type="text" id="c-prezzo-listino" readonly style="background:var(--bg);cursor:not-allowed"/>
-          </div>
-          <div class="field">
-            <label>Sconto applicato (%)</label>
-            <input type="number" id="c-sconto" min="0" step="0.5" value="0" placeholder="0"/>
-          </div>
-        </div>
-      </div>
-
-      <!-- VIP: solo prezzo libero concordato -->
-      <div id="campi-prezzo-vip" style="display:none">
-        <div class="form-row single">
-          <div class="field">
-            <label>Prezzo concordato con il cliente (€)</label>
-            <input type="number" id="c-prezzo-vip" min="0" step="0.01" placeholder="Es: 350.00"/>
-          </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Prezzo di listino (stagione)</label>
+          <input type="text" id="c-prezzo-listino" readonly style="background:var(--bg);cursor:not-allowed"/>
         </div>
         <div class="field">
-          <label>Note commerciali (obbligatorie)</label>
-          <textarea id="c-note-vip" placeholder="Descrivi le condizioni commerciali concordate con il cliente..."></textarea>
+          <label>Sconto applicato (%)</label>
+          <input type="number" id="c-sconto" min="0" max="50" step="0.5" value="0" placeholder="0"/>
         </div>
       </div>
 
@@ -536,15 +518,16 @@ async function initApp(user) {
     .single()
 
   if (error || !merchant) {
-    // Controlla se è admin (può accedere come admin)
     const ruolo = user.user_metadata?.ruolo
-    if (ruolo !== 'admin') {
+    if (ruolo !== 'admin' && ruolo !== 'superadmin') {
       await sb.auth.signOut()
       showLoginError('Account non autorizzato come merchant. Contatta l\'amministratore.')
       return
     }
-    // Admin: usa sconto max dal sistema
-    currentMerchant = { nome: 'Admin', cognome: '', sconto_max_pct: 50, id: null }
+    // Admin senza merchant associato — non dovrebbe succedere
+    await sb.auth.signOut()
+    showLoginError('Nessun profilo merchant associato all\'account admin. Contatta il supporto.')
+    return
   } else {
     currentMerchant = merchant
   }
@@ -891,22 +874,17 @@ function apriModalContratto(prodottoId, slot) {
     selectedSlots = []
   }
 
-  const isVip = currentMerchant.tipo === 'vip'
-  document.getElementById('campi-prezzo-normale').style.display = isVip ? 'none' : 'block'
-  document.getElementById('campi-prezzo-vip').style.display     = isVip ? 'block' : 'none'
+  // Prezzo listino
+  aggiornaListino()
 
-  if (!isVip) {
-    aggiornaListino()
-    const maxPct = parseFloat(currentMerchant.sconto_max_pct || 0)
-    const scontoInput = document.getElementById('c-sconto')
-    scontoInput.max = maxPct
-    scontoInput.title = `Massimo consentito: ${maxPct}%`
-    const scontoLabel = scontoInput.closest('.field')?.querySelector('label')
-    if (scontoLabel) scontoLabel.textContent = `Sconto applicato (max ${maxPct}%)`
-  } else {
-    document.getElementById('c-prezzo-vip').value = ''
-    document.getElementById('c-note-vip').value = ''
-  }
+  // Imposta max sconto sull'input
+  const maxPct = parseFloat(currentMerchant.sconto_max_pct || 0)
+  const scontoInput = document.getElementById('c-sconto')
+  scontoInput.max = maxPct
+  scontoInput.title = `Massimo consentito: ${maxPct}%`
+  // Aggiorna label con il limite
+  const scontoLabel = scontoInput.closest('.field')?.querySelector('label')
+  if (scontoLabel) scontoLabel.textContent = `Sconto applicato (max ${maxPct}%)`
 
   // Reset form
   document.getElementById('c-nome').value = ''
@@ -915,15 +893,13 @@ function apriModalContratto(prodottoId, slot) {
   document.getElementById('c-tel').value = ''
   document.getElementById('c-piva').value = ''
   document.getElementById('c-indirizzo').value = ''
-  if (!isVip) {
-    document.getElementById('c-sconto').value = 0
-    const campoScontoNote = document.getElementById('campo-sconto-note')
-    if (campoScontoNote) campoScontoNote.style.display = 'none'
-  }
+  document.getElementById('c-sconto').value = 0
   document.getElementById('c-note').value = ''
   document.getElementById('c-sconto-note').value = ''
+  const campoScontoNote = document.getElementById('campo-sconto-note')
+  if (campoScontoNote) campoScontoNote.style.display = 'none'
 
-  if (!isVip) aggiornaPreview()
+  aggiornaPreview()
   document.getElementById('modal-contratto').classList.add('open')
 }
 
@@ -1045,25 +1021,18 @@ async function salvaContratto() {
   const azienda = document.getElementById('c-azienda').value.trim()
   if (!nome) { alert('Inserisci il nome del cliente.'); return }
 
-  const isVip = currentMerchant.tipo === 'vip'
-  let prezzoListino, scontoEur, prezzoFinale, scontoPct
+  const scontoPct = parseFloat(document.getElementById('c-sconto').value || 0)
+  const maxPct = parseFloat(currentMerchant.sconto_max_pct || 10)
+  const scontoNote = document.getElementById('c-sconto-note').value.trim()
 
-  if (isVip) {
-    const prezzoVip = parseFloat(document.getElementById('c-prezzo-vip').value)
-    const noteVip   = document.getElementById('c-note-vip').value.trim()
-    if (!prezzoVip || prezzoVip <= 0) { alert('Inserisci il prezzo concordato con il cliente.'); return }
-    if (!noteVip) { alert('Le note commerciali sono obbligatorie per i contratti VIP.'); return }
-    prezzoListino = prezzoVip
-    scontoEur     = 0
-    prezzoFinale  = prezzoVip
-    scontoPct     = 0
-  } else {
-    prezzoListino = aggiornaListino()
-    scontoPct     = parseFloat(document.getElementById('c-sconto').value || 0)
-    scontoEur     = prezzoListino * (scontoPct / 100)
-    prezzoFinale  = prezzoListino - scontoEur
+  if (scontoPct > 0 && !scontoNote) {
+    alert('Inserisci la motivazione per lo sconto applicato.')
+    return
   }
 
+  const prezzoListino = aggiornaListino()
+  const scontoEur = prezzoListino * (scontoPct / 100)
+  const prezzoFinale = prezzoListino - scontoEur
   const richiede = true  // tutte le proposte richiedono approvazione admin
   const quantitaSlot = selectedProdotto.slot_variabile
     ? parseInt(document.getElementById('c-quantita-slot').value || selectedProdotto.vendita_minima_slot || 1)
@@ -1178,12 +1147,13 @@ async function salvaContratto() {
     indirizzo:      datiBase.cliente_indirizzo,
     prodotto:       selectedProdotto.nome,
     dimensioni:     selectedProdotto.dimensioni,
-    slots:          isVariabile ? selectedSlots.map(s => s.codice) : selectedSlot ? [selectedSlot.codice] : [],
+    slots:          isVariabile
+                      ? selectedSlots.map(s => s.codice)
+                      : selectedSlot ? [selectedSlot.codice] : [],
     nSlot:          isVariabile ? selectedSlots.length : 1,
-    prezzoListino:  isVip ? prezzoFinale : (isVariabile ? prezzoPerSlot * selectedSlots.length : prezzoListino),
-    scontoPct:      isVip ? 0 : scontoPct,
+    prezzoListino:  isVariabile ? prezzoPerSlot * selectedSlots.length : prezzoListino,
+    scontoPct,
     prezzoFinale:   totaleComplessivo,
-    isVip,
     merchant:       `${currentMerchant.nome} ${currentMerchant.cognome}`,
     stagione:       '2026/2027',
     dataOggi:       new Date().toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' })
@@ -1207,33 +1177,18 @@ function stampaProposta(dati) {
     cliente, azienda, piva, email, tel, indirizzo,
     prodotto, dimensioni, slots, nSlot,
     prezzoListino, scontoPct, prezzoFinale,
-    isVip, merchant, stagione, dataOggi
+    merchant, stagione, dataOggi
   } = dati
 
   const scontoEur = prezzoListino * (scontoPct / 100)
 
-  const scontoRiga = (!isVip && scontoPct > 0) ? `
+  const scontoRiga = scontoPct > 0 ? `
     <tr>
       <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#555">Sconto applicato</td>
       <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;color:#2e7d32">
         -${scontoPct}% &nbsp;(— € ${scontoEur.toLocaleString('it-IT', {minimumFractionDigits:2})})
       </td>
     </tr>` : ''
-
-  const prezzoRiga = isVip
-    ? `<tr style="background:#EEF4FF">
-        <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px">PREZZO CONCORDATO</td>
-        <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px;text-align:right">€ ${prezzoFinale.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
-       </tr>`
-    : `<tr>
-        <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#555">Prezzo di listino</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">€ ${prezzoListino.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
-       </tr>
-       ${scontoRiga}
-       <tr style="background:#EEF4FF">
-         <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px">TOTALE PROPOSTA</td>
-         <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px;text-align:right">€ ${prezzoFinale.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
-       </tr>`
 
   const slotsRiga = slots?.length ? `
     <tr>
@@ -1325,7 +1280,15 @@ function stampaProposta(dati) {
           <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#555">Durata contratto</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee">10 mesi · stagione ${stagione}</td>
         </tr>
-        ${prezzoRiga}
+        <tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#555">Prezzo di listino</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">€ ${prezzoListino.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
+        </tr>
+        ${scontoRiga}
+        <tr style="background:#EEF4FF">
+          <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px">TOTALE PROPOSTA</td>
+          <td style="padding:12px;font-weight:800;color:#1A3A6B;font-size:14px;text-align:right">€ ${prezzoFinale.toLocaleString('it-IT', {minimumFractionDigits:2})}</td>
+        </tr>
       </table>
     </div>
 
