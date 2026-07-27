@@ -487,6 +487,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('modal-cancel-contratto').addEventListener('click', closeModal)
   document.getElementById('btn-salva-contratto').addEventListener('click', salvaContratto)
   document.getElementById('c-sconto').addEventListener('input', aggiornaPreview)
+  document.getElementById('c-prezzo-vip').addEventListener('input', aggiornaPreviewVip)
 })
 
 async function doLogin() {
@@ -986,6 +987,13 @@ function closeModal() {
   selectedProdotto = null
   selectedSlot = null
   selectedSlots = []
+}
+
+function aggiornaPreviewVip() {
+  const prezzo = parseFloat(document.getElementById('c-prezzo-vip').value || 0)
+  document.getElementById('prev-listino').textContent = '—'
+  document.getElementById('prev-sconto').textContent  = '—'
+  document.getElementById('prev-totale').textContent  = `€ ${prezzo.toLocaleString('it-IT', {minimumFractionDigits:2})}`
 }
 
 function aggiornaPreview() {
