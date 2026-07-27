@@ -1316,6 +1316,8 @@ let sb = createClient(SUPABASE_URL, SUPABASE_ANON)
 let currentUser = null
 let allTifosi = []
 let allPartner = []
+let categoriePartner = []
+let editingCategoriaId = null
 
 // ── AUTH ──
 const ADMIN_PASSWORD = 'CartaVirtus2025!'
@@ -1540,8 +1542,6 @@ function rimuoviLogo() {
   document.getElementById('p-logo-img').src = ''
   document.getElementById('p-logo-preview').style.display = 'none'
 }
-
-let editingCategoriaId = null
 
 async function loadCategorieCRUD() {
   const tbody = document.getElementById('categorie-list')
