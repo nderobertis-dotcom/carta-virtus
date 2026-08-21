@@ -246,7 +246,7 @@ select.form-input:focus{border-color:var(--accent)}
     <div class="nav-section">Gestione</div>
     <div class="nav-item" onclick="showSection('tifosi')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Tifosi
+      Tifosi <span id="badge-accompagnatori" style="display:none;background:#e53935;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">0</span>
     </div>
     <div class="nav-item" onclick="showSection('membership')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
@@ -1063,6 +1063,25 @@ select.form-input:focus{border-color:var(--accent)}
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Membership</div>
         <div id="det-membership" style="font-size:13px;color:var(--muted)">Caricamento...</div>
       </div>
+      <!-- ACCOMPAGNATORE MINORE -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">👶 Accompagnatore minore</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Anno di nascita figlio</label>
+            <input class="form-input" type="number" id="det-anno-minore" placeholder="es: 2013" min="2005" max="2020" style="font-size:13px"/>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+              <input type="checkbox" id="det-accompagnatore-check" style="width:16px;height:16px"/>
+              Diritto accompagnatore
+            </label>
+          </div>
+        </div>
+        <div id="det-accompagnatore-info" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+        <div id="det-accompagnatore-doc"></div>
+        <button class="btn btn-primary btn-sm" onclick="salvaAccompagnatore()">💾 Salva accompagnatore</button>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-dettaglio-tifoso')">Chiudi</button>
@@ -1615,6 +1634,38 @@ async function eliminaCategoria(id, nome) {
   loadCategoriePartner()
 }
 
+async function aggiornaContatorAccompagnatori() {
+  const { count } = await sbAdmin.from('tifosi')
+    .select('*', { count: 'exact', head: true })
+    .eq('accompagnatore_stato', 'in_attesa')
+  const badge = document.getElementById('badge-accompagnatori')
+  if (!badge) return
+  if (count > 0) {
+    badge.textContent = count
+    badge.style.display = 'inline'
+  } else {
+    badge.style.display = 'none'
+  }
+}
+
+async function approvaAccompagnatore(tifoso_id) {
+  await sbAdmin.from('tifosi').update({ accompagnatore_stato: 'approvato' }).eq('id', tifoso_id)
+  toast('Accompagnatore approvato ✓', 'success')
+  aggiornaContatorAccompagnatori()
+  loadTifosi()
+  // Salva accompagnatore (cerca posto adiacente) — riusa la funzione esistente
+  currentDetTifoso = allTifosi.find(t => t.id === tifoso_id) || currentDetTifoso
+  await salvaAccompagnatore()
+}
+
+async function rifiutaAccompagnatore(tifoso_id) {
+  if (!confirm('Rifiutare la richiesta di accompagnatore?')) return
+  await sbAdmin.from('tifosi').update({ accompagnatore_stato: 'rifiutato', accompagnatore_minore: false }).eq('id', tifoso_id)
+  toast('Richiesta rifiutata', 'success')
+  aggiornaContatorAccompagnatori()
+  loadTifosi()
+}
+
 async function loadCategoriePartner() {
   const { data } = await sbAdmin.from('categorie_partner').select('*').order('ordine').order('nome')
   categoriePartner = data || []
@@ -1850,6 +1901,7 @@ async function eliminaPartner(id, nome) {
   loadPartner()
   loadPartnerList()
   loadCategoriePartner()
+  aggiornaContatorAccompagnatori()
 }
 
 async function inviaMailBenvenutoPartner(id) {
@@ -2295,7 +2347,125 @@ async function openDettaglioTifoso(id) {
     membEl.textContent = 'Nessuna membership'
   }
 
+  // Accompagnatore minore
+  document.getElementById('det-accompagnatore-check').checked = t.accompagnatore_minore || false
+  document.getElementById('det-anno-minore').value = t.anno_nascita_minore || ''
+
+  // Carica anno soglia per info
+  const { data: sogliaRow } = await sbAdmin.from('impostazioni').select('valore').eq('chiave', 'anno_soglia_minori').single()
+  const soglia = parseInt(sogliaRow?.valore || '2011')
+  const annoMinore = t.anno_nascita_minore
+  let infoText = `Anno soglia corrente: ${soglia} e successivi.`
+  if (annoMinore) {
+    const idoneo = annoMinore >= soglia
+    infoText += idoneo
+      ? ` ✅ Figlio (${annoMinore}) idoneo all'accesso gratuito.`
+      : ` ⚠️ Figlio (${annoMinore}) non idoneo — anno inferiore alla soglia.`
+  }
+
+  // Stato accompagnatore e documento
+  const stato = t.accompagnatore_stato || 'nessuno'
+  const statoLabel = { nessuno: '—', in_attesa: '⏳ In attesa di verifica', approvato: '✅ Approvato', rifiutato: '❌ Rifiutato' }
+  infoText += ` · Stato: ${statoLabel[stato]}`
+  document.getElementById('det-accompagnatore-info').innerHTML = infoText
+
+  // Documento e pulsanti verifica
+  const docContainer = document.getElementById('det-accompagnatore-doc')
+  if (docContainer) {
+    if (t.documento_minore_url && stato === 'in_attesa') {
+      docContainer.innerHTML = `
+        <div style="margin-top:10px">
+          <a href="${t.documento_minore_url}" target="_blank" class="btn btn-ghost btn-sm">📄 Visualizza documento</a>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-primary btn-sm" onclick='approvaAccompagnatore("${t.id}")'>✅ Approva</button>
+            <button class="btn btn-danger btn-sm" onclick='rifiutaAccompagnatore("${t.id}")'>❌ Rifiuta</button>
+          </div>
+        </div>`
+    } else if (t.documento_minore_url) {
+      docContainer.innerHTML = `<a href="${t.documento_minore_url}" target="_blank" class="btn btn-ghost btn-sm" style="margin-top:8px">📄 Visualizza documento</a>`
+    } else {
+      docContainer.innerHTML = ''
+    }
+  }
+
   openModal('modal-dettaglio-tifoso')
+}
+
+async function salvaAccompagnatore() {
+  const id = currentDetTifoso?.id
+  if (!id) return
+  const abilitato = document.getElementById('det-accompagnatore-check').checked
+  const anno = parseInt(document.getElementById('det-anno-minore').value) || null
+
+  if (abilitato && !anno) {
+    toast('Inserisci l\'anno di nascita del figlio', 'error'); return
+  }
+
+  // Carica soglia
+  const { data: sogliaRow } = await sbAdmin.from('impostazioni').select('valore').eq('chiave', 'anno_soglia_minori').single()
+  const soglia = parseInt(sogliaRow?.valore || '2011')
+  if (abilitato && anno && anno < soglia) {
+    if (!confirm(`L'anno ${anno} è inferiore alla soglia ${soglia}. Vuoi abilitare comunque l'accompagnatore?`)) return
+  }
+
+  // Se si abilita e il tifoso ha già un posto, cerca il posto adiacente
+  let postoAccId = currentDetTifoso.posto_accompagnatore_id || null
+
+  if (abilitato && !postoAccId && currentDetTifoso.id) {
+    // Trova il posto del tifoso
+    const { data: postoTifoso } = await sbAdmin.from('posti')
+      .select('id, settore, fila, numero').eq('tifoso_id', id).single()
+
+    if (postoTifoso) {
+      // Cerca posto adiacente (stesso settore, stessa fila, numero ±1)
+      const { data: adiacenti } = await sbAdmin.from('posti')
+        .select('id, numero')
+        .eq('settore', postoTifoso.settore)
+        .eq('fila', postoTifoso.fila)
+        .eq('stato', 'disponibile')
+        .in('numero', [postoTifoso.numero - 1, postoTifoso.numero + 1])
+        .order('numero')
+        .limit(1)
+
+      if (adiacenti && adiacenti.length > 0) {
+        const postoScelto = adiacenti[0]
+        // Prenota il posto adiacente come accompagnatore
+        await sbAdmin.from('posti').update({
+          stato: 'accompagnatore',
+          tifoso_id: id
+        }).eq('id', postoScelto.id)
+        postoAccId = postoScelto.id
+        toast(`Posto adiacente N°${postoScelto.numero} riservato per l'accompagnatore ✓`, 'success')
+      } else {
+        toast('⚠️ Nessun posto libero adiacente trovato — verifica manualmente', 'error')
+      }
+    } else {
+      toast('⚠️ Il tifoso non ha ancora un posto assegnato', 'error')
+      return
+    }
+  }
+
+  // Se si disabilita, libera il posto accompagnatore
+  if (!abilitato && postoAccId) {
+    await sbAdmin.from('posti').update({ stato: 'disponibile', tifoso_id: null }).eq('id', postoAccId)
+    postoAccId = null
+  }
+
+  const { error } = await sbAdmin.from('tifosi').update({
+    accompagnatore_minore:   abilitato,
+    anno_nascita_minore:     abilitato ? anno : null,
+    posto_accompagnatore_id: postoAccId
+  }).eq('id', id)
+
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+
+  // Aggiorna il record locale
+  currentDetTifoso.accompagnatore_minore   = abilitato
+  currentDetTifoso.anno_nascita_minore     = anno
+  currentDetTifoso.posto_accompagnatore_id = postoAccId
+
+  toast('Accompagnatore ' + (abilitato ? 'abilitato ✓' : 'disabilitato ✓'), 'success')
+  loadTifosi()
 }
 
 // ── BONUS ──
