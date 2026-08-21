@@ -502,38 +502,44 @@ async function verificaIngresso(qr) {
     return
   }
 
-  // ── Controlla se è un QR sponsor (inizia con SPO) ──
-  if (qr.startsWith('SPO')) {
-    const { data: sponsor, error: spErr } = await sbA.from('sponsor_posti')
-      .select('*, posto:posto_id(tribuna, fila, numero)')
-      .eq('qr_code', qr)
-      .single()
-
-    if (spErr || !sponsor) {
-      mostraRisultato('err', '❌', 'QR Sponsor non valido', 'Codice non trovato nel sistema.')
-      return
-    }
-
-    const posto = sponsor.posto
-    const postoLabel = posto
-      ? 'Tribuna '+posto.tribuna.charAt(0).toUpperCase()+posto.tribuna.slice(1)+' — Fila '+posto.fila+' Posto '+posto.numero
-      : '—'
-
-    mostraRisultato('ok', '🏢', 'Accesso consentito — SPONSOR',
-      (sponsor.azienda ? sponsor.azienda+' — ' : '') + sponsor.nome+' '+sponsor.cognome+'\n'+postoLabel,
-      'SPONSOR', null)
-    return
-  }
-
   // ── Trova tifoso per QR ──
   const { data: tifoso, error: tErr } = await sbA.from('tifosi')
-    .select('id, nome, cognome, stato, punti_saldo, auth_user_id, accompagnatore_minore, accompagnatore_stato, anno_nascita_minore')
+    .select('id, nome, cognome, stato, punti_saldo, auth_user_id, tipo, accompagnatore_minore, accompagnatore_stato, anno_nascita_minore')
     .eq('qr_code', qr)
     .eq('stato', 'attivo')
     .single()
 
   if (tErr || !tifoso) {
     mostraRisultato('err', '❌', 'QR non valido', 'Tifoso non trovato o account non attivo.')
+    return
+  }
+
+  // ── Sponsor: accesso diretto senza membership ──
+  if (tifoso.tipo === 'sponsor') {
+    const { data: giaEntrato } = await sbA.from('ingressi_gare')
+      .select('id, registrato_il')
+      .eq('gara_id', garaCorrente.id)
+      .eq('tifoso_id', tifoso.id)
+      .single()
+
+    if (giaEntrato) {
+      const ora = new Date(giaEntrato.registrato_il).toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
+      mostraRisultato('warn', '⚠️', 'Già entrato', tifoso.nome + ' ' + tifoso.cognome + ' (Sponsor) ha già effettuato l\'ingresso alle ' + ora + '.', 'Sponsor')
+      return
+    }
+
+    await sbA.from('ingressi_gare').insert({
+      gara_id:         garaCorrente.id,
+      tifoso_id:       tifoso.id,
+      piano_nome:      'Sponsor',
+      operatore_email: currentOperatoreEmail || null
+    })
+
+    mostraRisultato('ok', '🏢', 'Accesso consentito — SPONSOR',
+      tifoso.nome + ' ' + tifoso.cognome + ' · Ingresso omaggio',
+      'Sponsor', null)
+    await loadLog()
+    avviaRealtime()
     return
   }
 
