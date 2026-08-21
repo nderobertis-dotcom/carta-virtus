@@ -512,6 +512,9 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
           <div class="qr-display" id="t-qr-code" style="font-size:13px;letter-spacing:.1em">—</div>
         </div>
         <div id="t-membership-chip"></div>
+        <div id="t-accompagnatore-badge" style="display:none;margin-top:12px;background:#E8F5E9;border:1px solid #A5D6A7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2E7D32;text-align:center">
+          👶 Con accompagnatore — posto riservato adiacente
+        </div>
       </div>
       <div class="t-card">
         <div class="t-card-title">&#128202; Ultime transazioni</div>
@@ -720,6 +723,30 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
           Posto selezionato: <strong id="posto-selezionato-label">—</strong>
         </div>
         <div id="posto-error" style="font-size:12px;color:var(--rosso);margin-top:8px;display:none">Seleziona un posto per continuare.</div>
+
+        <!-- ACCOMPAGNATORE MINORE (solo Silver/Gold con posto) -->
+        <div id="blocco-accompagnatore" style="margin-top:20px;background:#F0F6FF;border:1px solid #DDEEFF;border-radius:12px;padding:18px">
+          <div style="font-size:13px;font-weight:700;color:var(--blu);margin-bottom:10px">👶 Accompagnatore minore</div>
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--text);margin-bottom:14px">
+            <input type="checkbox" id="reg-accompagnatore" style="margin-top:2px;width:16px;height:16px" onchange="toggleAccompagnatore(this.checked)"/>
+            <span>Ho un figlio minore che mi accompagnerà alle gare e ha diritto all'accesso gratuito (nato dal <strong id="anno-soglia-label">2011</strong> in poi). Richiedo la prenotazione del posto adiacente.</span>
+          </label>
+          <div id="campi-accompagnatore" style="display:none">
+            <div class="form-grid-2" style="margin-bottom:12px">
+              <div class="form-group">
+                <label>Anno di nascita del figlio *</label>
+                <input class="form-input" type="number" id="reg-anno-minore" placeholder="es: 2013" min="2005" max="2020"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Documento del minore * <span style="font-size:11px;color:var(--muted)">(documento d'identità o certificato di nascita — JPG, PNG, PDF · max 5MB)</span></label>
+              <input class="form-input" type="file" id="reg-doc-minore" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf" style="cursor:pointer"/>
+            </div>
+            <div style="font-size:12px;color:#546E7A;background:#fff;border-radius:8px;padding:10px 12px;margin-top:8px;border:1px solid #DDEEFF">
+              ℹ️ Il documento verrà verificato dall'amministrazione. Il posto adiacente sarà riservato dopo l'approvazione. Puoi completare l'acquisto ora.
+            </div>
+          </div>
+        </div>
 
         <button class="btn-reg" onclick="avantiDaPosto()">Continua &#8594;</button>
         <button class="btn-reg btn-reg-secondary" onclick="avanti(2)">&#8592; Indietro</button>
@@ -1127,10 +1154,38 @@ function avantiDaMaglia() {
   }
 }
 
+function toggleAccompagnatore(checked) {
+  document.getElementById('campi-accompagnatore').style.display = checked ? 'block' : 'none'
+}
+
+async function caricaAnnoSogliaMinori() {
+  const { data } = await sb.from('impostazioni').select('valore').eq('chiave', 'anno_soglia_minori').single()
+  const anno = data?.valore || '2011'
+  const el = document.getElementById('anno-soglia-label')
+  if (el) el.textContent = anno
+}
+
 function avantiDaPosto() {
   if (!_postoSelezionato) {
     document.getElementById('posto-error').style.display = 'block'
     return
+  }
+  // Valida accompagnatore se dichiarato
+  if (document.getElementById('reg-accompagnatore')?.checked) {
+    const anno = document.getElementById('reg-anno-minore').value
+    const doc  = document.getElementById('reg-doc-minore').files[0]
+    if (!anno) {
+      alert('Inserisci l\'anno di nascita del figlio.')
+      return
+    }
+    if (!doc) {
+      alert('Carica il documento del minore per procedere.')
+      return
+    }
+    if (doc.size > 5 * 1024 * 1024) {
+      alert('Il documento è troppo grande. Massimo 5MB.')
+      return
+    }
   }
   avanti(4)
 }
@@ -1490,6 +1545,8 @@ function avanti(n) {
     const numero = document.getElementById('reg-maglia-numero').value
     if (!taglia || !cognomeMaglia || !numero) { toast('Completa i dati della maglia', 'error'); return }
   }
+  // Carica anno soglia quando si arriva allo step posto
+  if (n === 3) caricaAnnoSogliaMinori()
   goStep(n)
 }
 
@@ -1550,6 +1607,34 @@ async function completaRegistrazione() {
       consenso_marketing: marketing
     }).select().single()
     if (tErr) throw new Error(tErr.message)
+
+    // ── ACCOMPAGNATORE MINORE ─────────────────────────────
+    const accompCheck = document.getElementById('reg-accompagnatore')
+    if (accompCheck?.checked) {
+      const annoMinore = parseInt(document.getElementById('reg-anno-minore').value) || null
+      const docFile    = document.getElementById('reg-doc-minore').files[0]
+      let docUrl = null
+
+      if (docFile) {
+        const ext = docFile.name.split('.').pop()
+        const path = `${tifoso.id}/doc_minore_${Date.now()}.${ext}`
+        const { data: upData, error: upErr } = await sb.storage
+          .from('documenti-minori')
+          .upload(path, docFile, { contentType: docFile.type })
+        if (!upErr) {
+          const { data: { publicUrl } } = sb.storage.from('documenti-minori').getPublicUrl(upData.path)
+          docUrl = publicUrl
+        }
+      }
+
+      await sbAdmin.from('tifosi').update({
+        accompagnatore_minore:  true,
+        anno_nascita_minore:    annoMinore,
+        accompagnatore_stato:   'in_attesa',
+        documento_minore_url:   docUrl
+      }).eq('id', tifoso.id)
+    }
+    // ─────────────────────────────────────────────────────
 
     const oggi = new Date()
     const scadenza = new Date(oggi)
@@ -1738,6 +1823,10 @@ async function caricaAreaTifoso(user) {
   currentTifosoId = tifoso.id
   currentAuthUserId = user.id
   currentPuntiSaldo = tifoso.punti_saldo
+
+  // Badge accompagnatore minore
+  const badgeAcc = document.getElementById('t-accompagnatore-badge')
+  if (badgeAcc) badgeAcc.style.display = tifoso.accompagnatore_minore ? 'block' : 'none'
 
   // Carica riscatti personali
   await loadMieiRiscatti(user.id)
