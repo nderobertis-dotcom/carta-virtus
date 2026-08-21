@@ -527,7 +527,7 @@ async function verificaIngresso(qr) {
 
   // ── Trova tifoso per QR ──
   const { data: tifoso, error: tErr } = await sbA.from('tifosi')
-    .select('id, nome, cognome, stato, punti_saldo, auth_user_id')
+    .select('id, nome, cognome, stato, punti_saldo, auth_user_id, accompagnatore_minore, accompagnatore_stato, anno_nascita_minore')
     .eq('qr_code', qr)
     .eq('stato', 'attivo')
     .single()
@@ -613,16 +613,21 @@ async function verificaIngresso(qr) {
     })
   }
 
+  const conAccompagnatore = tifoso.accompagnatore_minore && tifoso.accompagnatore_stato === 'approvato'
+  const accompagnatoreMsg = conAccompagnatore
+    ? ` · 👶 Con accompagnatore minore (${tifoso.anno_nascita_minore})`
+    : ''
+
   mostraRisultato('ok', '✅', 'Accesso consentito',
-    tifoso.nome + ' ' + tifoso.cognome + ' · Piano ' + pianoNome,
-    pianoNome, puntiGara)
+    tifoso.nome + ' ' + tifoso.cognome + ' · Piano ' + pianoNome + accompagnatoreMsg,
+    pianoNome, puntiGara, conAccompagnatore, tifoso.anno_nascita_minore)
 
   await loadLog()
   avviaRealtime()
 }
 
 // ── MOSTRA RISULTATO ──
-function mostraRisultato(tipo, icon, title, sub, piano, punti) {
+function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore, annoMinore) {
   const card = document.getElementById('result-card')
   card.className = 'result-card show result-' + (tipo === 'ok' ? 'ok' : tipo === 'warn' ? 'warn' : 'err')
   document.getElementById('result-icon').textContent = icon
@@ -637,6 +642,21 @@ function mostraRisultato(tipo, icon, title, sub, piano, punti) {
       (punti ? '<br>+' + punti + ' punti Carta Virtus accreditati' : '')
   } else {
     det.style.display = 'none'
+  }
+
+  // Banner accompagnatore minore
+  let accBanner = document.getElementById('result-accompagnatore')
+  if (!accBanner) {
+    accBanner = document.createElement('div')
+    accBanner.id = 'result-accompagnatore'
+    det.parentNode.insertBefore(accBanner, det.nextSibling)
+  }
+  if (conAccompagnatore) {
+    accBanner.style.display = 'block'
+    accBanner.style.cssText = 'display:block;margin-top:14px;background:rgba(46,125,50,.3);border:1px solid rgba(46,125,50,.6);border-radius:10px;padding:12px 16px;text-align:center;font-size:15px;font-weight:700;color:#a5d6a7'
+    accBanner.textContent = '👶 CON ACCOMPAGNATORE MINORE (nato ' + annoMinore + ')'
+  } else {
+    accBanner.style.display = 'none'
   }
 }
 
