@@ -756,12 +756,8 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Metodo di pagamento</div>
         <div class="pagamento-grid">
           <div class="pagamento-opt" onclick="selezionaPagamento('stripe',this)"><div class="pagamento-opt-icon">&#128179;</div><div class="pagamento-opt-label">Carta</div></div>
-          <div class="pagamento-opt" onclick="selezionaPagamento('paypal',this)"><div class="pagamento-opt-icon">&#127837;</div><div class="pagamento-opt-label">PayPal</div></div>
-          <div class="pagamento-opt" onclick="selezionaPagamento('bonifico',this)"><div class="pagamento-opt-icon">&#127974;</div><div class="pagamento-opt-label">Bonifico</div></div>
         </div>
-        <div class="pagamento-info" id="info-stripe">&#128179; Sarai reindirizzato alla pagina sicura Stripe per completare il pagamento con carta di credito o debito.</div>
-        <div class="pagamento-info" id="info-paypal">&#127837; Sarai reindirizzato a PayPal per completare il pagamento in modo sicuro.</div>
-        <div class="pagamento-info" id="info-bonifico">&#127974; <strong>Dati per il bonifico:</strong><br/>Intestatario: ASD Nuova Virtus Basket Molfetta<br/>IBAN: IT00 X000 0000 0000 0000 0000 000<br/>Causale: Carta Virtus [tuo nome] [piano]<br/><br/>Il tuo account verra attivato entro 48h dalla ricezione del bonifico.</div>
+        <div class="pagamento-info show" id="info-stripe">&#128179; Sarai reindirizzato alla pagina sicura Stripe per completare il pagamento con carta di credito o debito.</div>
         <div id="reg-error" style="font-size:12px;color:var(--rosso);margin-bottom:8px;display:none"></div>
         <button class="btn-reg" id="btn-completa" onclick="completaRegistrazione()" disabled style="opacity:.5">Seleziona un metodo &#8594;</button>
         <button class="btn-reg btn-reg-secondary" onclick="avantiDaPostoBack()">&#8592; Indietro</button>
@@ -1522,6 +1518,11 @@ function goStep(n) {
     if (i < n) tab.classList.add('done')
     else if (i === n) tab.classList.add('active')
   })
+  // Pre-seleziona Stripe automaticamente allo step pagamento
+  if (n === 4) {
+    const stripeOpt = document.querySelector('.pagamento-opt')
+    if (stripeOpt && !metodoPagamento) selezionaPagamento('stripe', stripeOpt)
+  }
 }
 
 function avanti(n) {
