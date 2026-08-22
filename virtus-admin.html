@@ -598,7 +598,7 @@ select.form-input:focus{border-color:var(--accent)}
       <div class="card">
         <div class="card-header">
           <div class="card-title">Calendario gare</div>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-gara')">+ Nuova gara</button>
+          <button class="btn btn-primary btn-sm" onclick="apriNuovaGara()">+ Nuova gara</button>
         </div>
         <div class="card-body">
           <table>
@@ -1119,14 +1119,15 @@ select.form-input:focus{border-color:var(--accent)}
   </div>
 </div>
 
-<!-- MODAL: Nuova Gara -->
+<!-- MODAL: Nuova/Modifica Gara -->
 <div class="modal-overlay" id="modal-gara">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Nuova gara</div>
+      <div class="modal-title" id="modal-gara-title">Nuova gara</div>
       <button class="modal-close" onclick="closeModal('modal-gara')">×</button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="g-id"/>
       <div class="form-grid">
         <div class="full form-group"><label>Titolo</label><input class="form-input" id="g-titolo" placeholder="Virtus Molfetta vs Avversario"/></div>
         <div class="full form-group"><label>Avversario</label><input class="form-input" id="g-avversario" placeholder="Nome squadra avversaria"/></div>
@@ -2857,43 +2858,104 @@ async function loadGare() {
 
   const ora = new Date()
   document.getElementById('gare-list').innerHTML = (data || []).map(g => {
+    // Fix timezone: data_ora è in UTC, convertiamo correttamente
     const dataGara = new Date(g.data_ora)
     const passata = dataGara < ora
     const apertura = new Date(dataGara.getTime() - 60*60*1000)
     const aperta = ora >= apertura && !passata
     const stato = passata ? 'Conclusa' : aperta ? 'Aperta' : 'Programmata'
     const badgeCol = passata ? 'badge-gray' : aperta ? 'badge-green' : 'badge-amber'
+    const dataStr = dataGara.toLocaleString('it-IT', {
+      day:'2-digit', month:'2-digit', year:'numeric',
+      hour:'2-digit', minute:'2-digit', timeZone:'Europe/Rome'
+    })
     return `<tr>
       <td><strong>${g.titolo}</strong></td>
       <td style="font-size:12px">${g.avversario}</td>
-      <td style="font-size:12px">${dataGara.toLocaleString('it-IT', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+      <td style="font-size:12px">${dataStr}</td>
       <td style="font-size:12px;color:var(--muted)">${g.luogo}</td>
       <td style="font-size:12px;color:var(--muted)">${g.stagione}</td>
       <td><span class="badge ${badgeCol}">${stato}</span></td>
-      <td>
+      <td style="display:flex;gap:4px">
         <button class="btn btn-ghost btn-sm" data-id="${g.id}" data-titolo="${g.titolo}" onclick="loadIngressi(this.dataset.id, this.dataset.titolo)">Ingressi</button>
-      </td>
-      <td>
-        <button class="btn btn-danger btn-sm" data-id="${g.id}" onclick="eliminaGara(this.dataset.id)">${g.attiva ? 'Disattiva' : 'Attiva'}</button>
+        <button class="btn btn-ghost btn-sm" onclick='apriModificaGara(${JSON.stringify(g)})'>✏️</button>
+        <button class="btn btn-danger btn-sm" onclick='confermaEliminaGara("${g.id}","${g.titolo.replace(/"/g,"&quot;")}")'>🗑️</button>
       </td>
     </tr>`
-  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Nessuna gara</td></tr>'
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessuna gara</td></tr>'
+}
+
+function apriModificaGara(g) {
+  document.getElementById('modal-gara-title').textContent = 'Modifica gara'
+  document.getElementById('g-id').value      = g.id
+  document.getElementById('g-titolo').value  = g.titolo
+  document.getElementById('g-avversario').value = g.avversario || ''
+  // Converti data UTC in formato datetime-local (YYYY-MM-DDTHH:MM) ora italiana
+  const d = new Date(g.data_ora)
+  const pad = n => String(n).padStart(2,'0')
+  const itOffset = d.toLocaleString('it-IT', { timeZone:'Europe/Rome', hour12:false })
+  // Usa toLocaleString per ottenere i componenti in ora italiana
+  const parts = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Rome',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  }).formatToParts(d)
+  const dp = {}; parts.forEach(p => dp[p.type] = p.value)
+  document.getElementById('g-data').value    = `${dp.year}-${dp.month}-${dp.day}T${dp.hour}:${dp.minute}`
+  document.getElementById('g-luogo').value   = g.luogo || 'PalaPoli, Molfetta'
+  document.getElementById('g-stagione').value = g.stagione || '2026/2027'
+  openModal('modal-gara')
+}
+
+function apriNuovaGara() {
+  document.getElementById('modal-gara-title').textContent = 'Nuova gara'
+  document.getElementById('g-id').value = ''
+  document.getElementById('g-titolo').value = ''
+  document.getElementById('g-avversario').value = ''
+  document.getElementById('g-data').value = ''
+  document.getElementById('g-luogo').value = 'PalaPoli, Molfetta'
+  document.getElementById('g-stagione').value = '2026/2027'
+  openModal('modal-gara')
 }
 
 async function salvaGara() {
+  const id = document.getElementById('g-id').value
+  // Converti datetime-local (ora italiana) in ISO UTC per Supabase
+  const dataLocale = document.getElementById('g-data').value
+  if (!dataLocale) { toast('Inserisci data e ora', 'error'); return }
+  // datetime-local è già ora locale del browser — new Date() lo tratta correttamente
+  const dataUTC = new Date(dataLocale).toISOString()
+
   const payload = {
-    titolo:    document.getElementById('g-titolo').value,
-    avversario:document.getElementById('g-avversario').value,
-    data_ora:  document.getElementById('g-data').value,
-    luogo:     document.getElementById('g-luogo').value,
-    stagione:  document.getElementById('g-stagione').value,
-    attiva:    true
+    titolo:     document.getElementById('g-titolo').value.trim(),
+    avversario: document.getElementById('g-avversario').value.trim(),
+    data_ora:   dataUTC,
+    luogo:      document.getElementById('g-luogo').value.trim(),
+    stagione:   document.getElementById('g-stagione').value.trim(),
+    attiva:     true
   }
   if (!payload.titolo || !payload.data_ora) { toast('Compila titolo e data', 'error'); return }
-  const { error } = await sbAdmin.from('gare').insert(payload)
+
+  let error
+  if (id) {
+    const res = await sbAdmin.from('gare').update(payload).eq('id', id)
+    error = res.error
+  } else {
+    const res = await sbAdmin.from('gare').insert(payload)
+    error = res.error
+  }
   if (error) { toast('Errore: ' + error.message, 'error'); return }
-  toast('Gara aggiunta!', 'success')
+  toast(id ? 'Gara aggiornata ✓' : 'Gara aggiunta ✓', 'success')
   closeModal('modal-gara')
+  loadGare()
+}
+
+async function confermaEliminaGara(id, titolo) {
+  if (!confirm(`Eliminare definitivamente la gara "${titolo}"?\nVerranno eliminati anche tutti gli ingressi registrati.`)) return
+  await sbAdmin.from('ingressi_gare').delete().eq('gara_id', id)
+  const { error } = await sbAdmin.from('gare').delete().eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Gara eliminata', 'success')
   loadGare()
 }
 
