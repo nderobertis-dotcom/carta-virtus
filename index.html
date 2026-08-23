@@ -1495,9 +1495,15 @@ function renderPartnerCards(partners) {
 let tuttiPostiPubblici = []
 
 async function caricaPostiPubblici() {
-  const { data } = await sb.from('posti')
+  const grid = document.getElementById('posti-pubblici-grid')
+  const { data, error } = await sb.from('posti')
     .select('id, settore, fila, numero, stato')
     .order('settore').order('fila').order('numero')
+  if (error) {
+    console.error('Errore caricamento posti:', error)
+    if (grid) grid.innerHTML = '<div style="color:#546E7A;font-size:13px;padding:20px 0">Impossibile caricare i posti. Riprova più tardi.</div>'
+    return
+  }
   tuttiPostiPubblici = data || []
   renderPostiPubblici(tuttiPostiPubblici)
 }
@@ -1510,6 +1516,7 @@ function filtraPosti(settore, btn) {
     : tuttiPostiPubblici.filter(p => p.settore?.toLowerCase() === settore)
   renderPostiPubblici(filtrati)
 }
+window.filtraPosti = filtraPosti
 
 function renderPostiPubblici(posti) {
   const grid = document.getElementById('posti-pubblici-grid')
