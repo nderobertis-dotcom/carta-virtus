@@ -1660,11 +1660,11 @@ async function initApp() {
 async function loadDashboard() {
   const [{ count: nTifosi }, { count: nPartner }, { data: txData }, { count: nCoupon }, { count: nAttesa }] =
     await Promise.all([
-      sb.from('tifosi').select('*', { count: 'exact', head: true }).eq('stato', 'attivo'),
-      sb.from('partner').select('*', { count: 'exact', head: true }).eq('attivo', true),
-      sb.from('transazioni').select('tipo, punti_delta'),
-      sb.from('riscatti').select('*', { count: 'exact', head: true }).eq('stato', 'emesso'),
-      sb.from('membership').select('*', { count: 'exact', head: true }).eq('stato', 'in_attesa')
+      sbAdmin.from('tifosi').select('*', { count: 'exact', head: true }).eq('stato', 'attivo'),
+      sbAdmin.from('partner').select('*', { count: 'exact', head: true }).eq('attivo', true),
+      sbAdmin.from('transazioni').select('tipo, punti_delta'),
+      sbAdmin.from('riscatti').select('*', { count: 'exact', head: true }).eq('stato', 'emesso'),
+      sbAdmin.from('membership').select('*', { count: 'exact', head: true }).eq('stato', 'in_attesa')
     ])
 
   document.getElementById('stat-tifosi').textContent = nTifosi ?? '0'
@@ -3014,7 +3014,7 @@ async function aggiornaIngressi(garaId) {
 
 function esportaIngressi() {
   if (!currentGaraId) return
-  sb.from('ingressi_gare')
+  sbAdmin.from('ingressi_gare')
     .select('piano_nome, registrato_il, tifoso:tifoso_id(nome, cognome)')
     .eq('gara_id', currentGaraId)
     .order('registrato_il', { ascending: true })
@@ -3839,7 +3839,7 @@ async function approvaContratto(id) {
   if (!ok) return
 
   const updates = [
-    sb.from('fop_contratti').update({ stato: 'approvato', approvato_il: new Date().toISOString() }).eq('id', id)
+    sbAdmin.from('fop_contratti').update({ stato: 'approvato', approvato_il: new Date().toISOString() }).eq('id', id)
   ]
   // Se c'è uno slot, marcarlo come venduto
   if (c.slot_id) {
@@ -3856,7 +3856,7 @@ async function annullaContratto(id) {
   if (!confirm('Annullare questa proposta?')) return
 
   const updates = [
-    sb.from('fop_contratti').update({ stato: 'annullato' }).eq('id', id)
+    sbAdmin.from('fop_contratti').update({ stato: 'annullato' }).eq('id', id)
   ]
   // Libera lo slot se opzionato
   if (c.slot_id) {
