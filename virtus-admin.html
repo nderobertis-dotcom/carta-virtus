@@ -3040,7 +3040,7 @@ function esportaIngressi() {
 
 // ── MEMBERSHIP ──
 async function loadMembership(statoFiltro) {
-  let query = sb.from('membership')
+  let query = sbAdmin.from('membership')
     .select('*, tifoso:tifoso_id(nome, cognome, email), piano:piano_id(nome, prezzo_eur)')
     .order('creato_il', { ascending: false })
   if (statoFiltro) query = query.eq('stato', statoFiltro)
