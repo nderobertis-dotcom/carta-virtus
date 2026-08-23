@@ -3081,7 +3081,8 @@ async function attivaMemb(id) {
 }
 
 async function sospendiMemb(id) {
-  const { error } = await sbAdmin.from('membership').update({ stato: 'scaduta' }).eq('id', id)
+  if (!confirm('Annullare questa membership?')) return
+  const { error } = await sbAdmin.from('membership').update({ stato: 'annullata' }).eq('id', id)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('Membership sospesa', 'success')
   loadMembership('')
