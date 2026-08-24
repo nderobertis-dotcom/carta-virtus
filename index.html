@@ -1559,9 +1559,13 @@ function filtraPosti(settore, btn) {
 window.filtraPosti = filtraPosti
 
 document.addEventListener('click', function(e) {
+  const posto = e.target.closest('.posto-pub-btn')
+  if (posto) {
+    onClickPosto(posto.dataset.tid, posto.dataset.fila, parseInt(posto.dataset.num))
+    return
+  }
   const btn = e.target.closest('.posti-filtro-btn')
-  if (!btn) return
-  filtraPosti(btn.dataset.settore || 'tutti', btn)
+  if (btn) filtraPosti(btn.dataset.settore || 'tutti', btn)
 })
 
 function renderPiantaPubblica(tid) {
@@ -1577,8 +1581,8 @@ function renderPiantaPubblica(tid) {
       const disponibile = stato === 'disponibile'
       const bg = disponibile ? '#4CAF50' : stato === 'accompagnatore' ? '#FF9800' : '#e53935'
       const cursor = disponibile ? 'pointer' : 'not-allowed'
-      const onclick = disponibile ? 'onClickPosto(\'' + tid + '\',\'' + fila + '\',' + n + ')' : ''
-      return '<div onclick="' + onclick + '" style="width:14px;height:14px;border-radius:2px;background:' + bg + ';cursor:' + cursor + ';flex-shrink:0;transition:.15s" title="Fila ' + fila + ' N° ' + n + (disponibile ? ' — Clicca per prenotare' : ' — Occupato') + '"></div>'
+      const clickAttr = disponibile ? 'data-tid="' + tid + '" data-fila="' + fila + '" data-num="' + n + '" class="posto-pub-btn"' : 'class="posto-pub-occ"'
+      return '<div ' + clickAttr + ' style="width:14px;height:14px;border-radius:2px;background:' + bg + ';cursor:' + cursor + ';flex-shrink:0;transition:.15s" title="Fila ' + fila + ' N\u00b0 ' + n + (disponibile ? ' \u2014 Clicca per prenotare' : ' \u2014 Occupato') + '"></div>'
     }).join('')
     return '<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px"><div style="font-size:10px;color:#546E7A;width:14px;text-align:center;flex-shrink:0;font-weight:600">' + fila + '</div><div style="display:flex;gap:2px">' + celle + '</div></div>'
   }).join('')
