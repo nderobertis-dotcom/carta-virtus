@@ -2040,15 +2040,6 @@ async function completaRegistrazione() {
   }
 }
 
-  } catch(err) {
-    errEl.textContent = err.message
-    errEl.style.display = 'block'
-    btn.textContent = 'Riprova'
-    btn.disabled = false
-    btn.style.opacity = '1'
-  }
-}
-
 function apriLogin() {
   chiudiModal()
   document.getElementById('modal-login').classList.add('open')
