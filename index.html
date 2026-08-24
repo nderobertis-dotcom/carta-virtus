@@ -417,14 +417,14 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     </div>
     <div id="posti-riepilogo" style="margin-bottom:16px;font-size:13px;color:#546E7A">Caricamento...</div>
     <div style="overflow-x:auto">
-      <div style="margin-bottom:28px">
+      <div class="pianta-settore" style="margin-bottom:28px">
         <div style="font-size:12px;font-weight:700;color:#1A3A6B;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:8px">
           <span style="background:#1A3A6B;color:#fff;padding:2px 10px;border-radius:12px">SETTORE A</span>
           <span style="font-size:11px;color:#546E7A;font-weight:400">Tribuna Sud · File E→A</span>
         </div>
         <div id="pianta-sud"></div>
       </div>
-      <div>
+      <div class="pianta-settore">
         <div style="font-size:12px;font-weight:700;color:#1A3A6B;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:8px">
           <span style="background:#1A3A6B;color:#fff;padding:2px 10px;border-radius:12px">SETTORE B</span>
           <span style="font-size:11px;color:#546E7A;font-weight:400">Tribuna Nord · File L→F</span>
@@ -433,6 +433,21 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
       </div>
     </div>
     <div id="posti-pubblici-grid" style="display:none"></div>
+
+    <!-- POPUP: Scelta piano dopo click posto -->
+    <div id="popup-posto" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="font-size:24px;margin-bottom:8px">🪑</div>
+        <div style="font-size:18px;font-weight:800;color:#1A3A6B;margin-bottom:6px">Posto selezionato</div>
+        <div id="popup-posto-info" style="font-size:14px;color:#546E7A;margin-bottom:20px"></div>
+        <div style="font-size:13px;color:#1A3A6B;font-weight:700;margin-bottom:12px">Scegli il tuo piano:</div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button onclick="scegliPianoDaPosto('silver',50)" style="background:#455A64;color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">🥈 Silver<br><span style="font-size:11px;opacity:.8">€ 50/anno</span></button>
+          <button onclick="scegliPianoDaPosto('gold',100)" style="background:#B8860B;color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">🥇 Gold<br><span style="font-size:11px;opacity:.8">€ 100/anno</span></button>
+        </div>
+        <button onclick="chiudiPopupPosto()" style="margin-top:16px;background:none;border:none;color:#546E7A;font-size:13px;cursor:pointer;text-decoration:underline">Annulla</button>
+      </div>
+    </div>
     <div style="margin-top:28px">
       <a href="#piani" onclick="document.getElementById('piani').scrollIntoView({behavior:'smooth'});return false"
          style="background:#1A3A6B;color:#fff;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;display:inline-block">
@@ -1530,51 +1545,87 @@ const MAPPA_POSTI_PUB = {
 }
 
 let _statiPostiPubblici = {}
+let _postoPreselezionato = null
 
 function filtraPosti(settore, btn) {
   document.querySelectorAll('.posti-filtro-btn').forEach(b => b.classList.remove('attivo'))
   btn.classList.add('attivo')
-  if (settore === 'tutti') {
-    document.getElementById('pianta-sud').parentElement.style.display = 'block'
-    document.getElementById('pianta-nord').parentElement.style.display = 'block'
-  } else if (settore === 'sud') {
-    document.getElementById('pianta-sud').parentElement.style.display = 'block'
-    document.getElementById('pianta-nord').parentElement.style.display = 'none'
-  } else {
-    document.getElementById('pianta-sud').parentElement.style.display = 'none'
-    document.getElementById('pianta-nord').parentElement.style.display = 'block'
-  }
+  const divSud = document.getElementById('pianta-sud').closest('.pianta-settore')
+  const divNord = document.getElementById('pianta-nord').closest('.pianta-settore')
+  if (settore === 'tutti') { divSud.style.display='block'; divNord.style.display='block' }
+  else if (settore === 'sud') { divSud.style.display='block'; divNord.style.display='none' }
+  else { divSud.style.display='none'; divNord.style.display='block' }
 }
 window.filtraPosti = filtraPosti
 
 document.addEventListener('click', function(e) {
   const btn = e.target.closest('.posti-filtro-btn')
   if (!btn) return
-  const settore = btn.dataset.settore || 'tutti'
-  filtraPosti(settore, btn)
+  filtraPosti(btn.dataset.settore || 'tutti', btn)
 })
 
 function renderPiantaPubblica(tid) {
   const conf = MAPPA_POSTI_PUB[tid]
   const el = document.getElementById('pianta-' + tid)
-  if (!el) return
+  if (!el || !conf) return
   el.innerHTML = conf.file.map(fila => {
     const riga = conf.struttura[fila]
     const celle = riga.map(n => {
-      if (n === 'S') return '<div style="width:12px;height:12px;flex-shrink:0"></div>'
+      if (n === 'S') return '<div style="width:14px;height:14px;flex-shrink:0"></div>'
       const k = tid + '_' + fila + '_' + n
       const stato = _statiPostiPubblici[k] || 'disponibile'
-      const bg = stato === 'disponibile' ? '#4CAF50' : stato === 'accompagnatore' ? '#FF9800' : '#F44336'
-      const title = 'Fila ' + fila + ' N° ' + n + ' — ' + (stato === 'disponibile' ? 'Disponibile' : 'Occupato')
-      return '<div style="width:12px;height:12px;border-radius:2px;background:' + bg + ';flex-shrink:0" title="' + title + '"></div>'
+      const disponibile = stato === 'disponibile'
+      const bg = disponibile ? '#4CAF50' : stato === 'accompagnatore' ? '#FF9800' : '#e53935'
+      const cursor = disponibile ? 'pointer' : 'not-allowed'
+      const onclick = disponibile ? 'onClickPosto('' + tid + '','' + fila + '',' + n + ')' : ''
+      return '<div onclick="' + onclick + '" style="width:14px;height:14px;border-radius:2px;background:' + bg + ';cursor:' + cursor + ';flex-shrink:0;transition:.15s" title="Fila ' + fila + ' N° ' + n + (disponibile ? ' — Clicca per prenotare' : ' — Occupato') + '"></div>'
     }).join('')
-    return '<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px"><div style="font-size:10px;color:#546E7A;width:12px;text-align:center;flex-shrink:0;font-weight:600">' + fila + '</div><div style="display:flex;gap:2px">' + celle + '</div></div>'
+    return '<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px"><div style="font-size:10px;color:#546E7A;width:14px;text-align:center;flex-shrink:0;font-weight:600">' + fila + '</div><div style="display:flex;gap:2px">' + celle + '</div></div>'
   }).join('')
 }
 
+function onClickPosto(tribuna, fila, numero) {
+  _postoPreselezionato = { tribuna, fila, numero, k: tribuna + '_' + fila + '_' + numero }
+  const settore = tribuna === 'sud' ? 'Settore A' : 'Settore B'
+
+  // Mostra popup scelta piano
+  const popup = document.getElementById('popup-posto')
+  if (!popup) return
+  document.getElementById('popup-posto-info').textContent = settore + ' · Fila ' + fila + ' · Posto ' + numero
+  popup.style.display = 'flex'
+}
+window.onClickPosto = onClickPosto
+
+function chiudiPopupPosto() {
+  document.getElementById('popup-posto').style.display = 'none'
+  _postoPreselezionato = null
+}
+window.chiudiPopupPosto = chiudiPopupPosto
+
+function scegliPianoDaPosto(piano, prezzo) {
+  chiudiPopupPosto()
+  // Pre-seleziona il posto nel form di registrazione
+  if (_postoPreselezionato) {
+    _postoSelezionato = _postoPreselezionato
+    _tribunaAttiva = _postoPreselezionato.tribuna
+  }
+  apriRegistrazione(piano, prezzo, true)
+  // Dopo apertura, salta allo step posto e pre-seleziona
+  setTimeout(() => {
+    avanti(3)
+    if (_postoPreselezionato) {
+      _postoSelezionato = _postoPreselezionato
+      renderMappaPosti()
+      // Evidenzia il posto pre-selezionato
+      document.getElementById('posto-error').style.display = 'none'
+    }
+  }, 100)
+}
+window.scegliPianoDaPosto = scegliPianoDaPosto
+
 async function caricaPostiPubblici() {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
   const riepilogo = document.getElementById('posti-riepilogo')
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
   try {
     const resp = await fetch('https://brwkwlyxkptzmkzkvava.supabase.co/rest/v1/posti?select=tribuna,fila,numero,stato', {
       headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
@@ -1589,11 +1640,68 @@ async function caricaPostiPubblici() {
     })
     renderPiantaPubblica('sud')
     renderPiantaPubblica('nord')
-    if (riepilogo) riepilogo.innerHTML = '<strong style="color:#2E7D32">' + disponibili + ' posti disponibili</strong> su ' + data.length + ' totali &nbsp;·&nbsp; <span style="color:#546E7A">🟢 Disponibile &nbsp; 🔴 Occupato</span>'
+    if (riepilogo) riepilogo.innerHTML = '<strong style="color:#2E7D32">' + disponibili + ' posti disponibili</strong> su ' + data.length + ' totali &nbsp;·&nbsp; <span style="font-size:12px;color:#546E7A">Clicca su un posto verde per prenotarlo</span>'
   } catch(e) {
     console.error('Errore posti:', e)
     if (riepilogo) riepilogo.textContent = 'Impossibile caricare la disponibilità posti.'
   }
+}
+
+// ── PARTNER PUBBLICI ──────────────────────────────────────
+let tuttiPartner = []
+let categoriaAttiva = 'tutti'
+let categorieMap = {}
+
+const CATEGORIE_DEFAULT = {
+  ristorazione: '🍽 Ristorazione',
+  abbigliamento: '👕 Abbigliamento',
+  sport: '⚽ Sport',
+  salute_benessere: '💆 Salute & Benessere',
+  intrattenimento: '🎭 Intrattenimento',
+  servizi: '🛠 Servizi',
+  altro: '🏪 Altro'
+}
+
+function getCatLabel(cat) {
+  if (categorieMap[cat]) return (categorieMap[cat].emoji || '') + ' ' + cat.replace(/_/g,' ')
+  return CATEGORIE_DEFAULT[cat] || cat
+}
+
+function renderPartnerFiltri(categorie) {
+  const cont = document.getElementById('partner-filtri')
+  if (!cont) return
+  const bottoni = ['tutti', ...categorie]
+  cont.innerHTML = bottoni.map(cat => {
+    const label = cat === 'tutti' ? '🔍 Tutti' : getCatLabel(cat)
+    return `<button class="partner-filtro-btn${cat === categoriaAttiva ? ' attivo' : ''}"
+      onclick="filtraPartner('${cat}')">${label}</button>`
+  }).join('')
+}
+
+function filtraPartner(cat) {
+  categoriaAttiva = cat
+  renderPartnerFiltri([...new Set(tuttiPartner.map(p => p.categoria).filter(Boolean))])
+  renderPartnerCards(cat === 'tutti' ? tuttiPartner : tuttiPartner.filter(p => p.categoria === cat))
+}
+
+function renderPartnerCards(partners) {
+  const grid = document.getElementById('partner-cards-grid')
+  if (!grid) return
+  if (!partners.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#546E7A;font-size:14px;padding:24px">Nessun partner in questa categoria.</div>'
+    return
+  }
+  grid.innerHTML = partners.map(p => {
+    const logoHtml = p.logo_url
+      ? `<img src="${p.logo_url}" alt="${p.nome_negozio}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+         <div style="display:none;font-size:32px;align-items:center;justify-content:center">🏪</div>`
+      : `<div style="font-size:32px;display:flex;align-items:center;justify-content:center">🏪</div>`
+    return `<div class="partner-card">
+      ${logoHtml}
+      <div class="partner-card-nome">${p.nome_negozio}</div>
+      <div class="partner-card-cat">${getCatLabel(p.categoria)}</div>
+    </div>`
+  }).join('')
 }
 
 // ── PARTNER PUBBLICI ──────────────────────────────────────
@@ -1608,22 +1716,6 @@ async function caricaPostiPubblici() {
 
 // ── DISPONIBILITÀ POSTI PUBBLICI ──────────────────────────
 
-async function caricaPostiPubblici() {
-  const grid = document.getElementById('posti-pubblici-grid')
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
-  try {
-    const resp = await fetch('https://brwkwlyxkptzmkzkvava.supabase.co/rest/v1/posti?select=id,tribuna,fila,numero,stato&order=tribuna,fila,numero', {
-      headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
-    })
-    const data = await resp.json()
-    if (!Array.isArray(data)) throw new Error('Risposta non valida')
-    tuttiPostiPubblici = data
-    renderPostiPubblici(data)
-  } catch(e) {
-    console.error('Errore posti:', e)
-    if (grid) grid.innerHTML = '<div style="color:#546E7A;font-size:13px;padding:20px 0">Impossibile caricare i posti.</div>'
-  }
-}
 
 function filtraPosti(settore, btn) {
   document.querySelectorAll('.posti-filtro-btn').forEach(b => b.classList.remove('attivo'))
