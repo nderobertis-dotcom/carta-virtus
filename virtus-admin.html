@@ -3585,13 +3585,19 @@ async function emettiFantCard() {
   btn.textContent = 'Elaborazione...'
 
   try {
-    // 1. Invita l'utente via Supabase Auth → riceve email con link per scegliere password
-    const { data: inviteData, error: inviteErr } = await sbAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { ruolo: 'tifoso', nome, cognome }
-    })
-    if (inviteErr) throw new Error('Errore invito: ' + inviteErr.message)
+    // 1. Genera password temporanea
+    const tempPass = 'Virtus' + Math.random().toString(36).slice(2,8).toUpperCase() + '!'
 
-    const uid = inviteData.user.id
+    // 2. Crea account Auth con createUser (no rate limit come inviteUserByEmail)
+    const { data: authData, error: authErr } = await sbAdmin.auth.admin.createUser({
+      email,
+      password: tempPass,
+      email_confirm: true,
+      user_metadata: { ruolo: 'tifoso', nome, cognome }
+    })
+    if (authErr) throw new Error('Errore creazione account: ' + authErr.message)
+
+    const uid = authData.user.id
 
     // 2. Crea record tifoso
     const scadenza = new Date()
@@ -3633,7 +3639,26 @@ async function emettiFantCard() {
       nota: `Bonus benvenuto piano ${piano}`
     })
 
-    toast(`✅ Fan Card emessa! Email di attivazione inviata a ${email}`, 'success')
+    // 5. Invia email con credenziali via EmailJS
+    try {
+      await emailjs.send('service_56o6ajc', 'template_382bqdi', {
+        to_email: email,
+        to_name: nome + ' ' + cognome,
+        message_html: `
+          <p>Ciao <strong>${nome}</strong>,</p>
+          <p>La tua <strong>Virtus Fan Card</strong> è stata emessa con successo!</p>
+          <p><strong>Piano:</strong> ${piano.charAt(0).toUpperCase() + piano.slice(1)}</p>
+          <p><strong>Email:</strong> ${email}<br>
+          <strong>Password temporanea:</strong> ${tempPass}</p>
+          <p>Accedi su <a href="https://virtusfanmolfetta.com">virtusfanmolfetta.com</a> e cambia la password dopo il primo accesso.</p>
+          <p>Forza Virtus! 🏀</p>
+        `
+      })
+    } catch(emailErr) {
+      console.warn('EmailJS error:', emailErr)
+    }
+
+    toast(`✅ Fan Card emessa! Credenziali inviate a ${email}`, 'success')
     closeModal('modal-emetti-fancard')
 
     // Reset form
