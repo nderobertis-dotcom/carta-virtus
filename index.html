@@ -1577,7 +1577,7 @@ function renderPiantaPubblica(tid) {
       const disponibile = stato === 'disponibile'
       const bg = disponibile ? '#4CAF50' : stato === 'accompagnatore' ? '#FF9800' : '#e53935'
       const cursor = disponibile ? 'pointer' : 'not-allowed'
-      const onclick = disponibile ? 'onClickPosto('' + tid + '','' + fila + '',' + n + ')' : ''
+      const onclick = disponibile ? 'onClickPosto(\'' + tid + '\',\'' + fila + '\',' + n + ')' : ''
       return '<div onclick="' + onclick + '" style="width:14px;height:14px;border-radius:2px;background:' + bg + ';cursor:' + cursor + ';flex-shrink:0;transition:.15s" title="Fila ' + fila + ' N° ' + n + (disponibile ? ' — Clicca per prenotare' : ' — Occupato') + '"></div>'
     }).join('')
     return '<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px"><div style="font-size:10px;color:#546E7A;width:14px;text-align:center;flex-shrink:0;font-weight:600">' + fila + '</div><div style="display:flex;gap:2px">' + celle + '</div></div>'
