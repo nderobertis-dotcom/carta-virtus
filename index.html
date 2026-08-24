@@ -1843,6 +1843,8 @@ function apriRegistrazione(nome, prezzo, richiedeMaglia) {
 window.apriRegistrazione = apriRegistrazione
 
 function chiudiModal() { document.getElementById('modal-reg').classList.remove('open') }
+window.apriRegistrazione = apriRegistrazione
+window.chiudiModal = chiudiModal
 
 function goStep(n) {
   document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'))
