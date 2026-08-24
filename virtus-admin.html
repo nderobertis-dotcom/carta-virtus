@@ -391,7 +391,7 @@ select.form-input:focus{border-color:var(--accent)}
             <span id="tifosi-count" style="font-size:11px;color:var(--muted)"></span>
             <button class="btn btn-ghost btn-sm" onclick="switchTifosiTab('ricariche')">⚡ Ricariche</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-ricarica-diretta')">+ Ricarica diretta</button>
-            <button class="btn btn-primary btn-sm" onclick="openModal('modal-emetti-fancard')">🎫 Emetti Fan Card</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-emetti-fancard');caricaAnnoSogliaFc()">🎫 Emetti Fan Card</button>
           </div>
         </div>
         <!-- TAB RICARICHE -->
@@ -1239,6 +1239,26 @@ select.form-input:focus{border-color:var(--accent)}
           <option value="contanti">Contanti</option>
           <option value="pos">POS</option>
         </select>
+      </div>
+      <!-- ACCOMPAGNATORE MINORE -->
+      <div style="grid-column:1/-1;background:#F0F6FF;border:1px solid #DDEEFF;border-radius:10px;padding:14px">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;margin-bottom:10px">
+          <input type="checkbox" id="fc-accompagnatore" style="margin-top:2px;width:15px;height:15px" onchange="toggleFcAccompagnatore(this.checked)"/>
+          <span>Il tifoso ha un figlio minore che lo accompagna alle gare <span style="font-size:11px;color:var(--muted)">(nato dal <span id="fc-anno-soglia">2011</span> in poi)</span></span>
+        </label>
+        <div id="fc-campi-accompagnatore" style="display:none;padding-top:8px;border-top:1px solid #DDEEFF">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="form-group">
+              <label>Anno di nascita figlio *</label>
+              <input class="form-input" type="number" id="fc-anno-minore" placeholder="es: 2013" min="2005" max="2020"/>
+            </div>
+            <div class="form-group">
+              <label>Documento minore</label>
+              <input class="form-input" type="file" id="fc-doc-minore" accept="image/jpeg,image/png,image/webp,application/pdf" style="cursor:pointer"/>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#546E7A;margin-top:4px">JPG, PNG, PDF · max 5MB · Il documento sarà salvato nel profilo del tifoso</div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -3566,6 +3586,16 @@ async function loadTifosiSelectRicarica() {
 const PIANI_PREZZI = { base: 10, bronze: 30, silver: 50, gold: 100 }
 const PIANI_PUNTI_BENVENUTO = { base: 10, bronze: 30, silver: 50, gold: 100 }
 
+function toggleFcAccompagnatore(checked) {
+  document.getElementById('fc-campi-accompagnatore').style.display = checked ? 'block' : 'none'
+}
+
+async function caricaAnnoSogliaFc() {
+  const { data } = await sbAdmin.from('impostazioni').select('valore').eq('chiave', 'anno_soglia_minori').single()
+  const el = document.getElementById('fc-anno-soglia')
+  if (el && data?.valore) el.textContent = data.valore
+}
+
 async function emettiFantCard() {
   const nome    = document.getElementById('fc-nome').value.trim()
   const cognome = document.getElementById('fc-cognome').value.trim()
@@ -3579,6 +3609,13 @@ async function emettiFantCard() {
   if (!nome || !cognome || !email || !piano || !metodo || isNaN(importo)) {
     toast('Compila tutti i campi obbligatori', 'error'); return
   }
+
+  // Validazione accompagnatore
+  const accomp = document.getElementById('fc-accompagnatore').checked
+  const annoMinore = parseInt(document.getElementById('fc-anno-minore').value) || null
+  const docMinore  = document.getElementById('fc-doc-minore').files[0]
+  if (accomp && !annoMinore) { toast('Inserisci l\'anno di nascita del figlio', 'error'); return }
+  if (accomp && docMinore && docMinore.size > 5 * 1024 * 1024) { toast('Documento troppo grande — max 5MB', 'error'); return }
 
   const btn = document.getElementById('fc-submit-btn')
   btn.disabled = true
@@ -3612,6 +3649,29 @@ async function emettiFantCard() {
       stato: 'attivo'
     })
     if (tifErr) throw new Error('Errore tifoso: ' + tifErr.message)
+
+    // ── ACCOMPAGNATORE MINORE ──────────────────────────────
+    if (accomp && annoMinore) {
+      let docUrl = null
+      if (docMinore) {
+        const ext = docMinore.name.split('.').pop()
+        const path = `${uid}/doc_minore_${Date.now()}.${ext}`
+        const { data: upData, error: upErr } = await sbAdmin.storage
+          .from('documenti-minori').upload(path, docMinore, { contentType: docMinore.type })
+        if (!upErr) {
+          const { data: { publicUrl } } = sbAdmin.storage.from('documenti-minori').getPublicUrl(upData.path)
+          docUrl = publicUrl
+        }
+      }
+      await sbAdmin.from('tifosi').update({
+        accompagnatore_minore:  true,
+        anno_nascita_minore:    annoMinore,
+        accompagnatore_stato:   docMinore ? 'in_attesa' : 'approvato',
+        documento_minore_url:   docUrl
+      }).eq('id', uid)
+      if (docMinore) aggiornaContatorAccompagnatori()
+    }
+    // ────────────────────────────────────────────────────────
 
     // 3. Recupera piano_id da membership_piani
     const pianoNomeMap = { base: 'Base', bronze: 'Bronze', silver: 'Silver', gold: 'Gold' }
@@ -3666,6 +3726,10 @@ async function emettiFantCard() {
     document.getElementById('fc-piano').value = ''
     document.getElementById('fc-importo').value = ''
     document.getElementById('fc-metodo').value = ''
+    document.getElementById('fc-accompagnatore').checked = false
+    document.getElementById('fc-anno-minore').value = ''
+    document.getElementById('fc-doc-minore').value = ''
+    document.getElementById('fc-campi-accompagnatore').style.display = 'none'
 
     loadTifosi()
     loadDashboard()
