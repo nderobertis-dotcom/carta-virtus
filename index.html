@@ -415,10 +415,24 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
       <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:16px;border-radius:4px;background:#E8F5E9;border:1.5px solid #4CAF50;display:inline-block"></span>Disponibile</span>
       <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:16px;border-radius:4px;background:#FFEBEE;border:1.5px solid #F44336;display:inline-block"></span>Occupato</span>
     </div>
-    <div id="posti-pubblici-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px;max-width:900px">
-      <div style="color:#546E7A;font-size:13px;padding:20px 0">Caricamento posti...</div>
+    <div id="posti-riepilogo" style="margin-bottom:16px;font-size:13px;color:#546E7A">Caricamento...</div>
+    <div style="overflow-x:auto">
+      <div style="margin-bottom:28px">
+        <div style="font-size:12px;font-weight:700;color:#1A3A6B;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          <span style="background:#1A3A6B;color:#fff;padding:2px 10px;border-radius:12px">SETTORE A</span>
+          <span style="font-size:11px;color:#546E7A;font-weight:400">Tribuna Sud · File E→A</span>
+        </div>
+        <div id="pianta-sud"></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#1A3A6B;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          <span style="background:#1A3A6B;color:#fff;padding:2px 10px;border-radius:12px">SETTORE B</span>
+          <span style="font-size:11px;color:#546E7A;font-weight:400">Tribuna Nord · File L→F</span>
+        </div>
+        <div id="pianta-nord"></div>
+      </div>
     </div>
-    <div id="posti-riepilogo" style="margin-top:20px;font-size:13px;color:#546E7A"></div>
+    <div id="posti-pubblici-grid" style="display:none"></div>
     <div style="margin-top:28px">
       <a href="#piani" onclick="document.getElementById('piani').scrollIntoView({behavior:'smooth'});return false"
          style="background:#1A3A6B;color:#fff;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;display:inline-block">
@@ -1492,7 +1506,107 @@ function renderPartnerCards(partners) {
 }
 
 // ── DISPONIBILITÀ POSTI PUBBLICI ──────────────────────────
-let tuttiPostiPubblici = []
+const MAPPA_POSTI_PUB = {
+  sud: {
+    file: ['E','D','C','B','A'],
+    struttura: {
+      E: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,'S',33,34,35],
+      D: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+      C: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+      B: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+      A: [1,2,3,4,5,6,7,8,'S','S','S',12,13,14,15,16,17,18,19,20,21,'S','S','S',25,26,27,28,29,30,31,32,'S',33,34,35],
+    }
+  },
+  nord: {
+    file: ['L','I','H','G','F'],
+    struttura: {
+      L: [1,2,3,'S','S','S',4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      I: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      H: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      G: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+      F: [1,2,3,'S','S','S',4,5,6,7,8,9,10,'S','S','S',14,15,16,17,18,19,20,21,'S','S','S',22,23,24,25],
+    }
+  }
+}
+
+let _statiPostiPubblici = {}
+
+function filtraPosti(settore, btn) {
+  document.querySelectorAll('.posti-filtro-btn').forEach(b => b.classList.remove('attivo'))
+  btn.classList.add('attivo')
+  if (settore === 'tutti') {
+    document.getElementById('pianta-sud').parentElement.style.display = 'block'
+    document.getElementById('pianta-nord').parentElement.style.display = 'block'
+  } else if (settore === 'sud') {
+    document.getElementById('pianta-sud').parentElement.style.display = 'block'
+    document.getElementById('pianta-nord').parentElement.style.display = 'none'
+  } else {
+    document.getElementById('pianta-sud').parentElement.style.display = 'none'
+    document.getElementById('pianta-nord').parentElement.style.display = 'block'
+  }
+}
+window.filtraPosti = filtraPosti
+
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.posti-filtro-btn')
+  if (!btn) return
+  const settore = btn.dataset.settore || 'tutti'
+  filtraPosti(settore, btn)
+})
+
+function renderPiantaPubblica(tid) {
+  const conf = MAPPA_POSTI_PUB[tid]
+  const el = document.getElementById('pianta-' + tid)
+  if (!el) return
+  el.innerHTML = conf.file.map(fila => {
+    const riga = conf.struttura[fila]
+    const celle = riga.map(n => {
+      if (n === 'S') return '<div style="width:12px;height:12px;flex-shrink:0"></div>'
+      const k = tid + '_' + fila + '_' + n
+      const stato = _statiPostiPubblici[k] || 'disponibile'
+      const bg = stato === 'disponibile' ? '#4CAF50' : stato === 'accompagnatore' ? '#FF9800' : '#F44336'
+      const title = 'Fila ' + fila + ' N° ' + n + ' — ' + (stato === 'disponibile' ? 'Disponibile' : 'Occupato')
+      return '<div style="width:12px;height:12px;border-radius:2px;background:' + bg + ';flex-shrink:0" title="' + title + '"></div>'
+    }).join('')
+    return '<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px"><div style="font-size:10px;color:#546E7A;width:12px;text-align:center;flex-shrink:0;font-weight:600">' + fila + '</div><div style="display:flex;gap:2px">' + celle + '</div></div>'
+  }).join('')
+}
+
+async function caricaPostiPubblici() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
+  const riepilogo = document.getElementById('posti-riepilogo')
+  try {
+    const resp = await fetch('https://brwkwlyxkptzmkzkvava.supabase.co/rest/v1/posti?select=tribuna,fila,numero,stato', {
+      headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+    })
+    const data = await resp.json()
+    if (!Array.isArray(data)) throw new Error('Risposta non valida')
+    _statiPostiPubblici = {}
+    let disponibili = 0
+    data.forEach(p => {
+      _statiPostiPubblici[p.tribuna + '_' + p.fila + '_' + p.numero] = p.stato
+      if (p.stato === 'disponibile') disponibili++
+    })
+    renderPiantaPubblica('sud')
+    renderPiantaPubblica('nord')
+    if (riepilogo) riepilogo.innerHTML = '<strong style="color:#2E7D32">' + disponibili + ' posti disponibili</strong> su ' + data.length + ' totali &nbsp;·&nbsp; <span style="color:#546E7A">🟢 Disponibile &nbsp; 🔴 Occupato</span>'
+  } catch(e) {
+    console.error('Errore posti:', e)
+    if (riepilogo) riepilogo.textContent = 'Impossibile caricare la disponibilità posti.'
+  }
+}
+
+// ── PARTNER PUBBLICI ──────────────────────────────────────
+
+    return `<div class="partner-card">
+      ${logoHtml}
+      <div class="partner-card-nome">${p.nome_negozio}</div>
+      <div class="partner-card-cat">${getCatLabel(p.categoria)}</div>
+    </div>`
+  }).join('')
+}
+
+// ── DISPONIBILITÀ POSTI PUBBLICI ──────────────────────────
 
 async function caricaPostiPubblici() {
   const grid = document.getElementById('posti-pubblici-grid')
@@ -1843,8 +1957,6 @@ function apriRegistrazione(nome, prezzo, richiedeMaglia) {
 window.apriRegistrazione = apriRegistrazione
 
 function chiudiModal() { document.getElementById('modal-reg').classList.remove('open') }
-window.apriRegistrazione = apriRegistrazione
-window.chiudiModal = chiudiModal
 
 function goStep(n) {
   document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'))
@@ -1973,6 +2085,15 @@ async function completaRegistrazione() {
     errEl.style.display = 'block'
     btn.textContent = 'Completa e paga'
     btn.disabled = false
+  }
+}
+
+  } catch(err) {
+    errEl.textContent = err.message
+    errEl.style.display = 'block'
+    btn.textContent = 'Riprova'
+    btn.disabled = false
+    btn.style.opacity = '1'
   }
 }
 
