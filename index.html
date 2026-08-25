@@ -414,8 +414,137 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
       <div id="posti-riepilogo" style="font-size:13px;color:#546E7A;margin-left:8px">Caricamento...</div>
     </div>
 
-    <!-- LAYOUT PRINCIPALE: tribune affiancate -->
-    <div style="display:flex;gap:0;align-items:flex-start;overflow-x:auto">
+    <!-- RIGA 1: Tribune affiancate -->
+    <div style="display:flex;gap:32px;align-items:flex-start;overflow-x:auto;margin-bottom:20px">
+
+      <!-- SETTORE A -->
+      <div class="pianta-settore" style="flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:#1A3A6B;letter-spacing:.08em;margin-bottom:8px;text-align:center">
+          <span style="background:#1A3A6B;color:#fff;padding:2px 10px;border-radius:12px;display:inline-block">SETTORE A</span><br>
+          <span style="font-size:10px;color:#546E7A;font-weight:400">Tribuna Sud · File E→A</span>
+        </div>
+        <div id="pianta-sud" style="display:inline-block"></div>
+      </div>
+
+      <!-- SETTORE B -->
+      <div class="pianta-settore" style="flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:#1A3A6B;letter-spacing:.08em;margin-bottom:8px;text-align:center">
+          <span style="background:#1A3A6B;color:#fff;padding:2px 10px;border-radius:12px;display:inline-block">SETTORE B</span><br>
+          <span style="font-size:10px;color:#546E7A;font-weight:400">Tribuna Nord · File L→F</span>
+        </div>
+        <div id="pianta-nord" style="display:inline-block"></div>
+      </div>
+
+    </div>
+
+    <!-- RIGA 2: Campo orizzontale + panchine sul lato lungo inferiore -->
+    <div style="overflow-x:auto">
+      <svg width="720" height="200" viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" style="display:block">
+
+        <!-- Sfondo campo -->
+        <rect x="10" y="10" width="700" height="150" rx="5" fill="#C8A46E" stroke="#1A3A6B" stroke-width="2"/>
+        <!-- Bordo interno -->
+        <rect x="18" y="18" width="684" height="134" fill="none" stroke="white" stroke-width="1.5"/>
+
+        <!-- Linea di metà campo -->
+        <line x1="360" y1="18" x2="360" y2="152" stroke="white" stroke-width="1.5"/>
+
+        <!-- Cerchio centrale -->
+        <circle cx="360" cy="85" r="28" fill="none" stroke="white" stroke-width="1.5"/>
+        <circle cx="360" cy="85" r="2" fill="white"/>
+
+        <!-- Area tiro libero SINISTRA -->
+        <rect x="18" y="52" width="90" height="66" fill="none" stroke="white" stroke-width="1.5"/>
+        <path d="M 108 52 A 45 45 0 0 1 108 118" fill="none" stroke="white" stroke-width="1.5"/>
+        <!-- Canestro SINISTRA -->
+        <line x1="18" y1="75" x2="18" y2="95" stroke="white" stroke-width="2.5"/>
+        <circle cx="28" cy="85" r="7" fill="none" stroke="#e53935" stroke-width="2"/>
+        <line x1="18" y1="85" x2="21" y2="85" stroke="#e53935" stroke-width="2"/>
+
+        <!-- Arco da 3 SINISTRA -->
+        <path d="M 18 30 A 90 90 0 0 1 18 140" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+        <!-- Area tiro libero DESTRA -->
+        <rect x="612" y="52" width="90" height="66" fill="none" stroke="white" stroke-width="1.5"/>
+        <path d="M 612 52 A 45 45 0 0 0 612 118" fill="none" stroke="white" stroke-width="1.5"/>
+        <!-- Canestro DESTRA -->
+        <line x1="702" y1="75" x2="702" y2="95" stroke="white" stroke-width="2.5"/>
+        <circle cx="692" cy="85" r="7" fill="none" stroke="#e53935" stroke-width="2"/>
+        <line x1="702" y1="85" x2="699" y2="85" stroke="#e53935" stroke-width="2"/>
+
+        <!-- Arco da 3 DESTRA -->
+        <path d="M 702 30 A 90 90 0 0 0 702 140" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+        <!-- Etichetta campo -->
+        <text x="360" y="89" text-anchor="middle" fill="white" font-size="9" font-family="Arial" opacity="0.7">CAMPO DI GARA</text>
+
+        <!-- PANCHINE — lato lungo inferiore -->
+        <!-- Panchina CASA (sinistra) -->
+        <rect x="10" y="165" width="340" height="14" rx="3" fill="#1A3A6B" stroke="#0D2147" stroke-width="1"/>
+        <text x="180" y="175" text-anchor="middle" fill="white" font-size="8" font-family="Arial" font-weight="bold">PANCHINA CASA</text>
+        <!-- Seggiolini casa -->
+        <g fill="#F57C00">
+          <rect x="14" y="166" width="9" height="12" rx="1"/>
+          <rect x="25" y="166" width="9" height="12" rx="1"/>
+          <rect x="36" y="166" width="9" height="12" rx="1"/>
+          <rect x="47" y="166" width="9" height="12" rx="1"/>
+          <rect x="58" y="166" width="9" height="12" rx="1"/>
+          <rect x="69" y="166" width="9" height="12" rx="1"/>
+          <rect x="80" y="166" width="9" height="12" rx="1"/>
+          <rect x="91" y="166" width="9" height="12" rx="1"/>
+          <rect x="102" y="166" width="9" height="12" rx="1"/>
+          <rect x="113" y="166" width="9" height="12" rx="1"/>
+          <rect x="124" y="166" width="9" height="12" rx="1"/>
+          <rect x="135" y="166" width="9" height="12" rx="1"/>
+        </g>
+
+        <!-- Panchina OSPITI (destra) -->
+        <rect x="370" y="165" width="340" height="14" rx="3" fill="#546E7A" stroke="#37474F" stroke-width="1"/>
+        <text x="540" y="175" text-anchor="middle" fill="white" font-size="8" font-family="Arial" font-weight="bold">PANCHINA OSPITI</text>
+        <!-- Seggiolini ospiti -->
+        <g fill="#B0BEC5">
+          <rect x="374" y="166" width="9" height="12" rx="1"/>
+          <rect x="385" y="166" width="9" height="12" rx="1"/>
+          <rect x="396" y="166" width="9" height="12" rx="1"/>
+          <rect x="407" y="166" width="9" height="12" rx="1"/>
+          <rect x="418" y="166" width="9" height="12" rx="1"/>
+          <rect x="429" y="166" width="9" height="12" rx="1"/>
+          <rect x="440" y="166" width="9" height="12" rx="1"/>
+          <rect x="451" y="166" width="9" height="12" rx="1"/>
+          <rect x="462" y="166" width="9" height="12" rx="1"/>
+          <rect x="473" y="166" width="9" height="12" rx="1"/>
+          <rect x="484" y="166" width="9" height="12" rx="1"/>
+          <rect x="495" y="166" width="9" height="12" rx="1"/>
+        </g>
+
+      </svg>
+    </div>
+
+    <div id="posti-pubblici-grid" style="display:none"></div>
+
+    <!-- POPUP: Scelta piano dopo click posto -->
+    <div id="popup-posto" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="font-size:24px;margin-bottom:8px">🪑</div>
+        <div style="font-size:18px;font-weight:800;color:#1A3A6B;margin-bottom:6px">Posto selezionato</div>
+        <div id="popup-posto-info" style="font-size:14px;color:#546E7A;margin-bottom:20px"></div>
+        <div style="font-size:13px;color:#1A3A6B;font-weight:700;margin-bottom:12px">Scegli il tuo piano:</div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button onclick="scegliPianoDaPosto('silver',50)" style="background:#455A64;color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">🥈 Silver<br><span style="font-size:11px;opacity:.8">€ 50/anno</span></button>
+          <button onclick="scegliPianoDaPosto('gold',100)" style="background:#B8860B;color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">🥇 Gold<br><span style="font-size:11px;opacity:.8">€ 100/anno</span></button>
+        </div>
+        <button onclick="chiudiPopupPosto()" style="margin-top:16px;background:none;border:none;color:#546E7A;font-size:13px;cursor:pointer;text-decoration:underline">Annulla</button>
+      </div>
+    </div>
+
+    <div style="margin-top:28px">
+      <a href="#piani" onclick="document.getElementById('piani').scrollIntoView({behavior:'smooth'});return false"
+         style="background:#1A3A6B;color:#fff;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;display:inline-block">
+        Scegli il tuo piano &rarr;
+      </a>
+    </div>
+  </div>
+</section>
 
       <!-- SETTORE A (Tribuna Sud) — a sinistra -->
       <div class="pianta-settore" style="flex-shrink:0">
