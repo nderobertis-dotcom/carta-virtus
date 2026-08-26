@@ -1567,7 +1567,7 @@ function stampaFanCard(dati) {
         <tr><td>Piano</td><td><span class="piano-badge">${piano}</span></td></tr>
         <tr><td>Stagione</td><td>${stagione}</td></tr>
         ${posto ? `<tr><td>Posto riservato</td><td><strong>${posto.settore} · Fila ${posto.fila} · N° ${posto.numero}</strong></td></tr>` : ''}
-        ${accompagnatore ? `<tr><td>Accompagnatore</td><td>👶 Con figlio minore (nato ${anno_nascita_minore})</td></tr>` : ''}
+        ${accompagnatore ? `<tr><td>Accompagnatore</td><td>👶 Figlio minore (nato ${anno_nascita_minore})${dati.posto_accompagnatore ? ' · <strong>' + dati.posto_accompagnatore.settore + ' · Fila ' + dati.posto_accompagnatore.fila + ' · N° ' + dati.posto_accompagnatore.numero + '</strong>' : ''}</td></tr>` : ''}
         <tr><td>Saldo punti</td><td>${punti} pt</td></tr>
         <tr><td>Codice tessera</td><td style="font-family:monospace;font-size:12px">${qr_code}</td></tr>
       </table>
@@ -1635,6 +1635,13 @@ async function stampaCardAdmin(tifoso_id) {
     .eq('stato', 'assegnato')
     .single()
 
+  // Recupera posto accompagnatore
+  const { data: postoAcc } = await sbAdmin.from('posti')
+    .select('tribuna, fila, numero')
+    .eq('tifoso_id', t.auth_user_id)
+    .eq('stato', 'accompagnatore')
+    .single()
+
   stampaFanCard({
     nome:     t.nome,
     cognome:  t.cognome,
@@ -1646,6 +1653,11 @@ async function stampaCardAdmin(tifoso_id) {
       settore: postoT.tribuna === 'sud' ? 'Settore A' : 'Settore B',
       fila:    postoT.fila,
       numero:  postoT.numero
+    } : null,
+    posto_accompagnatore: postoAcc ? {
+      settore: postoAcc.tribuna === 'sud' ? 'Settore A' : 'Settore B',
+      fila:    postoAcc.fila,
+      numero:  postoAcc.numero
     } : null,
     accompagnatore:      t.accompagnatore_minore && t.accompagnatore_stato === 'approvato',
     anno_nascita_minore: t.anno_nascita_minore
