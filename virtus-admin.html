@@ -535,9 +535,10 @@ select.form-input:focus{border-color:var(--accent)}
 
       <!-- Legenda -->
       <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:14px;height:14px;border-radius:3px;background:#1A3A6B"></div>Disponibile</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:14px;height:14px;border-radius:3px;background:#e65100"></div>Riservato (admin)</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:14px;height:14px;border-radius:3px;background:#2e7d32"></div>Occupato (tifoso)</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:14px;height:14px;border-radius:3px;background:#4CAF50"></div>Disponibile</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:14px;height:14px;border-radius:3px;background:#FF9800"></div>Riservato (admin)</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:14px;height:14px;border-radius:3px;background:#1A3A6B"></div>Assegnato (tifoso)</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:14px;height:14px;border-radius:3px;background:#7B1FA2"></div>Accompagnatore</div>
       </div>
 
       <!-- Statistiche -->
@@ -3179,7 +3180,7 @@ async function loadPosti() {
   ;(data||[]).forEach(p => {
     _adminStatiPosti[p.tribuna+'_'+p.fila+'_'+p.numero] = p
     if(p.stato==='disponibile') disponibili++
-    else if(p.stato==='occupato') occupati++
+    else if(p.stato==='assegnato' || p.stato==='accompagnatore') occupati++
     else if(p.stato==='riservato') riservati++
   })
 
@@ -3201,9 +3202,10 @@ function renderAdminMappa(tid) {
       const k = tid+'_'+fila+'_'+n
       const p = _adminStatiPosti[k]
       const stato = p?.stato || 'disponibile'
-      let bg = '#1A3A6B', cursor = 'pointer'
-      if (stato==='riservato') bg = '#e65100'
-      else if (stato==='occupato') { bg = '#2e7d32'; cursor = 'default' }
+      let bg = '#4CAF50', cursor = 'pointer'  // disponibile = verde
+      if (stato === 'riservato')      { bg = '#FF9800'; cursor = 'pointer' }   // arancio
+      else if (stato === 'assegnato') { bg = '#1A3A6B'; cursor = 'default' }   // blu scuro = occupato
+      else if (stato === 'accompagnatore') { bg = '#7B1FA2'; cursor = 'default' } // viola = accompagnatore
       return `<div onclick="apriAdminPostoModal('${tid}','${fila}',${n})" style="width:14px;height:14px;border-radius:2px;background:${bg};cursor:${cursor};display:flex;align-items:center;justify-content:center;font-size:5px;color:#fff;flex-shrink:0" title="Fila ${fila} Posto ${n} (${stato})">${n}</div>`
     }).join('')
     return `<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px"><div style="font-size:10px;color:var(--muted);width:12px;text-align:center;flex-shrink:0">${fila}</div><div style="display:flex;gap:2px">${posti}</div></div>`
@@ -3214,7 +3216,7 @@ async function apriAdminPostoModal(t, f, n) {
   const k = t+'_'+f+'_'+n
   const p = _adminStatiPosti[k]
   const stato = p?.stato || 'disponibile'
-  if (stato === 'occupato') return // Non modificabile se assegnato a tifoso
+  if (stato === 'assegnato' || stato === 'accompagnatore') return // Non modificabile se assegnato a tifoso
 
   _adminPostoCorrente = { k, tribuna: t, fila: f, numero: n, stato }
 
