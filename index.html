@@ -439,73 +439,80 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 
     <!-- RIGA 2: Campo orizzontale centrato + panchine invertite -->
     <div style="overflow-x:auto;text-align:center">
-      <svg width="540" height="200" viewBox="0 0 540 200" xmlns="http://www.w3.org/2000/svg" style="display:inline-block">
+      <svg width="540" height="310" viewBox="0 0 540 310" xmlns="http://www.w3.org/2000/svg" style="display:inline-block">
 
-        <!-- Sfondo campo -->
-        <rect x="10" y="10" width="520" height="150" rx="5" fill="#C8A46E" stroke="#1A3A6B" stroke-width="2"/>
+        <!-- Sfondo campo (proporzioni 28:15 → 520:279) -->
+        <rect x="10" y="10" width="520" height="278" rx="5" fill="#C8A46E" stroke="#1A3A6B" stroke-width="2"/>
         <!-- Bordo interno -->
-        <rect x="18" y="18" width="504" height="134" fill="none" stroke="white" stroke-width="1.5"/>
+        <rect x="18" y="18" width="504" height="262" fill="none" stroke="white" stroke-width="1.5"/>
 
         <!-- Linea di metà campo -->
-        <line x1="270" y1="18" x2="270" y2="152" stroke="white" stroke-width="1.5"/>
+        <line x1="270" y1="18" x2="270" y2="280" stroke="white" stroke-width="1.5"/>
 
-        <!-- Cerchio centrale -->
-        <circle cx="270" cy="85" r="28" fill="none" stroke="white" stroke-width="1.5"/>
-        <circle cx="270" cy="85" r="2" fill="white"/>
+        <!-- Cerchio centrale (r=1.80m su 15m → 12% altezza = 31px) -->
+        <circle cx="270" cy="149" r="31" fill="none" stroke="white" stroke-width="1.5"/>
+        <circle cx="270" cy="149" r="2.5" fill="white"/>
 
-        <!-- Area tiro libero SINISTRA -->
-        <rect x="18" y="52" width="80" height="66" fill="none" stroke="white" stroke-width="1.5"/>
-        <path d="M 98 52 A 40 40 0 0 1 98 118" fill="none" stroke="white" stroke-width="1.5"/>
-        <!-- Canestro SINISTRA -->
-        <line x1="18" y1="76" x2="18" y2="94" stroke="white" stroke-width="2.5"/>
-        <circle cx="27" cy="85" r="6" fill="none" stroke="#e53935" stroke-width="2"/>
-        <line x1="18" y1="85" x2="21" y2="85" stroke="#e53935" stroke-width="2"/>
-        <!-- Arco da 3 SINISTRA -->
-        <path d="M 18 32 A 78 78 0 0 1 18 138" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <!-- Area tiro libero SINISTRA (5.8m×4.9m → 107×90px) -->
+        <rect x="18" y="104" width="107" height="90" fill="none" stroke="white" stroke-width="1.5"/>
+        <!-- Semicerchio area SINISTRA (r=1.80m → 33px) -->
+        <path d="M 125 104 A 46 46 0 0 1 125 194" fill="none" stroke="white" stroke-width="1.5"/>
+        <!-- Canestro SINISTRA (a 1.57m dal fondo → 29px) -->
+        <line x1="18" y1="140" x2="18" y2="158" stroke="white" stroke-width="2.5"/>
+        <circle cx="29" cy="149" r="7" fill="none" stroke="#e53935" stroke-width="2"/>
+        <line x1="18" y1="149" x2="22" y2="149" stroke="#e53935" stroke-width="2"/>
+        <!-- Arco da 3 SINISTRA (r=6.75m → 124px) -->
+        <path d="M 18 57 A 124 124 0 0 1 18 241" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="6,3"/>
+        <!-- Linee laterali arco da 3 -->
+        <line x1="18" y1="57" x2="68" y2="57" stroke="white" stroke-width="1.5"/>
+        <line x1="18" y1="241" x2="68" y2="241" stroke="white" stroke-width="1.5"/>
 
         <!-- Area tiro libero DESTRA -->
-        <rect x="442" y="52" width="80" height="66" fill="none" stroke="white" stroke-width="1.5"/>
-        <path d="M 442 52 A 40 40 0 0 0 442 118" fill="none" stroke="white" stroke-width="1.5"/>
+        <rect x="415" y="104" width="107" height="90" fill="none" stroke="white" stroke-width="1.5"/>
+        <!-- Semicerchio area DESTRA -->
+        <path d="M 415 104 A 46 46 0 0 0 415 194" fill="none" stroke="white" stroke-width="1.5"/>
         <!-- Canestro DESTRA -->
-        <line x1="522" y1="76" x2="522" y2="94" stroke="white" stroke-width="2.5"/>
-        <circle cx="513" cy="85" r="6" fill="none" stroke="#e53935" stroke-width="2"/>
-        <line x1="522" y1="85" x2="519" y2="85" stroke="#e53935" stroke-width="2"/>
+        <line x1="522" y1="140" x2="522" y2="158" stroke="white" stroke-width="2.5"/>
+        <circle cx="511" cy="149" r="7" fill="none" stroke="#e53935" stroke-width="2"/>
+        <line x1="522" y1="149" x2="518" y2="149" stroke="#e53935" stroke-width="2"/>
         <!-- Arco da 3 DESTRA -->
-        <path d="M 522 32 A 78 78 0 0 0 522 138" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <path d="M 522 57 A 124 124 0 0 0 522 241" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="6,3"/>
+        <line x1="522" y1="57" x2="472" y2="57" stroke="white" stroke-width="1.5"/>
+        <line x1="522" y1="241" x2="472" y2="241" stroke="white" stroke-width="1.5"/>
 
         <!-- Etichetta -->
-        <text x="270" y="89" text-anchor="middle" fill="white" font-size="9" font-family="Arial" opacity="0.6">CAMPO DI GARA</text>
+        <text x="270" y="153" text-anchor="middle" fill="white" font-size="9" font-family="Arial" opacity="0.5">CAMPO DI GARA · 28×15 m</text>
 
         <!-- PANCHINA OSPITI (sinistra) -->
-        <rect x="10" y="165" width="255" height="14" rx="3" fill="#546E7A" stroke="#37474F" stroke-width="1"/>
-        <text x="263" y="175" text-anchor="end" fill="white" font-size="8" font-family="Arial" font-weight="bold">PANCHINA OSPITI</text>
+        <rect x="10" y="293" width="255" height="14" rx="3" fill="#546E7A" stroke="#37474F" stroke-width="1"/>
+        <text x="263" y="303" text-anchor="end" fill="white" font-size="8" font-family="Arial" font-weight="bold">PANCHINA OSPITI</text>
         <g fill="#B0BEC5">
-          <rect x="14" y="166" width="9" height="12" rx="1"/>
-          <rect x="25" y="166" width="9" height="12" rx="1"/>
-          <rect x="36" y="166" width="9" height="12" rx="1"/>
-          <rect x="47" y="166" width="9" height="12" rx="1"/>
-          <rect x="58" y="166" width="9" height="12" rx="1"/>
-          <rect x="69" y="166" width="9" height="12" rx="1"/>
-          <rect x="80" y="166" width="9" height="12" rx="1"/>
-          <rect x="91" y="166" width="9" height="12" rx="1"/>
-          <rect x="102" y="166" width="9" height="12" rx="1"/>
-          <rect x="113" y="166" width="9" height="12" rx="1"/>
+          <rect x="14" y="294" width="9" height="12" rx="1"/>
+          <rect x="25" y="294" width="9" height="12" rx="1"/>
+          <rect x="36" y="294" width="9" height="12" rx="1"/>
+          <rect x="47" y="294" width="9" height="12" rx="1"/>
+          <rect x="58" y="294" width="9" height="12" rx="1"/>
+          <rect x="69" y="294" width="9" height="12" rx="1"/>
+          <rect x="80" y="294" width="9" height="12" rx="1"/>
+          <rect x="91" y="294" width="9" height="12" rx="1"/>
+          <rect x="102" y="294" width="9" height="12" rx="1"/>
+          <rect x="113" y="294" width="9" height="12" rx="1"/>
         </g>
 
         <!-- PANCHINA CASA (destra) -->
-        <rect x="275" y="165" width="255" height="14" rx="3" fill="#1A3A6B" stroke="#0D2147" stroke-width="1"/>
-        <text x="528" y="175" text-anchor="end" fill="white" font-size="8" font-family="Arial" font-weight="bold">PANCHINA CASA</text>
+        <rect x="275" y="293" width="255" height="14" rx="3" fill="#1A3A6B" stroke="#0D2147" stroke-width="1"/>
+        <text x="528" y="303" text-anchor="end" fill="white" font-size="8" font-family="Arial" font-weight="bold">PANCHINA CASA</text>
         <g fill="#F57C00">
-          <rect x="279" y="166" width="9" height="12" rx="1"/>
-          <rect x="290" y="166" width="9" height="12" rx="1"/>
-          <rect x="301" y="166" width="9" height="12" rx="1"/>
-          <rect x="312" y="166" width="9" height="12" rx="1"/>
-          <rect x="323" y="166" width="9" height="12" rx="1"/>
-          <rect x="334" y="166" width="9" height="12" rx="1"/>
-          <rect x="345" y="166" width="9" height="12" rx="1"/>
-          <rect x="356" y="166" width="9" height="12" rx="1"/>
-          <rect x="367" y="166" width="9" height="12" rx="1"/>
-          <rect x="378" y="166" width="9" height="12" rx="1"/>
+          <rect x="279" y="294" width="9" height="12" rx="1"/>
+          <rect x="290" y="294" width="9" height="12" rx="1"/>
+          <rect x="301" y="294" width="9" height="12" rx="1"/>
+          <rect x="312" y="294" width="9" height="12" rx="1"/>
+          <rect x="323" y="294" width="9" height="12" rx="1"/>
+          <rect x="334" y="294" width="9" height="12" rx="1"/>
+          <rect x="345" y="294" width="9" height="12" rx="1"/>
+          <rect x="356" y="294" width="9" height="12" rx="1"/>
+          <rect x="367" y="294" width="9" height="12" rx="1"/>
+          <rect x="378" y="294" width="9" height="12" rx="1"/>
         </g>
 
       </svg>
@@ -1570,7 +1577,18 @@ function stampaFanCard(dati) {
     ⚠️ Documento personale e non cedibile. In caso di smarrimento contattare info@virtusmolfetta.com. Il QR code è l'unico strumento valido per l'accredito punti e l'ingresso alle gare.
   </div>
 
-
+  <!-- FIRMA -->
+  <div class="firma-area">
+    <div class="firma-col">
+      ${TIMBRO ? '<img src="' + TIMBRO + '" style="height:80px;display:block;margin:0 auto 8px"/>' : '<div style="height:60px"></div>'}
+      <div class="label">Per SSD Pol. Virtus 2014 Srl</div>
+      <div class="nome">Andrea Bellifemmine · Presidente</div>
+    </div>
+    <div class="firma-col">
+      <div style="border-top:1px solid #aaa;margin-bottom:8px"></div>
+      <div class="label">Firma del Titolare per accettazione</div>
+    </div>
+  </div>
 
   <div class="footer">
     SSD Pol. Virtus 2014 Srl · Via Martiri di Via Fani, c/o PalaPoli · 70056 Molfetta (BA) · P.IVA 07659340728
