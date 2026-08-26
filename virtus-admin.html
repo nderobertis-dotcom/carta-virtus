@@ -1415,7 +1415,7 @@ async function doLogout() {
 
 
 function stampaFanCard(dati) {
-  const { nome, cognome, qr_code, piano, stagione, punti } = dati
+  const { nome, cognome, qr_code, piano, stagione, punti, posto, accompagnatore, anno_nascita_minore } = dati
 
   const pianoBg = { Base:'#546E7A', Bronze:'#8D4925', Silver:'#455A64', Gold:'#B8860B' }[piano] || '#1A3A6B'
   const pianoDesc = {
@@ -1566,6 +1566,8 @@ function stampaFanCard(dati) {
         <tr><td>Nominativo</td><td>${nome} ${cognome}</td></tr>
         <tr><td>Piano</td><td><span class="piano-badge">${piano}</span></td></tr>
         <tr><td>Stagione</td><td>${stagione}</td></tr>
+        ${posto ? `<tr><td>Posto riservato</td><td><strong>${posto.settore} · Fila ${posto.fila} · N° ${posto.numero}</strong></td></tr>` : ''}
+        ${accompagnatore ? `<tr><td>Accompagnatore</td><td>👶 Con figlio minore (nato ${anno_nascita_minore})</td></tr>` : ''}
         <tr><td>Saldo punti</td><td>${punti} pt</td></tr>
         <tr><td>Codice tessera</td><td style="font-family:monospace;font-size:12px">${qr_code}</td></tr>
       </table>
@@ -1618,22 +1620,35 @@ function stampaFanCard(dati) {
 async function stampaCardAdmin(tifoso_id) {
   const t = allTifosi.find(x => x.id === tifoso_id)
   if (!t) return
-  // Recupera piano dalla membership
   const { data: memb } = await sbAdmin.from('membership')
     .select('*, piano:piano_id(nome)')
     .eq('tifoso_id', tifoso_id)
     .eq('stato', 'attiva')
     .order('creato_il', { ascending: false })
-    .limit(1)
-    .single()
+    .limit(1).single()
   const piano = memb?.piano?.nome || 'Base'
+
+  // Recupera posto assegnato
+  const { data: postoT } = await sbAdmin.from('posti')
+    .select('tribuna, fila, numero')
+    .eq('tifoso_id', t.auth_user_id)
+    .eq('stato', 'assegnato')
+    .single()
+
   stampaFanCard({
     nome:     t.nome,
     cognome:  t.cognome,
     qr_code:  t.qr_code,
     piano,
     stagione: '2026/2027',
-    punti:    t.punti_saldo || 0
+    punti:    t.punti_saldo || 0,
+    posto:    postoT ? {
+      settore: postoT.tribuna === 'sud' ? 'Settore A' : 'Settore B',
+      fila:    postoT.fila,
+      numero:  postoT.numero
+    } : null,
+    accompagnatore:      t.accompagnatore_minore && t.accompagnatore_stato === 'approvato',
+    anno_nascita_minore: t.anno_nascita_minore
   })
 }
 
