@@ -2911,6 +2911,8 @@ async function salvaDatiTifoso() {
   if (idx >= 0) Object.assign(allTifosi[idx], payload)
   toast('✅ Dati anagrafici salvati', 'success')
 }
+
+async function salvaAccompagnatore() {
   const id = currentDetTifoso?.id
   if (!id) return
   const abilitato = document.getElementById('det-accompagnatore-check').checked
