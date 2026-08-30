@@ -4338,6 +4338,70 @@ async function salvaFopProdotto() {
   await loadFopProdotti()
 }
 
+
+// ── ESPOSIZIONE GLOBALE FUNZIONI ──
+if (typeof doLogin !== "undefined") window.doLogin = doLogin;
+if (typeof doLogout !== "undefined") window.doLogout = doLogout;
+if (typeof showSection !== "undefined") window.showSection = showSection;
+if (typeof openModal !== "undefined") window.openModal = openModal;
+if (typeof closeModal !== "undefined") window.closeModal = closeModal;
+if (typeof openDettaglioTifoso !== "undefined") window.openDettaglioTifoso = openDettaglioTifoso;
+if (typeof salvaDatiTifoso !== "undefined") window.salvaDatiTifoso = salvaDatiTifoso;
+if (typeof openBonus !== "undefined") window.openBonus = openBonus;
+if (typeof salvaBonus !== "undefined") window.salvaBonus = salvaBonus;
+if (typeof emettiFantCard !== "undefined") window.emettiFantCard = emettiFantCard;
+if (typeof stampaCardAdmin !== "undefined") window.stampaCardAdmin = stampaCardAdmin;
+if (typeof apriNuovaGara !== "undefined") window.apriNuovaGara = apriNuovaGara;
+if (typeof salvaGara !== "undefined") window.salvaGara = salvaGara;
+if (typeof confermaEliminaGara !== "undefined") window.confermaEliminaGara = confermaEliminaGara;
+if (typeof loadIngressi !== "undefined") window.loadIngressi = loadIngressi;
+if (typeof esportaIngressi !== "undefined") window.esportaIngressi = esportaIngressi;
+if (typeof loadMaglieSciarpe !== "undefined") window.loadMaglieSciarpe = loadMaglieSciarpe;
+if (typeof switchMaglieTab !== "undefined") window.switchMaglieTab = switchMaglieTab;
+if (typeof flagConsegna !== "undefined") window.flagConsegna = flagConsegna;
+if (typeof loadPosti !== "undefined") window.loadPosti = loadPosti;
+if (typeof apriAdminPostoModal !== "undefined") window.apriAdminPostoModal = apriAdminPostoModal;
+if (typeof chiudiAdminPostoModal !== "undefined") window.chiudiAdminPostoModal = chiudiAdminPostoModal;
+if (typeof assegnaPosto !== "undefined") window.assegnaPosto = assegnaPosto;
+if (typeof resetOpzione !== "undefined") window.resetOpzione = resetOpzione;
+if (typeof setPosto !== "undefined") window.setPosto = setPosto;
+if (typeof loadMerchants !== "undefined") window.loadMerchants = loadMerchants;
+if (typeof apriModalNuovoMerchant !== "undefined") window.apriModalNuovoMerchant = apriModalNuovoMerchant;
+if (typeof salvaMerchant !== "undefined") window.salvaMerchant = salvaMerchant;
+if (typeof toggleMerchant !== "undefined") window.toggleMerchant = toggleMerchant;
+if (typeof apriModalPartner !== "undefined") window.apriModalPartner = apriModalPartner;
+if (typeof salvaPartner !== "undefined") window.salvaPartner = salvaPartner;
+if (typeof rimuoviLogo !== "undefined") window.rimuoviLogo = rimuoviLogo;
+if (typeof creaAccessoPartner !== "undefined") window.creaAccessoPartner = creaAccessoPartner;
+if (typeof apriModalNuovaCategoria !== "undefined") window.apriModalNuovaCategoria = apriModalNuovaCategoria;
+if (typeof salvaCategoria !== "undefined") window.salvaCategoria = salvaCategoria;
+if (typeof switchPremioTab !== "undefined") window.switchPremioTab = switchPremioTab;
+if (typeof apriModalProdotto !== "undefined") window.apriModalProdotto = apriModalProdotto;
+if (typeof salvaPremio !== "undefined") window.salvaPremio = salvaPremio;
+if (typeof confermaConsegna !== "undefined") window.confermaConsegna = confermaConsegna;
+if (typeof annullaRiscatto !== "undefined") window.annullaRiscatto = annullaRiscatto;
+if (typeof salvaCampagna !== "undefined") window.salvaCampagna = salvaCampagna;
+if (typeof salvaTasso !== "undefined") window.salvaTasso = salvaTasso;
+if (typeof loadFopContratti !== "undefined") window.loadFopContratti = loadFopContratti;
+if (typeof loadFopPianta !== "undefined") window.loadFopPianta = loadFopPianta;
+if (typeof salvaFopProdotto !== "undefined") window.salvaFopProdotto = salvaFopProdotto;
+if (typeof approvaContratto !== "undefined") window.approvaContratto = approvaContratto;
+if (typeof annullaContratto !== "undefined") window.annullaContratto = annullaContratto;
+if (typeof loadOperatori !== "undefined") window.loadOperatori = loadOperatori;
+if (typeof ativaOperatore !== "undefined") window.ativaOperatore = ativaOperatore;
+if (typeof filtraMembership !== "undefined") window.filtraMembership = filtraMembership;
+if (typeof attivaMemb !== "undefined") window.attivaMemb = attivaMemb;
+if (typeof sospendiMemb !== "undefined") window.sospendiMemb = sospendiMemb;
+if (typeof annullaMemb !== "undefined") window.annullaMemb = annullaMemb;
+if (typeof salvaAccompagnatore !== "undefined") window.salvaAccompagnatore = salvaAccompagnatore;
+if (typeof eseguiRicaricaDiretta !== "undefined") window.eseguiRicaricaDiretta = eseguiRicaricaDiretta;
+if (typeof confermaRicarica !== "undefined") window.confermaRicarica = confermaRicarica;
+if (typeof annullaRicarica !== "undefined") window.annullaRicarica = annullaRicarica;
+if (typeof loadScansioni !== "undefined") window.loadScansioni = loadScansioni;
+if (typeof esportaScansioni !== "undefined") window.esportaScansioni = esportaScansioni;
+if (typeof switchTifosiTab !== "undefined") window.switchTifosiTab = switchTifosiTab;
+if (typeof stampaSponsorQR !== "undefined") window.stampaSponsorQR = stampaSponsorQR;
+if (typeof attivaOperatore !== "undefined") window.attivaOperatore = attivaOperatore;
 </script>
 
 <!-- MODAL: Nuovo/Modifica Merchant -->
