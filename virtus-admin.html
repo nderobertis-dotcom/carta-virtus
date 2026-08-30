@@ -264,6 +264,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
       Premi
     </div>
+    <div class="nav-item" onclick="showSection('maglie')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+      Maglie &amp; Sciarpe
+    </div>
     <div class="nav-item" onclick="showSection('campagne')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       Campagne
@@ -506,6 +510,37 @@ select.form-input:focus{border-color:var(--accent)}
     </div>
 
     <!-- CAMPAGNE -->
+    <!-- SEZIONE: Maglie & Sciarpe -->
+    <div class="section" id="section-maglie">
+      <div class="section-header">
+        <div class="section-title">👕 Maglie &amp; Sciarpe</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" id="ms-tab-maglie" onclick="switchMaglieTab('maglie',this)">👕 Maglie</button>
+          <button class="btn btn-ghost btn-sm" id="ms-tab-sciarpe" onclick="switchMaglieTab('sciarpe',this)">🧣 Sciarpe</button>
+          <button class="btn btn-primary btn-sm" onclick="loadMaglieSciarpe()">↻ Aggiorna</button>
+        </div>
+      </div>
+
+      <!-- Riepilogo contatori -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="ms-riepilogo"></div>
+
+      <!-- Tabella elenco -->
+      <div class="card">
+        <table class="table" id="ms-table">
+          <thead><tr>
+            <th>Tifoso</th>
+            <th>Piano</th>
+            <th id="ms-col-detail">Taglia</th>
+            <th>Cognome su maglia</th>
+            <th>Numero</th>
+            <th>Consegnata</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="ms-list"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Seleziona una categoria</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="section" id="section-campagne">
       <div class="card">
         <div class="card-header">
@@ -1025,23 +1060,31 @@ select.form-input:focus{border-color:var(--accent)}
         </div>
         <div>
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Telefono</div>
-          <div style="font-size:13px" id="det-tel">—</div>
+          <input class="form-input" id="det-tel" placeholder="—" style="font-size:13px;padding:6px 10px"/>
         </div>
         <div>
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Data di nascita</div>
-          <div style="font-size:13px" id="det-nascita">—</div>
+          <input class="form-input" id="det-nascita" type="date" style="font-size:13px;padding:6px 10px"/>
         </div>
         <div>
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Sesso</div>
-          <div style="font-size:13px" id="det-sesso">—</div>
+          <select class="form-input" id="det-sesso" style="font-size:13px;padding:6px 10px">
+            <option value="">—</option>
+            <option value="M">Maschio</option>
+            <option value="F">Femmina</option>
+          </select>
         </div>
         <div>
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">QR Code</div>
           <div class="qr-code" style="font-size:11px" id="det-qr">—</div>
         </div>
         <div style="grid-column:1/-1">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Indirizzo</div>
-          <div style="font-size:13px" id="det-indirizzo">—</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Indirizzo (via, CAP, città)</div>
+          <div style="display:grid;grid-template-columns:2fr 1fr 2fr;gap:8px">
+            <input class="form-input" id="det-via" placeholder="Via..." style="font-size:12px;padding:6px 10px"/>
+            <input class="form-input" id="det-cap" placeholder="CAP" style="font-size:12px;padding:6px 10px"/>
+            <input class="form-input" id="det-citta" placeholder="Città" style="font-size:12px;padding:6px 10px"/>
+          </div>
         </div>
         <div>
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Punti saldo</div>
@@ -1086,6 +1129,7 @@ select.form-input:focus{border-color:var(--accent)}
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-dettaglio-tifoso')">Chiudi</button>
+      <button class="btn btn-secondary" onclick="salvaDatiTifoso()">💾 Salva anagrafica</button>
       <button class="btn btn-primary" onclick="openBonus(currentDetTifoso.id, currentDetTifoso.nome + ' ' + currentDetTifoso.cognome);closeModal('modal-dettaglio-tifoso')">+ Bonus punti</button>
     </div>
   </div>
@@ -1654,6 +1698,124 @@ async function stampaCardAdmin(tifoso_id) {
   })
 }
 
+// ── MAGLIE & SCIARPE ──────────────────────────────────────
+let _msTab = 'maglie'
+let _msData = []
+
+function switchMaglieTab(tab, btn) {
+  _msTab = tab
+  document.querySelectorAll('[id^="ms-tab-"]').forEach(b => b.classList.remove('btn-primary'))
+  if (btn) btn.classList.add('btn-primary')
+  document.getElementById('ms-col-detail').textContent = tab === 'maglie' ? 'Taglia' : 'Inclusa nel piano'
+  renderMaglieSciarpe()
+}
+
+async function loadMaglieSciarpe() {
+  const { data, error } = await sbAdmin.from('membership')
+    .select('id, maglia_taglia, maglia_cognome, maglia_numero, maglia_consegnata, maglia_consegnata_il, sciarpa_inclusa, sciarpa_consegnata, sciarpa_consegnata_il, piano:piano_id(nome), tifoso:tifoso_id(nome, cognome)')
+    .not('stato', 'eq', 'annullata')
+    .order('creato_il', { ascending: false })
+  if (error) { toast('Errore caricamento: ' + error.message, 'error'); return }
+  _msData = data || []
+
+  // Sciarpe incluse per tutti i piani non Base
+  _msData.forEach(m => {
+    if (!m.sciarpa_inclusa && m.piano?.nome && m.piano.nome !== 'Base') {
+      m.sciarpa_inclusa = true
+    }
+  })
+
+  renderRiepilogoMs()
+  renderMaglieSciarpe()
+}
+
+function renderRiepilogoMs() {
+  const maglieTot   = _msData.filter(m => m.maglia_taglia).length
+  const maglieConsegnate = _msData.filter(m => m.maglia_taglia && m.maglia_consegnata).length
+  const sciarpe     = _msData.filter(m => m.sciarpa_inclusa).length
+  const sciarpeConsegnate = _msData.filter(m => m.sciarpa_inclusa && m.sciarpa_consegnata).length
+
+  document.getElementById('ms-riepilogo').innerHTML = `
+    <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:var(--accent)">${maglieTot}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Maglie totali</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#4CAF50">${maglieConsegnate}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Maglie consegnate</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:var(--accent)">${sciarpe}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Sciarpe totali</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#4CAF50">${sciarpeConsegnate}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Sciarpe consegnate</div>
+    </div>`
+}
+
+function renderMaglieSciarpe() {
+  const tbody = document.getElementById('ms-list')
+  if (!tbody) return
+  const isMaglie = _msTab === 'maglie'
+  const list = isMaglie
+    ? _msData.filter(m => m.maglia_taglia)
+    : _msData.filter(m => m.sciarpa_inclusa)
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessun elemento trovato</td></tr>'
+    return
+  }
+
+  tbody.innerHTML = list.map(m => {
+    const nome = m.tifoso ? m.tifoso.nome + ' ' + m.tifoso.cognome : '—'
+    const piano = m.piano?.nome || '—'
+    const consegnata = isMaglie ? m.maglia_consegnata : m.sciarpa_consegnata
+    const consegnataIl = isMaglie ? m.maglia_consegnata_il : m.sciarpa_consegnata_il
+    const dettaglio = isMaglie ? (m.maglia_taglia || '—') : '<span class="badge badge-green">Inclusa</span>'
+    const dataConsegna = consegnataIl ? new Date(consegnataIl).toLocaleDateString('it-IT') : ''
+
+    return `<tr>
+      <td><strong>${nome}</strong></td>
+      <td><span class="badge badge-amber">${piano}</span></td>
+      <td>${dettaglio}</td>
+      <td style="font-size:12px">${isMaglie ? (m.maglia_cognome || '—') : '—'}</td>
+      <td style="font-size:12px;text-align:center">${isMaglie ? (m.maglia_numero || '—') : '—'}</td>
+      <td style="text-align:center">
+        ${consegnata
+          ? `<span style="color:#4CAF50;font-size:13px">✅ ${dataConsegna}</span>`
+          : '<span style="color:var(--muted);font-size:12px">—</span>'
+        }
+      </td>
+      <td>
+        ${consegnata
+          ? `<button class="btn btn-ghost btn-sm" onclick="flagConsegna('${m.id}','${isMaglie ? 'maglia' : 'sciarpa'}',false)">↩ Annulla</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="flagConsegna('${m.id}','${isMaglie ? 'maglia' : 'sciarpa'}',true)">✅ Consegnata</button>`
+        }
+      </td>
+    </tr>`
+  }).join('')
+}
+
+async function flagConsegna(membId, tipo, consegnata) {
+  const campo = tipo === 'maglia' ? 'maglia_consegnata' : 'sciarpa_consegnata'
+  const campoIl = tipo === 'maglia' ? 'maglia_consegnata_il' : 'sciarpa_consegnata_il'
+  const payload = {
+    [campo]:   consegnata,
+    [campoIl]: consegnata ? new Date().toISOString() : null
+  }
+  const { error } = await sbAdmin.from('membership').update(payload).eq('id', membId)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+
+  // Aggiorna in memoria
+  const m = _msData.find(x => x.id === membId)
+  if (m) { m[campo] = consegnata; m[campoIl] = payload[campoIl] }
+
+  toast(consegnata ? '✅ Consegna registrata' : 'Consegna annullata', 'success')
+  renderRiepilogoMs()
+  renderMaglieSciarpe()
+}
+
 // ── NAV ──
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
@@ -1680,6 +1842,7 @@ function showSection(name) {
   if (name === 'posti')         loadPosti()
   if (name === 'transazioni')   loadTransazioni()
   if (name === 'report')        loadReport()
+  if (name === 'maglie')         { loadMaglieSciarpe(); switchMaglieTab('maglie', document.getElementById('ms-tab-maglie')) }
   if (name === 'membership')    loadMembership('in_attesa')
   if (name === 'gare')          loadGare()
   if (name === 'operatori')     loadOperatori()
@@ -2591,11 +2754,13 @@ async function openDettaglioTifoso(id) {
   document.getElementById('det-nome-title').textContent = t.nome + ' ' + t.cognome
   document.getElementById('det-nome').textContent = t.nome + ' ' + t.cognome
   document.getElementById('det-email').textContent = t.email
-  document.getElementById('det-tel').textContent = t.telefono || '—'
-  document.getElementById('det-nascita').textContent = t.data_nascita ? new Date(t.data_nascita).toLocaleDateString('it-IT') : '—'
-  document.getElementById('det-sesso').textContent = t.sesso === 'M' ? 'Maschio' : t.sesso === 'F' ? 'Femmina' : t.sesso || '—'
+  document.getElementById('det-tel').value = t.telefono || ''
+  document.getElementById('det-nascita').value = t.data_nascita ? t.data_nascita.split('T')[0] : ''
+  document.getElementById('det-sesso').value = t.sesso || ''
   document.getElementById('det-qr').textContent = t.qr_code
-  document.getElementById('det-indirizzo').textContent = [t.via, t.cap, t.citta].filter(Boolean).join(', ') || '—'
+  document.getElementById('det-via').value = t.via || ''
+  document.getElementById('det-cap').value = t.cap || ''
+  document.getElementById('det-citta').value = t.citta || ''
   document.getElementById('det-punti').textContent = t.punti_saldo
   document.getElementById('det-stato').innerHTML = '<span class="badge badge-' + (t.stato === 'attivo' ? 'green' : 'red') + '">' + t.stato + '</span>'
   document.getElementById('det-marketing').textContent = t.consenso_marketing ? 'Sì' : 'No'
@@ -2663,7 +2828,23 @@ async function openDettaglioTifoso(id) {
   openModal('modal-dettaglio-tifoso')
 }
 
-async function salvaAccompagnatore() {
+async function salvaDatiTifoso() {
+  if (!currentDetTifoso) return
+  const payload = {
+    telefono:    document.getElementById('det-tel').value.trim() || null,
+    data_nascita: document.getElementById('det-nascita').value || null,
+    sesso:       document.getElementById('det-sesso').value || null,
+    via:         document.getElementById('det-via').value.trim() || null,
+    cap:         document.getElementById('det-cap').value.trim() || null,
+    citta:       document.getElementById('det-citta').value.trim() || null,
+  }
+  const { error } = await sbAdmin.from('tifosi').update(payload).eq('id', currentDetTifoso.id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  // Aggiorna allTifosi in memoria
+  const idx = allTifosi.findIndex(t => t.id === currentDetTifoso.id)
+  if (idx >= 0) Object.assign(allTifosi[idx], payload)
+  toast('✅ Dati anagrafici salvati', 'success')
+}
   const id = currentDetTifoso?.id
   if (!id) return
   const abilitato = document.getElementById('det-accompagnatore-check').checked
