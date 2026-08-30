@@ -831,10 +831,15 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         <div class="maglia-box" id="maglia-box">
           <div class="maglia-box-title">&#128085; Personalizza la tua maglia di gara</div>
           <div class="form-group"><label>Taglia *</label>
-            <select class="form-input" id="reg-taglia">
+            <select class="form-input" id="reg-taglia" onchange="toggleTagliaAnni(this.value)">
               <option value="">Seleziona taglia</option>
-              <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option>
+              <option value="S/M">S/M</option>
+              <option value="L/XL">L/XL</option>
+              <option value="bambino">Anni _____ (bambino)</option>
             </select>
+            <div id="taglia-anni-box" style="display:none;margin-top:8px">
+              <input class="form-input" id="reg-taglia-anni" type="number" min="2" max="16" placeholder="Età del bambino (es: 8)"/>
+            </div>
           </div>
           <div class="form-grid-2">
             <div class="form-group"><label>Cognome sulla maglia *</label><input class="form-input" id="reg-maglia-cognome" placeholder="ROSSI" style="text-transform:uppercase"/></div>
@@ -2048,7 +2053,11 @@ function apriRegistrazione(nome, prezzo, richiedeMaglia) {
   document.getElementById('step-tab-3').style.display = ''
   document.getElementById('modal-reg').classList.add('open')
 }
-window.apriRegistrazione = apriRegistrazione
+function toggleTagliaAnni(val) {
+  const box = document.getElementById('taglia-anni-box')
+  if (box) box.style.display = val === 'bambino' ? 'block' : 'none'
+}
+window.toggleTagliaAnni = toggleTagliaAnni
 
 function chiudiModal() { document.getElementById('modal-reg').classList.remove('open') }
 
@@ -2085,10 +2094,13 @@ function avanti(n) {
     if (pass.length < 8) { toast('La password deve avere almeno 8 caratteri', 'error'); return }
   }
   if (n === 3 && pianoSelezionato && pianoSelezionato.richiedeMaglia) {
-    const taglia = document.getElementById('reg-taglia').value
+    const tagliaVal = document.getElementById('reg-taglia').value
+    const tagliaAnni = document.getElementById('reg-taglia-anni')?.value
+    const taglia = tagliaVal === 'bambino' ? ('Anni ' + (tagliaAnni || '?')) : tagliaVal
     const cognomeMaglia = document.getElementById('reg-maglia-cognome').value.trim()
     const numero = document.getElementById('reg-maglia-numero').value
     if (!taglia || !cognomeMaglia || !numero) { toast('Completa i dati della maglia', 'error'); return }
+    if (tagliaVal === 'bambino' && !tagliaAnni) { toast('Inserisci l\'età del bambino', 'error'); return }
   }
   // Carica anno soglia quando si arriva allo step posto
   if (n === 3) caricaAnnoSogliaMinori()
