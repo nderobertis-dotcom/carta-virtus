@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
   window.loadMaglieSciarpe = loadMaglieSciarpe;
   window.switchMaglieTab = switchMaglieTab;
   window.loadMsReport = loadMsReport;
+  window.apriEditBiglietteria = apriEditBiglietteria;
+  window.salvaBiglietteria = salvaBiglietteria;
   window.flagConsegna = flagConsegna;
   window.loadPosti = loadPosti;
   window.apriAdminPostoModal = apriAdminPostoModal;
@@ -1424,6 +1426,36 @@ select.form-input:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- MODAL: Biglietteria gara -->
+<div class="modal-overlay" id="modal-biglietteria-gara">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">🎟️ Dati biglietteria</div>
+      <button class="modal-close" onclick="closeModal('modal-biglietteria-gara')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;font-weight:600;color:var(--blu);margin-bottom:16px" id="bg-gara-titolo"></div>
+      <input type="hidden" id="bg-gara-id"/>
+      <div class="form-group">
+        <label>Biglietti venduti</label>
+        <input class="form-input" id="bg-biglietti" type="number" min="0" placeholder="0"/>
+      </div>
+      <div class="form-group">
+        <label>Accrediti concessi</label>
+        <input class="form-input" id="bg-accrediti" type="number" min="0" placeholder="0"/>
+      </div>
+      <div class="form-group">
+        <label>Incasso totale (€)</label>
+        <input class="form-input" id="bg-incasso" type="number" min="0" step="0.01" placeholder="0.00"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-biglietteria-gara')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaBiglietteria()">💾 Salva</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Conferma consegna riscatto -->
 <div class="modal-overlay" id="modal-consegna">
   <div class="modal" style="max-width:440px">
@@ -1895,10 +1927,21 @@ async function loadMsReport() {
   ;(ingressi || []).forEach(i => {
     presenzeMap[i.tifoso_id] = (presenzeMap[i.tifoso_id] || 0) + 1
   })
-  const totalGare = (gare || []).length
+  const ora = new Date()
+  const gareDisputate  = (gare || []).filter(g => new Date(g.data_ora) < ora)
+  const gareDaDisputare = (gare || []).filter(g => new Date(g.data_ora) >= ora)
+  const totalGare = gareDisputate.length
   const totalIngressi = (ingressi || []).length
   const tifConPresenze = Object.keys(presenzeMap).length
   const mediaPresenze = tifConPresenze ? (totalIngressi / tifConPresenze).toFixed(1) : '—'
+
+  // Biglietteria stagionale
+  const totBiglietti = (gare||[]).reduce((s,g) => s + (g.biglietti_venduti||0), 0)
+  const totAccrediti  = (gare||[]).reduce((s,g) => s + (g.accrediti_concessi||0), 0)
+  const totIncasso    = (gare||[]).reduce((s,g) => s + parseFloat(g.incasso_eur||0), 0)
+  const gareConDati   = (gare||[]).filter(g => new Date(g.data_ora) < ora && (g.biglietti_venduti||0) > 0).length
+  const mediaBiglietti = gareConDati ? (totBiglietti / gareConDati).toFixed(0) : '—'
+  const mediaIncasso   = gareConDati ? (totIncasso   / gareConDati).toFixed(2) : '—'
 
   // Tifosi con più presenze
   const topTifosi = tifosi
@@ -1957,53 +2000,113 @@ async function loadMsReport() {
     <!-- PRESENZE -->
     <div class="card" style="margin-bottom:20px">
       <div class="card-title" style="margin-bottom:16px">🏟️ Presenze al Palazzetto</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
-        ${kpiCard('Gare disputate', totalGare)}
-        ${kpiCard('Ingressi totali', totalIngressi, '#2E7D32')}
-        ${kpiCard('Tifosi presenti', tifConPresenze)}
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
+        ${kpiCard('Gare disputate', gareDisputate.length, '#2E7D32')}
+        ${kpiCard('Gare da disputare', gareDaDisputare.length, '#F57C00')}
+        ${kpiCard('Ingressi totali', totalIngressi, 'var(--accent)')}
+        ${kpiCard('Tifosi con presenze', tifConPresenze)}
         ${kpiCard('Media presenze/tifoso', mediaPresenze, 'var(--gold)')}
       </div>
 
       ${topTifosi.filter(t=>t.presenze>0).length ? `
       <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Top 5 tifosi per presenze</div>
       <table class="table">
-        <thead><tr><th>Tifoso</th><th>Piano</th><th style="text-align:center">Presenze</th><th style="text-align:center">% gare</th></tr></thead>
+        <thead><tr><th>Tifoso</th><th>Piano</th><th style="text-align:center">Presenze</th><th style="text-align:center">% gare disputate</th></tr></thead>
         <tbody>
           ${topTifosi.filter(t=>t.presenze>0).map(t => {
             const memb = membMap[t.id]
             const piano = memb?.piano?.nome || '—'
             const pct = totalGare ? Math.round(t.presenze/totalGare*100) : 0
-            return `<tr>
-              <td><strong>${t.nome} ${t.cognome}</strong></td>
-              <td><span class="badge badge-amber">${piano}</span></td>
-              <td style="text-align:center;font-weight:700">${t.presenze}</td>
-              <td style="text-align:center">${pct}%</td>
-            </tr>`
+            return '<tr>' +
+              '<td><strong>'+t.nome+' '+t.cognome+'</strong></td>' +
+              '<td><span class="badge badge-amber">'+piano+'</span></td>' +
+              '<td style="text-align:center;font-weight:700">'+t.presenze+'</td>' +
+              '<td style="text-align:center">'+pct+'%</td>' +
+            '</tr>'
           }).join('')}
         </tbody>
       </table>` : '<div style="color:var(--muted);font-size:13px">Nessuna presenza registrata ancora</div>'}
     </div>
 
-    <!-- PRESENZE PER GARA -->
-    ${(gare||[]).length ? `
-    <div class="card">
-      <div class="card-title" style="margin-bottom:16px">📅 Presenze per Gara</div>
+    <!-- BIGLIETTERIA PER GARA -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:4px">🎟️ Biglietteria per Gara</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Clicca su ✏️ per inserire i dati di biglietteria di ogni gara disputata</div>
+
+      <!-- Totali stagione -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        ${kpiCard('Biglietti venduti', totBiglietti, '#1565C0')}
+        ${kpiCard('Accrediti', totAccrediti, '#546E7A')}
+        ${kpiCard('Incasso totale', '€ '+totIncasso.toFixed(2), '#2E7D32')}
+        ${kpiCard('Media incasso/gara', gareConDati ? '€ '+mediaIncasso : '—', 'var(--gold)')}
+      </div>
+
       <table class="table">
-        <thead><tr><th>Gara</th><th>Data</th><th style="text-align:center">Ingressi</th></tr></thead>
+        <thead><tr>
+          <th>Gara</th><th>Data</th><th style="text-align:center">Fan Card</th>
+          <th style="text-align:center">Biglietti</th><th style="text-align:center">Accrediti</th>
+          <th style="text-align:right">Incasso</th><th style="width:40px"></th>
+        </tr></thead>
         <tbody>
           ${(gare||[]).map(g => {
-            const n = presenzePerGara[g.id] || 0
+            const disputata = new Date(g.data_ora) < ora
             const data = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Rome'})
-            return `<tr>
-              <td>${g.titolo}</td>
-              <td style="font-size:12px;color:var(--muted)">${data}</td>
-              <td style="text-align:center;font-weight:700">${n}</td>
-            </tr>`
+            const fanCard = presenzePerGara[g.id] || 0
+            const bv = g.biglietti_venduti || 0
+            const ac = g.accrediti_concessi || 0
+            const inc = parseFloat(g.incasso_eur||0).toFixed(2)
+            const rowStyle = disputata ? '' : 'opacity:.5'
+            return '<tr style="'+rowStyle+'">' +
+              '<td><strong>'+g.titolo+'</strong>'+(disputata ? '' : ' <span style="font-size:10px;color:var(--muted)">(da disputare)</span>')+'</td>' +
+              '<td style="font-size:12px;color:var(--muted)">'+data+'</td>' +
+              '<td style="text-align:center">'+fanCard+'</td>' +
+              '<td style="text-align:center">'+(disputata ? bv : '—')+'</td>' +
+              '<td style="text-align:center">'+(disputata ? ac : '—')+'</td>' +
+              '<td style="text-align:right">'+(disputata ? '€ '+inc : '—')+'</td>' +
+              '<td>'+(disputata ? '<button class="btn btn-ghost btn-sm" onclick="apriEditBiglietteria(\''+g.id+'\',\''+g.titolo.replace(/'/g,'')+'\','+bv+','+ac+','+inc+')">✏️</button>' : '')+'</td>' +
+            '</tr>'
           }).join('')}
+          ${gareConDati > 0 ? '<tr style="font-weight:700;border-top:2px solid var(--border)">'+
+            '<td colspan="3">Totale stagione</td>'+
+            '<td style="text-align:center">'+totBiglietti+'</td>'+
+            '<td style="text-align:center">'+totAccrediti+'</td>'+
+            '<td style="text-align:right">€ '+totIncasso.toFixed(2)+'</td>'+
+            '<td></td></tr>' : ''}
+          ${gareConDati > 1 ? '<tr style="color:var(--muted)">'+
+            '<td colspan="3">Media per gara disputata</td>'+
+            '<td style="text-align:center">'+mediaBiglietti+'</td>'+
+            '<td style="text-align:center">'+(totAccrediti/gareConDati).toFixed(0)+'</td>'+
+            '<td style="text-align:right">€ '+mediaIncasso+'</td>'+
+            '<td></td></tr>' : ''}
         </tbody>
       </table>
-    </div>` : ''}
+    </div>
   `
+}
+
+function apriEditBiglietteria(garaId, titolo, biglietti, accrediti, incasso) {
+  document.getElementById('bg-gara-id').value = garaId
+  document.getElementById('bg-gara-titolo').textContent = titolo
+  document.getElementById('bg-biglietti').value = biglietti || 0
+  document.getElementById('bg-accrediti').value = accrediti || 0
+  document.getElementById('bg-incasso').value   = incasso || 0
+  openModal('modal-biglietteria-gara')
+}
+
+async function salvaBiglietteria() {
+  const garaId    = document.getElementById('bg-gara-id').value
+  const biglietti = parseInt(document.getElementById('bg-biglietti').value) || 0
+  const accrediti = parseInt(document.getElementById('bg-accrediti').value) || 0
+  const incasso   = parseFloat(document.getElementById('bg-incasso').value) || 0
+  const { error } = await sbAdmin.from('gare').update({
+    biglietti_venduti: biglietti,
+    accrediti_concessi: accrediti,
+    incasso_eur: incasso
+  }).eq('id', garaId)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('✅ Dati biglietteria salvati', 'success')
+  closeModal('modal-biglietteria-gara')
+  loadMsReport()
 }
 
 async function loadMaglieSciarpe() {
