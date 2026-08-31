@@ -664,6 +664,9 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
           <div class="qr-display" id="t-qr-code" style="font-size:13px;letter-spacing:.1em">—</div>
         </div>
         <div id="t-membership-chip"></div>
+        <div id="t-posto-display" style="display:none;margin-top:10px;background:#f0f6ff;border:1px solid #cdddf5;border-radius:8px;padding:8px 14px;font-size:13px;color:var(--blu);font-weight:600">
+          🪑 <span id="t-posto-label"></span>
+        </div>
         <div id="t-accompagnatore-badge" style="display:none;margin-top:12px;background:#E8F5E9;border:1px solid #A5D6A7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2E7D32;text-align:center">
           👶 Con accompagnatore — posto riservato adiacente
         </div>
@@ -2515,6 +2518,18 @@ async function caricaAreaTifoso(user) {
   }
   const btnStampa = document.getElementById('btn-stampa-card')
   if (btnStampa) btnStampa.style.display = 'block'
+
+  // Mostra posto assegnato nella card
+  if (postoTifoso) {
+    const settoreLabel = postoTifoso.tribuna === 'sud' ? 'Settore A' : 'Settore B'
+    const postoLabel = `${settoreLabel} · Fila ${postoTifoso.fila} · Posto ${postoTifoso.numero}`
+    const postoDisplay = document.getElementById('t-posto-display')
+    const postoLabelEl = document.getElementById('t-posto-label')
+    if (postoDisplay && postoLabelEl) {
+      postoLabelEl.textContent = postoLabel
+      postoDisplay.style.display = 'block'
+    }
+  }
 
   // Popola sezione profilo
   const { data: membProfilo } = await sb.from('membership')
