@@ -755,6 +755,61 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     </div>
   </div>
 
+  <!-- IL MIO PROFILO -->
+  <div class="tifoso-content" style="padding-top:0;padding-bottom:0">
+    <div style="max-width:1100px;margin:0 auto;padding:0 24px 32px">
+      <div class="t-card">
+        <div class="t-card-title">👤 Il mio profilo</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px">Aggiorna i tuoi dati personali e le preferenze per la maglia.</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+          <div class="form-group"><label style="font-size:12px;font-weight:600;color:var(--muted)">Telefono</label>
+            <input class="form-input" id="profilo-tel" type="tel" placeholder="es. 333 1234567"/></div>
+          <div class="form-group"><label style="font-size:12px;font-weight:600;color:var(--muted)">Data di nascita</label>
+            <input class="form-input" id="profilo-nascita" type="date"/></div>
+          <div class="form-group"><label style="font-size:12px;font-weight:600;color:var(--muted)">Sesso</label>
+            <select class="form-input" id="profilo-sesso">
+              <option value="">—</option>
+              <option value="M">Maschio</option>
+              <option value="F">Femmina</option>
+            </select></div>
+          <div class="form-group"><label style="font-size:12px;font-weight:600;color:var(--muted)">Città</label>
+            <input class="form-input" id="profilo-citta" placeholder="es. Molfetta"/></div>
+          <div class="form-group"><label style="font-size:12px;font-weight:600;color:var(--muted)">Via / Indirizzo</label>
+            <input class="form-input" id="profilo-via" placeholder="es. Via Roma 1"/></div>
+          <div class="form-group"><label style="font-size:12px;font-weight:600;color:var(--muted)">CAP</label>
+            <input class="form-input" id="profilo-cap" placeholder="es. 70056"/></div>
+        </div>
+
+        <!-- Dati maglia (solo per Silver e Gold) -->
+        <div id="profilo-maglia-box" style="display:none;border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+          <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">🏀 Dati maglia</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div class="form-group">
+              <label style="font-size:12px;font-weight:600;color:var(--muted)">Taglia</label>
+              <select class="form-input" id="profilo-taglia" onchange="toggleProfiloTagliaAnni(this.value)">
+                <option value="">Seleziona</option>
+                <option value="S/M">S/M</option>
+                <option value="L/XL">L/XL</option>
+                <option value="bambino">Anni _____ (bambino)</option>
+              </select>
+              <input class="form-input" id="profilo-taglia-anni" type="number" min="2" max="16" placeholder="Età bambino" style="display:none;margin-top:6px"/>
+            </div>
+            <div class="form-group"><label style="font-size:12px;font-weight:600;color:var(--muted)">Cognome sulla maglia</label>
+              <input class="form-input" id="profilo-maglia-cognome" placeholder="es. ROSSI" style="text-transform:uppercase"/></div>
+            <div class="form-group"><label style="font-size:12px;font-weight:600;color:var(--muted)">Numero</label>
+              <input class="form-input" id="profilo-maglia-numero" type="number" min="1" max="99" placeholder="es. 10"/></div>
+          </div>
+        </div>
+
+        <div id="profilo-save-error" style="display:none;font-size:12px;color:var(--rosso);margin-bottom:8px"></div>
+        <button class="btn-hero btn-hero-primary" style="font-size:13px;margin-top:8px" onclick="salvaProfiloTifoso()">
+          💾 Salva modifiche
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- CATALOGO PREMI AREA TIFOSO -->
   <div class="tifoso-content" style="padding-top:0">
     <div style="max-width:1100px;margin:0 auto;padding:0 24px 60px">
@@ -2053,7 +2108,76 @@ function apriRegistrazione(nome, prezzo, richiedeMaglia) {
   document.getElementById('step-tab-3').style.display = ''
   document.getElementById('modal-reg').classList.add('open')
 }
-function toggleTagliaAnni(val) {
+function toggleProfiloTagliaAnni(val) {
+  const el = document.getElementById('profilo-taglia-anni')
+  if (el) el.style.display = val === 'bambino' ? 'block' : 'none'
+}
+window.toggleProfiloTagliaAnni = toggleProfiloTagliaAnni
+
+function popolaProfiloTifoso(tifoso, pianoNome, memb) {
+  document.getElementById('profilo-tel').value     = tifoso.telefono || ''
+  document.getElementById('profilo-nascita').value = tifoso.data_nascita ? tifoso.data_nascita.split('T')[0] : ''
+  document.getElementById('profilo-sesso').value   = tifoso.sesso || ''
+  document.getElementById('profilo-via').value     = tifoso.via || ''
+  document.getElementById('profilo-cap').value     = tifoso.cap || ''
+  document.getElementById('profilo-citta').value   = tifoso.citta || ''
+
+  // Mostra sezione maglia solo per Silver e Gold
+  const hasMaglia = pianoNome === 'Silver' || pianoNome === 'Gold'
+  const magliaBox = document.getElementById('profilo-maglia-box')
+  if (magliaBox) magliaBox.style.display = hasMaglia ? 'block' : 'none'
+
+  if (hasMaglia && memb) {
+    // Taglia bambino: se inizia con "Anni "
+    const taglia = memb.maglia_taglia || ''
+    if (taglia.startsWith('Anni ')) {
+      document.getElementById('profilo-taglia').value = 'bambino'
+      document.getElementById('profilo-taglia-anni').value = taglia.replace('Anni ', '')
+      document.getElementById('profilo-taglia-anni').style.display = 'block'
+    } else {
+      document.getElementById('profilo-taglia').value = taglia
+    }
+    document.getElementById('profilo-maglia-cognome').value = memb.maglia_cognome || ''
+    document.getElementById('profilo-maglia-numero').value  = memb.maglia_numero  || ''
+  }
+}
+
+async function salvaProfiloTifoso() {
+  const errEl = document.getElementById('profilo-save-error')
+  errEl.style.display = 'none'
+
+  // Dati anagrafici
+  const payload = {
+    telefono:     document.getElementById('profilo-tel').value.trim() || null,
+    data_nascita: document.getElementById('profilo-nascita').value || null,
+    sesso:        document.getElementById('profilo-sesso').value || null,
+    via:          document.getElementById('profilo-via').value.trim() || null,
+    cap:          document.getElementById('profilo-cap').value.trim() || null,
+    citta:        document.getElementById('profilo-citta').value.trim() || null,
+  }
+
+  const { error: tErr } = await sb.from('tifosi').update(payload).eq('id', currentTifosoId)
+  if (tErr) { errEl.textContent = 'Errore: ' + tErr.message; errEl.style.display = 'block'; return }
+
+  // Dati maglia (se visibili)
+  const magliaBox = document.getElementById('profilo-maglia-box')
+  if (magliaBox && magliaBox.style.display !== 'none') {
+    const tagliaVal = document.getElementById('profilo-taglia').value
+    const tagliaAnni = document.getElementById('profilo-taglia-anni').value
+    const taglia = tagliaVal === 'bambino' ? ('Anni ' + (tagliaAnni || '?')) : tagliaVal
+    const cognomeMaglia = document.getElementById('profilo-maglia-cognome').value.toUpperCase().trim()
+    const numero = parseInt(document.getElementById('profilo-maglia-numero').value) || null
+
+    const { error: mErr } = await sb.from('membership')
+      .update({ maglia_taglia: taglia || null, maglia_cognome: cognomeMaglia || null, maglia_numero: numero })
+      .eq('tifoso_id', currentTifosoId)
+      .eq('stato', 'attiva')
+    if (mErr) { errEl.textContent = 'Errore maglia: ' + mErr.message; errEl.style.display = 'block'; return }
+  }
+
+  toast('✅ Profilo aggiornato!', 'success')
+}
+window.salvaProfiloTifoso = salvaProfiloTifoso
   const box = document.getElementById('taglia-anni-box')
   if (box) box.style.display = val === 'bambino' ? 'block' : 'none'
 }
@@ -2386,6 +2510,14 @@ async function caricaAreaTifoso(user) {
   }
   const btnStampa = document.getElementById('btn-stampa-card')
   if (btnStampa) btnStampa.style.display = 'block'
+
+  // Popola sezione profilo
+  const { data: membProfilo } = await sb.from('membership')
+    .select('maglia_taglia, maglia_cognome, maglia_numero')
+    .eq('tifoso_id', tifoso.id)
+    .eq('stato', 'attiva')
+    .single()
+  popolaProfiloTifoso(tifoso, pianoNome, membProfilo)
 
   const badgeAcc = document.getElementById('t-accompagnatore-badge')
   if (badgeAcc) badgeAcc.style.display = tifoso.accompagnatore_minore ? 'block' : 'none'
