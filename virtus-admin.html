@@ -6,6 +6,10 @@
 <title>Virtus Fan Card — Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js">
 document.addEventListener('DOMContentLoaded', function() {
+  window.toggleFcMaglia = toggleFcMaglia;
+  window.toggleFcTagliaAnni = toggleFcTagliaAnni;
+  window.fcMostraTribuna = fcMostraTribuna;
+  window.fcSelezionaPosto = fcSelezionaPosto;
   window.doLogin = doLogin;
   window.doLogout = doLogout;
   window.showSection = showSection;
@@ -1331,13 +1335,38 @@ select.form-input:focus{border-color:var(--accent)}
       </div>
       <div class="form-group" style="grid-column:1/-1">
         <label>Piano membership *</label>
-        <select class="form-input" id="fc-piano">
+        <select class="form-input" id="fc-piano" onchange="toggleFcMaglia(this.value)">
           <option value="">— Seleziona piano —</option>
           <option value="base">Base — € 10/anno</option>
           <option value="bronze">🥉 Bronze — € 30/anno</option>
           <option value="silver">🥈 Silver — € 50/anno</option>
           <option value="gold">🥇 Gold — € 100/anno</option>
         </select>
+      </div>
+
+      <!-- DATI MAGLIA (Silver e Gold) -->
+      <div id="fc-maglia-box" style="grid-column:1/-1;display:none;background:#fff8f0;border:1.5px solid #ffe0b2;border-radius:10px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--arancio);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">🏀 Dati maglia di gara</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>Taglia *</label>
+            <select class="form-input" id="fc-maglia-taglia" onchange="toggleFcTagliaAnni(this.value)">
+              <option value="">Seleziona</option>
+              <option value="S/M">S/M</option>
+              <option value="L/XL">L/XL</option>
+              <option value="bambino">Anni _____ (bambino)</option>
+            </select>
+            <input class="form-input" id="fc-maglia-anni" type="number" min="2" max="16" placeholder="Età bambino" style="display:none;margin-top:6px"/>
+          </div>
+          <div class="form-group">
+            <label>Cognome sulla maglia *</label>
+            <input class="form-input" id="fc-maglia-cognome" placeholder="es. ROSSI" style="text-transform:uppercase"/>
+          </div>
+          <div class="form-group">
+            <label>Numero *</label>
+            <input class="form-input" id="fc-maglia-numero" type="number" min="1" max="99" placeholder="es. 10"/>
+          </div>
+        </div>
       </div>
       <div class="form-group">
         <label>Importo riscosso (€) *</label>
@@ -1351,6 +1380,22 @@ select.form-input:focus{border-color:var(--accent)}
           <option value="pos">POS</option>
         </select>
       </div>
+      <!-- SCELTA POSTO (Silver e Gold) -->
+      <div id="fc-posto-box" style="grid-column:1/-1;display:none;background:#F0F6FF;border:1px solid #DDEEFF;border-radius:10px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">🪑 Posto riservato</div>
+        <div style="display:flex;gap:10px;margin-bottom:12px">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="fcMostraTribuna('sud',this)">Settore A (Sud)</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="fcMostraTribuna('nord',this)">Settore B (Nord)</button>
+        </div>
+        <div id="fc-pianta-container" style="overflow-x:auto"></div>
+        <div id="fc-posto-selezionato" style="margin-top:10px;font-size:13px;color:var(--blu);font-weight:600;display:none">
+          ✅ Posto selezionato: <span id="fc-posto-label"></span>
+        </div>
+        <input type="hidden" id="fc-posto-tribuna"/>
+        <input type="hidden" id="fc-posto-fila"/>
+        <input type="hidden" id="fc-posto-numero"/>
+      </div>
+
       <!-- ACCOMPAGNATORE MINORE -->
       <div style="grid-column:1/-1;background:#F0F6FF;border:1px solid #DDEEFF;border-radius:10px;padding:14px">
         <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;margin-bottom:10px">
@@ -1358,17 +1403,10 @@ select.form-input:focus{border-color:var(--accent)}
           <span>Il tifoso ha un figlio minore che lo accompagna alle gare <span style="font-size:11px;color:var(--muted)">(nato dal <span id="fc-anno-soglia">2011</span> in poi)</span></span>
         </label>
         <div id="fc-campi-accompagnatore" style="display:none;padding-top:8px;border-top:1px solid #DDEEFF">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="form-group">
-              <label>Anno di nascita figlio *</label>
-              <input class="form-input" type="number" id="fc-anno-minore" placeholder="es: 2013" min="2005" max="2020"/>
-            </div>
-            <div class="form-group">
-              <label>Documento minore</label>
-              <input class="form-input" type="file" id="fc-doc-minore" accept="image/jpeg,image/png,image/webp,application/pdf" style="cursor:pointer"/>
-            </div>
+          <div class="form-group">
+            <label>Anno di nascita figlio *</label>
+            <input class="form-input" type="number" id="fc-anno-minore" placeholder="es: 2013" min="2005" max="2020"/>
           </div>
-          <div style="font-size:11px;color:#546E7A;margin-top:4px">JPG, PNG, PDF · max 5MB · Il documento sarà salvato nel profilo del tifoso</div>
         </div>
       </div>
     </div>
@@ -3863,6 +3901,74 @@ async function caricaAnnoSogliaFc() {
   if (el && data?.valore) el.textContent = data.valore
 }
 
+function toggleFcMaglia(piano) {
+  const box = document.getElementById('fc-maglia-box')
+  const postoBox = document.getElementById('fc-posto-box')
+  const hasPosto = piano === 'silver' || piano === 'gold'
+  if (box) box.style.display = hasPosto ? 'block' : 'none'
+  if (postoBox) postoBox.style.display = hasPosto ? 'block' : 'none'
+  // Reset posto selezionato
+  document.getElementById('fc-posto-tribuna').value = ''
+  document.getElementById('fc-posto-fila').value = ''
+  document.getElementById('fc-posto-numero').value = ''
+  document.getElementById('fc-posto-selezionato').style.display = 'none'
+  document.getElementById('fc-pianta-container').innerHTML = ''
+}
+
+let _fcStatiPosti = {}
+
+async function fcMostraTribuna(tid, btn) {
+  document.querySelectorAll('#fc-posto-box .btn').forEach(b => b.classList.remove('btn-primary'))
+  btn.classList.add('btn-primary')
+
+  if (!Object.keys(_fcStatiPosti).length) {
+    const { data } = await sbAdmin.from('posti').select('tribuna,fila,numero,stato')
+    if (data) data.forEach(p => { _fcStatiPosti[p.tribuna+'_'+p.fila+'_'+p.numero] = p.stato })
+  }
+
+  const conf = ADMIN_MAPPA_POSTI[tid]
+  if (!conf) return
+  const selT = document.getElementById('fc-posto-tribuna').value
+  const selF = document.getElementById('fc-posto-fila').value
+  const selN = parseInt(document.getElementById('fc-posto-numero').value)
+
+  let html = conf.file.map(fila => {
+    const riga = conf.struttura[fila]
+    const celle = riga.map(n => {
+      if (n === 'S') return '<div style="width:14px;height:14px;flex-shrink:0"></div>'
+      const k = tid+'_'+fila+'_'+n
+      const stato = _fcStatiPosti[k] || 'disponibile'
+      const isSel = selT === tid && selF === fila && selN === n
+      let bg = isSel ? '#F57C00' : stato === 'disponibile' ? '#4CAF50' : '#e53935'
+      const cursor = stato === 'disponibile' || isSel ? 'pointer' : 'not-allowed'
+      const click = stato === 'disponibile' ? `onclick="fcSelezionaPosto('${tid}','${fila}',${n})"` : ''
+      return `<div ${click} style="width:14px;height:14px;border-radius:2px;background:${bg};cursor:${cursor};flex-shrink:0" title="Fila ${fila} N°${n} — ${stato}"></div>`
+    }).join('')
+    return `<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px">
+      <div style="font-size:10px;color:var(--muted);width:12px;text-align:center;flex-shrink:0">${fila}</div>
+      <div style="display:flex;gap:2px">${celle}</div>
+    </div>`
+  }).join('')
+
+  document.getElementById('fc-pianta-container').innerHTML = html
+}
+
+function fcSelezionaPosto(tid, fila, numero) {
+  document.getElementById('fc-posto-tribuna').value = tid
+  document.getElementById('fc-posto-fila').value = fila
+  document.getElementById('fc-posto-numero').value = numero
+  const settore = tid === 'sud' ? 'Settore A' : 'Settore B'
+  document.getElementById('fc-posto-label').textContent = `${settore} · Fila ${fila} · N° ${numero}`
+  document.getElementById('fc-posto-selezionato').style.display = 'block'
+  // Ricarica pianta per evidenziare selezione
+  const btn = document.querySelector(`#fc-posto-box .btn-primary`)
+  if (btn) fcMostraTribuna(tid, btn)
+}
+function toggleFcTagliaAnni(val) {
+  const el = document.getElementById('fc-maglia-anni')
+  if (el) el.style.display = val === 'bambino' ? 'block' : 'none'
+}
+
 async function emettiFantCard() {
   const nome    = document.getElementById('fc-nome').value.trim()
   const cognome = document.getElementById('fc-cognome').value.trim()
@@ -3877,12 +3983,29 @@ async function emettiFantCard() {
     toast('Compila tutti i campi obbligatori', 'error'); return
   }
 
+  // Validazione maglia (Silver e Gold)
+  const hasMaglia = piano === 'silver' || piano === 'gold'
+  let magliaTaglia = null, magliaCognome = null, magliaNumero = null
+  if (hasMaglia) {
+    const tagliaVal = document.getElementById('fc-maglia-taglia').value
+    const tagliaAnni = document.getElementById('fc-maglia-anni').value
+    magliaTaglia = tagliaVal === 'bambino' ? ('Anni ' + (tagliaAnni || '?')) : tagliaVal
+    magliaCognome = document.getElementById('fc-maglia-cognome').value.toUpperCase().trim()
+    magliaNumero = parseInt(document.getElementById('fc-maglia-numero').value) || null
+    if (!magliaTaglia || !magliaCognome || !magliaNumero) {
+      toast('Compila tutti i dati della maglia', 'error'); return
+    }
+  }
+
   // Validazione accompagnatore
   const accomp = document.getElementById('fc-accompagnatore').checked
   const annoMinore = parseInt(document.getElementById('fc-anno-minore').value) || null
-  const docMinore  = document.getElementById('fc-doc-minore').files[0]
   if (accomp && !annoMinore) { toast('Inserisci l\'anno di nascita del figlio', 'error'); return }
-  if (accomp && docMinore && docMinore.size > 5 * 1024 * 1024) { toast('Documento troppo grande — max 5MB', 'error'); return }
+
+  // Legge posto selezionato
+  const postoTribuna = document.getElementById('fc-posto-tribuna').value
+  const postoFila    = document.getElementById('fc-posto-fila').value
+  const postoNumero  = parseInt(document.getElementById('fc-posto-numero').value) || null
 
   const btn = document.getElementById('fc-submit-btn')
   btn.disabled = true
@@ -3948,17 +4071,28 @@ async function emettiFantCard() {
 
     // 4. Crea record membership
     const oggi = new Date().toISOString().split('T')[0]
-    const { error: membErr } = await sbAdmin.from('membership').insert({
+    const membPayload = {
       tifoso_id: uid,
       piano_id: pianoData.id,
       metodo_pagamento: metodo,
       stato: 'attiva',
       valida_dal: oggi,
       scade_il: scadenza.toISOString().split('T')[0]
-    })
+    }
+    if (hasMaglia) {
+      membPayload.maglia_taglia  = magliaTaglia
+      membPayload.maglia_cognome = magliaCognome
+      membPayload.maglia_numero  = magliaNumero
+    }
+    const { error: membErr } = await sbAdmin.from('membership').insert(membPayload)
     if (membErr) throw new Error('Errore membership: ' + membErr.message)
 
-    // 4. Registra transazione punti benvenuto
+    // 4b. Assegna posto se selezionato
+    if (postoTribuna && postoFila && postoNumero) {
+      await sbAdmin.from('posti')
+        .update({ stato: 'assegnato', tifoso_id: authData.user.id })
+        .eq('tribuna', postoTribuna).eq('fila', postoFila).eq('numero', postoNumero)
+    }
     await sbAdmin.from('transazioni').insert({
       tifoso_id: uid,
       tipo: 'BONUS',
@@ -3995,8 +4129,20 @@ async function emettiFantCard() {
     document.getElementById('fc-metodo').value = ''
     document.getElementById('fc-accompagnatore').checked = false
     document.getElementById('fc-anno-minore').value = ''
-    document.getElementById('fc-doc-minore').value = ''
     document.getElementById('fc-campi-accompagnatore').style.display = 'none'
+    document.getElementById('fc-maglia-box').style.display = 'none'
+    document.getElementById('fc-maglia-taglia').value = ''
+    document.getElementById('fc-maglia-cognome').value = ''
+    document.getElementById('fc-maglia-numero').value = ''
+    document.getElementById('fc-maglia-anni').value = ''
+    document.getElementById('fc-maglia-anni').style.display = 'none'
+    document.getElementById('fc-posto-box').style.display = 'none'
+    document.getElementById('fc-posto-tribuna').value = ''
+    document.getElementById('fc-posto-fila').value = ''
+    document.getElementById('fc-posto-numero').value = ''
+    document.getElementById('fc-posto-selezionato').style.display = 'none'
+    document.getElementById('fc-pianta-container').innerHTML = ''
+    _fcStatiPosti = {}
 
     loadTifosi()
     loadDashboard()
