@@ -5,81 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Virtus Fan Card — Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  window.toggleFcMaglia = toggleFcMaglia;
-  window.toggleFcTagliaAnni = toggleFcTagliaAnni;
-  window.fcMostraTribuna = fcMostraTribuna;
-  window.fcSelezionaPosto = fcSelezionaPosto;
-  window.doLogin = doLogin;
-  window.doLogout = doLogout;
-  window.showSection = showSection;
-  window.openModal = openModal;
-  window.closeModal = closeModal;
-  window.openDettaglioTifoso = openDettaglioTifoso;
-  window.salvaDatiTifoso = salvaDatiTifoso;
-  window.openBonus = openBonus;
-  window.salvaBonus = salvaBonus;
-  window.emettiFantCard = emettiFantCard;
-  window.stampaCardAdmin = stampaCardAdmin;
-  window.apriNuovaGara = apriNuovaGara;
-  window.apriModificaGara = apriModificaGara;
-  window.salvaGara = salvaGara;
-  window.confermaEliminaGara = confermaEliminaGara;
-  window.loadIngressi = loadIngressi;
-  window.esportaIngressi = esportaIngressi;
-  window.loadMaglieSciarpe = loadMaglieSciarpe;
-  window.switchMaglieTab = switchMaglieTab;
-  window.loadMsReport = loadMsReport;
-  window.stampaReportDirettivo = stampaReportDirettivo;
-  window.apriEditBiglietteria = apriEditBiglietteria;
-  window.salvaBiglietteria = salvaBiglietteria;
-  window.flagConsegna = flagConsegna;
-  window.loadPosti = loadPosti;
-  window.apriAdminPostoModal = apriAdminPostoModal;
-  window.chiudiAdminPostoModal = chiudiAdminPostoModal;
-  window.assegnaPosto = assegnaPosto;
-  window.resetOpzione = resetOpzione;
-  window.setPosto = setPosto;
-  window.loadMerchants = loadMerchants;
-  window.apriModalNuovoMerchant = apriModalNuovoMerchant;
-  window.salvaMerchant = salvaMerchant;
-  window.toggleMerchant = toggleMerchant;
-  window.apriModalPartner = apriModalPartner;
-  window.salvaPartner = salvaPartner;
-  window.rimuoviLogo = rimuoviLogo;
-  window.creaAccessoPartner = creaAccessoPartner;
-  window.apriModalNuovaCategoria = apriModalNuovaCategoria;
-  window.salvaCategoria = salvaCategoria;
-  window.switchPremioTab = switchPremioTab;
-  window.apriModalProdotto = apriModalProdotto;
-  window.salvaPremio = salvaPremio;
-  window.confermaConsegna = confermaConsegna;
-  window.annullaRiscatto = annullaRiscatto;
-  window.salvaCampagna = salvaCampagna;
-  window.salvaTasso = salvaTasso;
-  window.loadFopContratti = loadFopContratti;
-  window.loadFopPianta = loadFopPianta;
-  window.salvaFopProdotto = salvaFopProdotto;
-  window.approvaContratto = approvaContratto;
-  window.annullaContratto = annullaContratto;
-  window.loadOperatori = loadOperatori;
-  window.attivaOperatore = attivaOperatore;
-  window.filtraMembership = filtraMembership;
-  window.attivaMemb = attivaMemb;
-  window.sospendiMemb = sospendiMemb;
-  window.annullaMemb = annullaMemb;
-  window.salvaAccompagnatore = salvaAccompagnatore;
-  window.eseguiRicaricaDiretta = eseguiRicaricaDiretta;
-  window.confermaRicarica = confermaRicarica;
-  window.annullaRicarica = annullaRicarica;
-  window.loadScansioni = loadScansioni;
-  window.esportaScansioni = esportaScansioni;
-  window.switchTifosiTab = switchTifosiTab;
-  window.stampaSponsorQR = stampaSponsorQR;
-  window.annullaConv = typeof annullaConv !== 'undefined' ? annullaConv : null;
-});
-</script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -5028,6 +4953,82 @@ async function salvaFopProdotto() {
   await loadFopProdotti()
 }
 
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  window.toggleFcMaglia = toggleFcMaglia;
+  window.toggleFcTagliaAnni = toggleFcTagliaAnni;
+  window.fcMostraTribuna = fcMostraTribuna;
+  window.fcSelezionaPosto = fcSelezionaPosto;
+  window.doLogin = doLogin;
+  window.doLogout = doLogout;
+  window.showSection = showSection;
+  window.openModal = openModal;
+  window.closeModal = closeModal;
+  window.openDettaglioTifoso = openDettaglioTifoso;
+  window.salvaDatiTifoso = salvaDatiTifoso;
+  window.openBonus = openBonus;
+  window.salvaBonus = salvaBonus;
+  window.emettiFantCard = emettiFantCard;
+  window.stampaCardAdmin = stampaCardAdmin;
+  window.apriNuovaGara = apriNuovaGara;
+  window.apriModificaGara = apriModificaGara;
+  window.salvaGara = salvaGara;
+  window.confermaEliminaGara = confermaEliminaGara;
+  window.loadIngressi = loadIngressi;
+  window.esportaIngressi = esportaIngressi;
+  window.loadMaglieSciarpe = loadMaglieSciarpe;
+  window.switchMaglieTab = switchMaglieTab;
+  window.loadMsReport = loadMsReport;
+  window.stampaReportDirettivo = stampaReportDirettivo;
+  window.apriEditBiglietteria = apriEditBiglietteria;
+  window.salvaBiglietteria = salvaBiglietteria;
+  window.flagConsegna = flagConsegna;
+  window.loadPosti = loadPosti;
+  window.apriAdminPostoModal = apriAdminPostoModal;
+  window.chiudiAdminPostoModal = chiudiAdminPostoModal;
+  window.assegnaPosto = assegnaPosto;
+  window.resetOpzione = resetOpzione;
+  window.setPosto = setPosto;
+  window.loadMerchants = loadMerchants;
+  window.apriModalNuovoMerchant = apriModalNuovoMerchant;
+  window.salvaMerchant = salvaMerchant;
+  window.toggleMerchant = toggleMerchant;
+  window.apriModalPartner = apriModalPartner;
+  window.salvaPartner = salvaPartner;
+  window.rimuoviLogo = rimuoviLogo;
+  window.creaAccessoPartner = creaAccessoPartner;
+  window.apriModalNuovaCategoria = apriModalNuovaCategoria;
+  window.salvaCategoria = salvaCategoria;
+  window.switchPremioTab = switchPremioTab;
+  window.apriModalProdotto = apriModalProdotto;
+  window.salvaPremio = salvaPremio;
+  window.confermaConsegna = confermaConsegna;
+  window.annullaRiscatto = annullaRiscatto;
+  window.salvaCampagna = salvaCampagna;
+  window.salvaTasso = salvaTasso;
+  window.loadFopContratti = loadFopContratti;
+  window.loadFopPianta = loadFopPianta;
+  window.salvaFopProdotto = salvaFopProdotto;
+  window.approvaContratto = approvaContratto;
+  window.annullaContratto = annullaContratto;
+  window.loadOperatori = loadOperatori;
+  window.attivaOperatore = attivaOperatore;
+  window.filtraMembership = filtraMembership;
+  window.attivaMemb = attivaMemb;
+  window.sospendiMemb = sospendiMemb;
+  window.annullaMemb = annullaMemb;
+  window.salvaAccompagnatore = salvaAccompagnatore;
+  window.eseguiRicaricaDiretta = eseguiRicaricaDiretta;
+  window.confermaRicarica = confermaRicarica;
+  window.annullaRicarica = annullaRicarica;
+  window.loadScansioni = loadScansioni;
+  window.esportaScansioni = esportaScansioni;
+  window.switchTifosiTab = switchTifosiTab;
+  window.stampaSponsorQR = stampaSponsorQR;
+  window.annullaConv = typeof annullaConv !== 'undefined' ? annullaConv : null;
+});
 </script>
 
 <!-- MODAL: Nuovo/Modifica Merchant -->
