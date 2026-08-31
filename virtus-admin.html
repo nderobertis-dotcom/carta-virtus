@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.loadMaglieSciarpe = loadMaglieSciarpe;
   window.switchMaglieTab = switchMaglieTab;
   window.loadMsReport = loadMsReport;
+  window.stampaReportDirettivo = stampaReportDirettivo;
   window.apriEditBiglietteria = apriEditBiglietteria;
   window.salvaBiglietteria = salvaBiglietteria;
   window.flagConsegna = flagConsegna;
@@ -615,7 +616,10 @@ select.form-input:focus{border-color:var(--accent)}
       </div>
 
       <!-- REPORT STATISTICO -->
-      <div id="ms-report-box" style="display:none" id="ms-report-box">
+      <div id="ms-report-box" style="display:none">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+          <button class="btn btn-primary" onclick="stampaReportDirettivo()">🖨️ Stampa / PDF Direttivo</button>
+        </div>
         <div id="ms-report-content"></div>
       </div>
     </div>
@@ -2093,7 +2097,183 @@ function apriEditBiglietteria(garaId, titolo, biglietti, accrediti, incasso) {
   openModal('modal-biglietteria-gara')
 }
 
-async function salvaBiglietteria() {
+async function stampaReportDirettivo() {
+  // Raccoglie i dati già caricati nel report
+  const el = document.getElementById('ms-report-content')
+  if (!el || !el.innerHTML) { toast('Carica prima il report', 'error'); return }
+
+  toast('Generazione report in corso...', 'success')
+
+  // Recupera dati freschi
+  const { data: gare } = await sbAdmin.from('gare')
+    .select('id,titolo,data_ora,biglietti_venduti,accrediti_concessi,incasso_eur')
+    .order('data_ora')
+  const { data: tifosi } = await sbAdmin.from('tifosi').select('id,auth_user_id,nome,cognome,sesso,data_nascita,stato').eq('tipo','tifoso')
+  const { data: memberships } = await sbAdmin.from('membership').select('tifoso_id,piano:piano_id(nome),stato').eq('stato','attiva')
+  const { data: ingressi } = await sbAdmin.from('ingressi_gare').select('tifoso_id,gara_id,piano_nome')
+
+  const ora = new Date()
+  const gareDisputate = (gare||[]).filter(g => new Date(g.data_ora) < ora)
+  const gareDaDisputare = (gare||[]).filter(g => new Date(g.data_ora) >= ora)
+  const presenzePerGara = {}
+  ;(ingressi||[]).forEach(i => { presenzePerGara[i.gara_id] = (presenzePerGara[i.gara_id]||0)+1 })
+  const totIngressi  = (ingressi||[]).length
+  const totBiglietti = gareDisputate.reduce((s,g) => s+(g.biglietti_venduti||0), 0)
+  const totAccrediti = gareDisputate.reduce((s,g) => s+(g.accrediti_concessi||0), 0)
+  const totIncasso   = gareDisputate.reduce((s,g) => s+parseFloat(g.incasso_eur||0), 0)
+  const gareConDati  = gareDisputate.filter(g => (g.biglietti_venduti||0) > 0).length
+  const perPiano     = {}
+  ;(memberships||[]).forEach(m => { const p = m.piano?.nome||'N/D'; perPiano[p]=(perPiano[p]||0)+1 })
+
+  // Costruisce il contesto per l'AI
+  const contesto = `
+Stagione sportiva 2026/2027 - Nuova Virtus Basket Molfetta (PalaPoli)
+
+TIFOSI ISCRITTI: ${tifosi?.length||0} (Base:${perPiano.Base||0}, Bronze:${perPiano.Bronze||0}, Silver:${perPiano.Silver||0}, Gold:${perPiano.Gold||0})
+
+GARE DISPUTATE: ${gareDisputate.length} su ${(gare||[]).length} in calendario
+
+BIGLIETTERIA (gare con dati: ${gareConDati}):
+- Totale biglietti venduti: ${totBiglietti}
+- Totale accrediti: ${totAccrediti}
+- Incasso totale: €${totIncasso.toFixed(2)}
+- Media biglietti/gara: ${gareConDati ? (totBiglietti/gareConDati).toFixed(0) : 'N/D'}
+- Media incasso/gara: ${gareConDati ? '€'+(totIncasso/gareConDati).toFixed(2) : 'N/D'}
+
+PRESENZE FAN CARD PER GARA:
+${gareDisputate.map(g => {
+  const data = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',timeZone:'Europe/Rome'})
+  return `- ${g.titolo} (${data}): ${presenzePerGara[g.id]||0} Fan Card, ${g.biglietti_venduti||0} biglietti, €${parseFloat(g.incasso_eur||0).toFixed(2)}`
+}).join('\n')}
+
+GARE RIMANENTI: ${gareDaDisputare.length}
+`
+
+  // Chiamata API Anthropic per valutazione
+  let valutazione = ''
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Sei un consulente sportivo esperto di marketing e gestione di società basket dilettantistiche italiane. Analizza i dati seguenti della stagione e scrivi una valutazione professionale sull'andamento dell'affluenza del pubblico alle gare casalinghe, con suggerimenti concreti per migliorare la presenza sulle tribune nella seconda parte della stagione. Scrivi in italiano, tono professionale ma diretto, max 400 parole, struttura con paragrafi (senza markdown, solo testo piano).\n\n${contesto}`
+        }]
+      })
+    })
+    const json = await resp.json()
+    valutazione = json.content?.[0]?.text || 'Valutazione non disponibile.'
+  } catch(e) {
+    valutazione = 'Valutazione non disponibile al momento.'
+  }
+
+  // Genera PDF in nuova finestra
+  const oggi = new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
+  const html = `<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Report Direttivo — Nuova Virtus Basket Molfetta</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0 }
+    body { font-family:'Segoe UI',Arial,sans-serif; color:#111; background:#fff; padding:32px 40px; font-size:12px; line-height:1.6; max-width:780px; margin:0 auto }
+    .no-print { text-align:right; margin-bottom:20px }
+    .no-print button { background:#1A3A6B;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer }
+    .header { display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #1A3A6B; padding-bottom:12px; margin-bottom:20px }
+    .header h1 { font-size:16px; font-weight:800; color:#1A3A6B }
+    .header .sub { font-size:11px; color:#546E7A; margin-top:2px }
+    .header .data { font-size:11px; color:#546E7A; text-align:right }
+    .titolo-sezione { font-size:11px; font-weight:700; color:#1A3A6B; text-transform:uppercase; letter-spacing:.1em; border-left:3px solid #F57C00; padding-left:8px; margin:20px 0 10px }
+    .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px }
+    .kpi { background:#F0F6FF; border-radius:6px; padding:10px; text-align:center }
+    .kpi-val { font-size:20px; font-weight:800; color:#1A3A6B }
+    .kpi-label { font-size:9px; color:#546E7A; text-transform:uppercase; letter-spacing:.06em; margin-top:2px }
+    .kpi.verde .kpi-val { color:#2E7D32 }
+    .kpi.arancio .kpi-val { color:#F57C00 }
+    table { width:100%; border-collapse:collapse; font-size:11px }
+    th { background:#1A3A6B; color:#fff; padding:6px 8px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.06em }
+    td { padding:6px 8px; border-bottom:1px solid #eee }
+    tr:nth-child(even) td { background:#F9FBFE }
+    .total-row td { font-weight:700; border-top:2px solid #1A3A6B; background:#EEF4FF }
+    .valutazione { background:#F9FBFE; border:1px solid #DDEEFF; border-radius:8px; padding:16px; margin-top:16px; font-size:12px; line-height:1.7; white-space:pre-wrap }
+    .footer { text-align:center; margin-top:24px; font-size:10px; color:#9E9E9E; border-top:1px solid #eee; padding-top:10px }
+    @media print { .no-print { display:none } body { padding:16px 24px } }
+  </style>
+</head>
+<body>
+  <div class="no-print"><button onclick="window.print()">🖨️ Stampa / Salva PDF</button></div>
+
+  <div class="header">
+    <div>
+      <h1>Report Stagionale — Direttivo</h1>
+      <div class="sub">Nuova Virtus Basket Molfetta · Stagione 2026/2027</div>
+    </div>
+    <div class="data">Emesso il: <strong>${oggi}</strong></div>
+  </div>
+
+  <div class="titolo-sezione">Riepilogo Tifosi</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-val">${tifosi?.length||0}</div><div class="kpi-label">Fan Card emesse</div></div>
+    <div class="kpi"><div class="kpi-val">${perPiano.Silver||0}</div><div class="kpi-label">Silver</div></div>
+    <div class="kpi"><div class="kpi-val">${perPiano.Gold||0}</div><div class="kpi-label">Gold</div></div>
+    <div class="kpi"><div class="kpi-val">${(perPiano.Base||0)+(perPiano.Bronze||0)}</div><div class="kpi-label">Base + Bronze</div></div>
+  </div>
+
+  <div class="titolo-sezione">Biglietteria Stagionale</div>
+  <div class="kpi-grid">
+    <div class="kpi verde"><div class="kpi-val">${totIngressi}</div><div class="kpi-label">Ingressi Fan Card</div></div>
+    <div class="kpi"><div class="kpi-val">${totBiglietti}</div><div class="kpi-label">Biglietti venduti</div></div>
+    <div class="kpi arancio"><div class="kpi-val">${totAccrediti}</div><div class="kpi-label">Accrediti</div></div>
+    <div class="kpi verde"><div class="kpi-val">€${totIncasso.toFixed(0)}</div><div class="kpi-label">Incasso totale</div></div>
+  </div>
+
+  <div class="titolo-sezione">Dettaglio Gare</div>
+  <table>
+    <thead><tr><th>Gara</th><th>Data</th><th style="text-align:center">Fan Card</th><th style="text-align:center">Biglietti</th><th style="text-align:center">Accrediti</th><th style="text-align:right">Incasso</th></tr></thead>
+    <tbody>
+      ${gare.map(g => {
+        const disp = new Date(g.data_ora) < ora
+        const data = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Rome'})
+        return `<tr>
+          <td>${g.titolo}${!disp ? ' <em style="color:#999;font-size:10px">(da disputare)</em>' : ''}</td>
+          <td>${data}</td>
+          <td style="text-align:center">${presenzePerGara[g.id]||0}</td>
+          <td style="text-align:center">${disp ? (g.biglietti_venduti||0) : '—'}</td>
+          <td style="text-align:center">${disp ? (g.accrediti_concessi||0) : '—'}</td>
+          <td style="text-align:right">${disp ? '€'+parseFloat(g.incasso_eur||0).toFixed(2) : '—'}</td>
+        </tr>`
+      }).join('')}
+      <tr class="total-row">
+        <td colspan="2">Totale stagione</td>
+        <td style="text-align:center">${totIngressi}</td>
+        <td style="text-align:center">${totBiglietti}</td>
+        <td style="text-align:center">${totAccrediti}</td>
+        <td style="text-align:right">€${totIncasso.toFixed(2)}</td>
+      </tr>
+      ${gareConDati > 1 ? `<tr>
+        <td colspan="2" style="color:#546E7A">Media per gara disputata</td>
+        <td style="text-align:center;color:#546E7A">${gareDisputate.length ? (totIngressi/gareDisputate.length).toFixed(1) : '—'}</td>
+        <td style="text-align:center;color:#546E7A">${(totBiglietti/gareConDati).toFixed(0)}</td>
+        <td style="text-align:center;color:#546E7A">${(totAccrediti/gareConDati).toFixed(0)}</td>
+        <td style="text-align:right;color:#546E7A">€${(totIncasso/gareConDati).toFixed(2)}</td>
+      </tr>` : ''}
+    </tbody>
+  </table>
+
+  <div class="titolo-sezione">Valutazione Andamento e Raccomandazioni</div>
+  <div class="valutazione">${valutazione}</div>
+
+  <div class="footer">SSD Pol. Virtus 2014 Srl · Via Martiri di Via Fani c/o PalaPoli · 70056 Molfetta (BA) · Documento riservato al Direttivo</div>
+</body>
+</html>`
+
+  const win = window.open('', '_blank', 'width=900,height:1100')
+  if (!win) { alert('Abilita i popup per stampare il report.'); return }
+  win.document.open(); win.document.write(html); win.document.close()
+}
   const garaId    = document.getElementById('bg-gara-id').value
   const biglietti = parseInt(document.getElementById('bg-biglietti').value) || 0
   const accrediti = parseInt(document.getElementById('bg-accrediti').value) || 0
