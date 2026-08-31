@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.esportaIngressi = esportaIngressi;
   window.loadMaglieSciarpe = loadMaglieSciarpe;
   window.switchMaglieTab = switchMaglieTab;
+  window.loadMsReport = loadMsReport;
   window.flagConsegna = flagConsegna;
   window.loadPosti = loadPosti;
   window.apriAdminPostoModal = apriAdminPostoModal;
@@ -587,6 +588,7 @@ select.form-input:focus{border-color:var(--accent)}
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn btn-ghost btn-sm" id="ms-tab-maglie" onclick="switchMaglieTab('maglie',this)">👕 Maglie</button>
           <button class="btn btn-ghost btn-sm" id="ms-tab-sciarpe" onclick="switchMaglieTab('sciarpe',this)">🧣 Sciarpe</button>
+          <button class="btn btn-ghost btn-sm" id="ms-tab-report" onclick="switchMaglieTab('report',this)">📊 Report</button>
           <button class="btn btn-primary btn-sm" onclick="loadMaglieSciarpe()">↻ Aggiorna</button>
         </div>
       </div>
@@ -608,6 +610,11 @@ select.form-input:focus{border-color:var(--accent)}
           </tr></thead>
           <tbody id="ms-list"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Seleziona una categoria</td></tr></tbody>
         </table>
+      </div>
+
+      <!-- REPORT STATISTICO -->
+      <div id="ms-report-box" style="display:none" id="ms-report-box">
+        <div id="ms-report-content"></div>
       </div>
     </div>
 
@@ -1810,8 +1817,193 @@ function switchMaglieTab(tab, btn) {
   _msTab = tab
   document.querySelectorAll('[id^="ms-tab-"]').forEach(b => b.classList.remove('btn-primary'))
   if (btn) btn.classList.add('btn-primary')
+
+  const tableCard = document.querySelector('#section-maglie .card')
+  const reportBox = document.getElementById('ms-report-box')
+
+  if (tab === 'report') {
+    if (tableCard) tableCard.style.display = 'none'
+    if (reportBox) reportBox.style.display = 'block'
+    loadMsReport()
+    return
+  }
+
+  if (tableCard) tableCard.style.display = 'block'
+  if (reportBox) reportBox.style.display = 'none'
   document.getElementById('ms-col-detail').textContent = tab === 'maglie' ? 'Taglia' : 'Inclusa nel piano'
   renderMaglieSciarpe()
+}
+
+async function loadMsReport() {
+  const el = document.getElementById('ms-report-content')
+  if (!el) return
+  el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted)">Caricamento dati...</div>'
+
+  // Carica tifosi con tutti i dati
+  const { data: tifosi } = await sbAdmin.from('tifosi')
+    .select('id, auth_user_id, nome, cognome, sesso, data_nascita, stato, creato_il, tipo')
+    .eq('tipo', 'tifoso')
+
+  // Carica membership con piano
+  const { data: memberships } = await sbAdmin.from('membership')
+    .select('tifoso_id, piano:piano_id(nome), stato, maglia_taglia, maglia_cognome, maglia_numero, valida_dal')
+    .eq('stato', 'attiva')
+
+  // Carica ingressi per presenze
+  const { data: ingressi } = await sbAdmin.from('ingressi_gare')
+    .select('tifoso_id, piano_nome, gara_id')
+
+  // Carica gare
+  const { data: gare } = await sbAdmin.from('gare')
+    .select('id, titolo, data_ora').order('data_ora')
+
+  if (!tifosi) { el.innerHTML = '<div style="color:var(--rosso);padding:20px">Errore caricamento dati</div>'; return }
+
+  // ── CALCOLI ──
+  const tot = tifosi.length
+  const uomini = tifosi.filter(t => t.sesso === 'M').length
+  const donne  = tifosi.filter(t => t.sesso === 'F').length
+  const senzaSesso = tot - uomini - donne
+
+  // Età media
+  const oggi = new Date()
+  const eta = tifosi
+    .filter(t => t.data_nascita)
+    .map(t => Math.floor((oggi - new Date(t.data_nascita)) / (365.25*24*3600*1000)))
+  const etaMedia = eta.length ? (eta.reduce((a,b) => a+b,0) / eta.length).toFixed(1) : '—'
+  const etaMin   = eta.length ? Math.min(...eta) : '—'
+  const etaMax   = eta.length ? Math.max(...eta) : '—'
+
+  // Per piano
+  const membMap = {}
+  ;(memberships || []).forEach(m => { membMap[m.tifoso_id] = m })
+  const perPiano = {}
+  ;(memberships || []).forEach(m => {
+    const p = m.piano?.nome || 'N/D'
+    perPiano[p] = (perPiano[p] || 0) + 1
+  })
+
+  // Taglie maglie
+  const taglie = {}
+  ;(memberships || []).filter(m => m.maglia_taglia).forEach(m => {
+    const t = m.maglia_taglia
+    taglie[t] = (taglie[t] || 0) + 1
+  })
+
+  // Presenze per tifoso
+  const presenzeMap = {}
+  ;(ingressi || []).forEach(i => {
+    presenzeMap[i.tifoso_id] = (presenzeMap[i.tifoso_id] || 0) + 1
+  })
+  const totalGare = (gare || []).length
+  const totalIngressi = (ingressi || []).length
+  const tifConPresenze = Object.keys(presenzeMap).length
+  const mediaPresenze = tifConPresenze ? (totalIngressi / tifConPresenze).toFixed(1) : '—'
+
+  // Tifosi con più presenze
+  const topTifosi = tifosi
+    .map(t => ({ ...t, presenze: presenzeMap[t.auth_user_id] || 0 }))
+    .sort((a,b) => b.presenze - a.presenze)
+    .slice(0, 5)
+
+  // Presenze per gara
+  const presenzePerGara = {}
+  ;(ingressi || []).forEach(i => {
+    presenzePerGara[i.gara_id] = (presenzePerGara[i.gara_id] || 0) + 1
+  })
+
+  // ── HTML ──
+  const kpiCard = (label, value, color='var(--accent)') =>
+    `<div style="background:var(--bg3);border-radius:10px;padding:16px;text-align:center">
+       <div style="font-size:26px;font-weight:800;color:${color}">${value}</div>
+       <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px">${label}</div>
+     </div>`
+
+  el.innerHTML = `
+    <!-- ANAGRAFICA -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:16px">👥 Anagrafica Tifosi</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
+        ${kpiCard('Totale tifosi', tot)}
+        ${kpiCard('Uomini', uomini, '#1565C0')}
+        ${kpiCard('Donne', donne, '#C2185B')}
+        ${kpiCard('Età media', etaMedia + ' anni', 'var(--gold)')}
+        ${kpiCard('Range età', etaMin + '–' + etaMax + ' anni', '#546E7A')}
+      </div>
+      <div style="font-size:12px;color:var(--muted)">${senzaSesso > 0 ? `⚠️ ${senzaSesso} tifosi senza sesso indicato` : '✅ Tutti i tifosi hanno indicato il sesso'}</div>
+    </div>
+
+    <!-- PER PIANO -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:16px">🎫 Fan Card per Piano</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        ${['Base','Bronze','Silver','Gold'].map(p => kpiCard(p, perPiano[p] || 0,
+          p==='Base'?'#546E7A':p==='Bronze'?'#8D4925':p==='Silver'?'#455A64':'#B8860B'
+        )).join('')}
+      </div>
+    </div>
+
+    <!-- TAGLIE MAGLIE -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:16px">👕 Taglie Maglie</div>
+      ${Object.keys(taglie).length ? `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px">
+        ${Object.entries(taglie).sort((a,b)=>b[1]-a[1]).map(([t,n]) =>
+          kpiCard(t, n, 'var(--arancio)')
+        ).join('')}
+      </div>` : '<div style="color:var(--muted);font-size:13px">Nessun dato maglia ancora inserito</div>'}
+    </div>
+
+    <!-- PRESENZE -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:16px">🏟️ Presenze al Palazzetto</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        ${kpiCard('Gare disputate', totalGare)}
+        ${kpiCard('Ingressi totali', totalIngressi, '#2E7D32')}
+        ${kpiCard('Tifosi presenti', tifConPresenze)}
+        ${kpiCard('Media presenze/tifoso', mediaPresenze, 'var(--gold)')}
+      </div>
+
+      ${topTifosi.filter(t=>t.presenze>0).length ? `
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Top 5 tifosi per presenze</div>
+      <table class="table">
+        <thead><tr><th>Tifoso</th><th>Piano</th><th style="text-align:center">Presenze</th><th style="text-align:center">% gare</th></tr></thead>
+        <tbody>
+          ${topTifosi.filter(t=>t.presenze>0).map(t => {
+            const memb = membMap[t.id]
+            const piano = memb?.piano?.nome || '—'
+            const pct = totalGare ? Math.round(t.presenze/totalGare*100) : 0
+            return `<tr>
+              <td><strong>${t.nome} ${t.cognome}</strong></td>
+              <td><span class="badge badge-amber">${piano}</span></td>
+              <td style="text-align:center;font-weight:700">${t.presenze}</td>
+              <td style="text-align:center">${pct}%</td>
+            </tr>`
+          }).join('')}
+        </tbody>
+      </table>` : '<div style="color:var(--muted);font-size:13px">Nessuna presenza registrata ancora</div>'}
+    </div>
+
+    <!-- PRESENZE PER GARA -->
+    ${(gare||[]).length ? `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">📅 Presenze per Gara</div>
+      <table class="table">
+        <thead><tr><th>Gara</th><th>Data</th><th style="text-align:center">Ingressi</th></tr></thead>
+        <tbody>
+          ${(gare||[]).map(g => {
+            const n = presenzePerGara[g.id] || 0
+            const data = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Rome'})
+            return `<tr>
+              <td>${g.titolo}</td>
+              <td style="font-size:12px;color:var(--muted)">${data}</td>
+              <td style="text-align:center;font-weight:700">${n}</td>
+            </tr>`
+          }).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+  `
 }
 
 async function loadMaglieSciarpe() {
