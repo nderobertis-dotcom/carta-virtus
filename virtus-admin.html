@@ -2200,6 +2200,8 @@ GARE RIMANENTI: ${gareDaDisputare.length}
   if (!win) { alert('Abilita i popup per stampare il report.'); return }
   win.document.open(); win.document.write(html); win.document.close()
 }
+
+async function salvaBiglietteria() {
   const garaId    = document.getElementById('bg-gara-id').value
   const biglietti = parseInt(document.getElementById('bg-biglietti').value) || 0
   const accrediti = parseInt(document.getElementById('bg-accrediti').value) || 0
