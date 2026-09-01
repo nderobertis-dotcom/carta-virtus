@@ -1746,12 +1746,8 @@ async function caricaStatoGrattaVinci() {
     const data = await resp.json()
     const attivo = data?.[0]?.valore === 'true'
     const section = document.getElementById('gratta-vinci-section')
-    if (section) section.style.display = attivo ? 'block' : 'block' // mostra sempre (coming soon gestito da modal)
-    // Nota: la sezione è sempre visibile se attivo=true o false
-    // Se attivo=false i pulsanti aprono il coming soon
-    // Se attivo=true i pulsanti aprono acquisto reale (futuro)
     if (section) {
-      section.style.display = 'block'
+      section.style.display = attivo ? 'block' : 'none'
       section.dataset.attivo = attivo ? 'true' : 'false'
     }
   } catch(e) { console.warn('GV stato:', e) }
