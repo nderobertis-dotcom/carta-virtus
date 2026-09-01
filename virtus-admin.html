@@ -489,6 +489,7 @@ select.form-input:focus{border-color:var(--accent)}
         <button class="btn btn-primary btn-sm" id="gv-tab-venditori" onclick="switchGvTab('venditori',this)">👤 Venditori</button>
         <button class="btn btn-ghost btn-sm" id="gv-tab-blocchi" onclick="switchGvTab('blocchi',this)">📦 Blocchi ticket</button>
         <button class="btn btn-ghost btn-sm" id="gv-tab-premi" onclick="switchGvTab('premi',this)">🎁 Premi</button>
+        <button class="btn btn-ghost btn-sm" id="gv-tab-regolamento" onclick="switchGvTab('regolamento',this)">📋 Regolamento</button>
         <button class="btn btn-ghost btn-sm" onclick="loadGrattaVinci()">↻ Aggiorna</button>
       </div>
       <div id="gv-panel-venditori">
@@ -535,9 +536,20 @@ select.form-input:focus{border-color:var(--accent)}
           </div>
         </div>
       </div>
-    </div>
+      <!-- Panel Regolamento -->
+      <div id="gv-panel-regolamento" style="display:none">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:8px">📋 Regolamento pubblico</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Il testo qui salvato viene mostrato ai tifosi nella landing page quando cliccano "Regolamento". Ogni riga vuota separa i paragrafi.</div>
+          <textarea id="gv-regolamento-text" style="width:100%;height:400px;font-family:monospace;font-size:13px;line-height:1.7;padding:12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);resize:vertical" placeholder="Inserisci il testo del regolamento..."></textarea>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px">
+            <button class="btn btn-ghost" onclick="loadGvRegolamento()">↻ Ricarica</button>
+            <button class="btn btn-primary" onclick="salvaGvRegolamento()">💾 Salva regolamento</button>
+          </div>
+        </div>
+      </div>
 
-    <div class="section" id="section-premi">
+    </div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button class="btn btn-primary btn-sm" id="tab-catalogo" onclick="switchPremioTab('catalogo')">🎁 Catalogo premi</button>
         <button class="btn btn-ghost btn-sm" id="tab-riscatti" onclick="switchPremioTab('riscatti')">📋 Riscatti</button>
@@ -2648,9 +2660,11 @@ function switchGvTab(tab, btn) {
   _gvTab = tab
   document.querySelectorAll('[id^="gv-tab-"]').forEach(b => b.classList.remove('btn-primary'))
   btn.classList.add('btn-primary')
-  document.getElementById('gv-panel-venditori').style.display = tab === 'venditori' ? 'block' : 'none'
-  document.getElementById('gv-panel-blocchi').style.display   = tab === 'blocchi'   ? 'block' : 'none'
-  document.getElementById('gv-panel-premi').style.display     = tab === 'premi'     ? 'block' : 'none'
+  document.getElementById('gv-panel-venditori').style.display   = tab === 'venditori'   ? 'block' : 'none'
+  document.getElementById('gv-panel-blocchi').style.display     = tab === 'blocchi'     ? 'block' : 'none'
+  document.getElementById('gv-panel-premi').style.display       = tab === 'premi'       ? 'block' : 'none'
+  document.getElementById('gv-panel-regolamento').style.display = tab === 'regolamento' ? 'block' : 'none'
+  if (tab === 'regolamento') loadGvRegolamento()
 }
 
 async function toggleGvAttivo() {
@@ -2661,6 +2675,20 @@ async function toggleGvAttivo() {
   await sbAdmin.from('impostazioni').update({ valore: nuovoVal }).eq('chiave','gratta_vinci_attivo')
   toast((nuovoVal==='true' ? '✅ Sezione attivata' : 'Sezione disattivata'), 'success')
   loadGrattaVinci()
+}
+
+async function loadGvRegolamento() {
+  const { data } = await sbAdmin.from('impostazioni').select('valore').eq('chiave','gv_regolamento').single()
+  const el = document.getElementById('gv-regolamento-text')
+  if (el) el.value = data?.valore || ''
+}
+
+async function salvaGvRegolamento() {
+  const testo = document.getElementById('gv-regolamento-text').value.trim()
+  if (!testo) { toast('Il regolamento non può essere vuoto','error'); return }
+  const { error } = await sbAdmin.from('impostazioni').upsert({ chiave: 'gv_regolamento', valore: testo })
+  if (error) { toast('Errore: '+error.message,'error'); return }
+  toast('✅ Regolamento salvato','success')
 }
 
 function apriModGvPremio(p) {
@@ -5455,6 +5483,8 @@ document.addEventListener('DOMContentLoaded', function() {
   window.loadMaglieSciarpe = loadMaglieSciarpe;
   window.switchMaglieTab = switchMaglieTab;
   window.loadMsReport = loadMsReport;
+  window.loadGvRegolamento = loadGvRegolamento;
+  window.salvaGvRegolamento = salvaGvRegolamento;
   window.apriModGvPremio = apriModGvPremio;
   window.salvaGvPremio = salvaGvPremio;
   window.eliminaGvPremio = eliminaGvPremio;
