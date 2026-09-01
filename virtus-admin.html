@@ -2025,7 +2025,7 @@ async function loadMsReport() {
             const ac = g.accrediti_concessi || 0
             const inc = parseFloat(g.incasso_eur||0)
             const rateo = rateoFanCardPerGara
-            const totGara = disputata ? (inc + rateo) : 0
+            const totGara = inc + rateo  // rateo sempre incluso, biglietteria solo se disputata
             const rowStyle = disputata ? '' : 'opacity:.5'
             return '<tr style="'+rowStyle+'">' +
               '<td><strong>'+g.titolo+'</strong>'+(disputata ? '' : ' <span style="font-size:10px;color:var(--muted)">(da disputare)</span>')+'</td>' +
@@ -2035,7 +2035,7 @@ async function loadMsReport() {
               '<td style="text-align:center">'+(disputata ? ac : '—')+'</td>' +
               '<td style="text-align:right">'+(disputata ? '€ '+inc.toFixed(2) : '—')+'</td>' +
               '<td style="text-align:right;color:var(--muted)">€ '+rateo.toFixed(2)+'</td>' +
-              '<td style="text-align:right;font-weight:600">'+(disputata ? '€ '+totGara.toFixed(2) : '—')+'</td>' +
+              '<td style="text-align:right;font-weight:600">€ '+totGara.toFixed(2)+'</td>' +
               '<td>'+(disputata ? '<button class="btn btn-ghost btn-sm" onclick="apriEditBiglietteria(\''+g.id+'\',\''+g.titolo.replace(/'/g,'')+'\','+bv+','+ac+','+inc+')">✏️</button>' : '')+'</td>' +
             '</tr>'
           }).join('')}
@@ -2230,7 +2230,7 @@ GARE RIMANENTI: ${gareDaDisputare.length}
         const ac = g.accrediti_concessi || 0
         const inc = parseFloat(g.incasso_eur||0)
         const rateo = rateoFanCardPerGara
-        const totGara = disp ? (inc + rateo) : 0
+        const totGara = inc + rateo  // rateo sempre incluso
         return `<tr style="${!disp ? 'opacity:.5;color:#999' : ''}">
           <td><strong>${g.avversario || g.titolo}</strong>${!disp ? ' <em style="font-size:10px">(da disputare)</em>' : ''}</td>
           <td>${data}</td>
@@ -2239,7 +2239,7 @@ GARE RIMANENTI: ${gareDaDisputare.length}
           <td style="text-align:center">${disp ? ac : '—'}</td>
           <td style="text-align:right">${disp ? '€'+inc.toFixed(2) : '—'}</td>
           <td style="text-align:right;color:#546E7A">€${rateo.toFixed(2)}</td>
-          <td style="text-align:right;font-weight:${disp?'700':'400'}">${disp ? '€'+totGara.toFixed(2) : '—'}</td>
+          <td style="text-align:right;font-weight:${disp?'700':'400'}">€${totGara.toFixed(2)}</td>
         </tr>`
       }).join('')}
       <tr class="total-row">
