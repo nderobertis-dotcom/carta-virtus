@@ -25,7 +25,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
 
-/* ── SIDEBAR ── */
+/*  SIDEBAR  */
 #sidebar{
   width:var(--sidebar-w);min-height:100vh;background:#1a3a6b;
   border-right:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;
@@ -61,7 +61,7 @@ nav{padding:16px 0;flex:1}
   background:none;border:none;width:100%;text-align:left;margin-top:8px}
 .logout-btn:hover{color:#fff}
 
-/* ── MAIN ── */
+/*  MAIN  */
 #main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
 .topbar{
   height:56px;background:#fff;border-bottom:1px solid var(--border);
@@ -81,12 +81,12 @@ nav{padding:16px 0;flex:1}
 .btn-danger{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
 .btn-sm{padding:5px 12px;font-size:11px}
 
-/* ── CONTENT ── */
+/*  CONTENT  */
 .content{padding:28px;flex:1}
 .section{display:none}
 .section.active{display:block}
 
-/* ── LOGIN ── */
+/*  LOGIN  */
 #login-screen{
   position:fixed;inset:0;background:var(--bg);display:flex;
   align-items:center;justify-content:center;z-index:999
@@ -109,7 +109,7 @@ nav{padding:16px 0;flex:1}
 .form-group input:focus{border-color:var(--accent)}
 .login-error{font-size:12px;color:#ef4444;margin-bottom:12px;display:none}
 
-/* ── STATS ── */
+/*  STATS  */
 .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:28px}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
 .stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
@@ -120,7 +120,7 @@ nav{padding:16px 0;flex:1}
 .stat-purple{color:var(--purple)}
 .stat-gold{color:var(--gold)}
 
-/* ── TABLES ── */
+/*  TABLES  */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
 .card-header{padding:16px 20px;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between}
@@ -142,7 +142,7 @@ tr:hover td{background:rgba(21,101,192,.03)}
 .pts{font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2)}
 .qr-code{font-family:monospace;font-size:11px;color:var(--muted);letter-spacing:.05em}
 
-/* ── MODAL ── */
+/*  MODAL  */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(15,40,80,.5);z-index:200;
   display:none;align-items:center;justify-content:center
@@ -160,7 +160,7 @@ tr:hover td{background:rgba(21,101,192,.03)}
 .modal-footer{padding:16px 24px;border-top:1px solid var(--border);
   display:flex;justify-content:flex-end;gap:10px}
 
-/* ── SEARCH ── */
+/*  SEARCH  */
 .search-bar{
   display:flex;align-items:center;gap:8px;background:var(--bg3);
   border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin-bottom:20px
@@ -169,16 +169,16 @@ tr:hover td{background:rgba(21,101,192,.03)}
   font-size:13px;font-family:'DM Sans',sans-serif;flex:1}
 .search-bar input::placeholder{color:var(--muted)}
 
-/* ── CHARTS ── */
+/*  CHARTS  */
 .mini-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:6px}
 .mini-bar-fill{height:100%;border-radius:2px;transition:width .5s}
 
-/* ── EMPTY STATE ── */
+/*  EMPTY STATE  */
 .empty{text-align:center;padding:48px 20px;color:var(--muted)}
 .empty-icon{font-size:36px;margin-bottom:12px;opacity:.4}
 .empty p{font-size:13px}
 
-/* ── TOAST ── */
+/*  TOAST  */
 #toast{
   position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border);
   border-radius:10px;padding:12px 18px;font-size:13px;color:var(--text);
@@ -189,7 +189,7 @@ tr:hover td{background:rgba(21,101,192,.03)}
 #toast.success{border-color:var(--teal);color:var(--teal)}
 #toast.error{border-color:#ef4444;color:#ef4444}
 
-/* ── FORM GRID ── */
+/*  FORM GRID  */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .form-grid .full{grid-column:1/-1}
 select.form-input{
@@ -199,10 +199,10 @@ select.form-input{
 }
 select.form-input:focus{border-color:var(--accent)}
 
-/* ── REPORT ── */
+/*  REPORT  */
 .report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
 
-/* ── SCROLLBAR ── */
+/*  SCROLLBAR  */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:var(--bg3)}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -488,6 +488,7 @@ select.form-input:focus{border-color:var(--accent)}
       <div style="display:flex;gap:8px;margin-bottom:20px">
         <button class="btn btn-primary btn-sm" id="gv-tab-venditori" onclick="switchGvTab('venditori',this)">👤 Venditori</button>
         <button class="btn btn-ghost btn-sm" id="gv-tab-blocchi" onclick="switchGvTab('blocchi',this)">📦 Blocchi ticket</button>
+        <button class="btn btn-ghost btn-sm" id="gv-tab-premi" onclick="switchGvTab('premi',this)">🎁 Premi</button>
         <button class="btn btn-ghost btn-sm" onclick="loadGrattaVinci()">↻ Aggiorna</button>
       </div>
       <div id="gv-panel-venditori">
@@ -509,6 +510,30 @@ select.form-input:focus{border-color:var(--accent)}
           <thead><tr><th>Da N°</th><th>A N°</th><th>Qtà</th><th>Venditore</th><th>Consegnato il</th><th>Note</th><th></th></tr></thead>
           <tbody id="gv-blocchi-list"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Caricamento...</td></tr></tbody>
         </table></div>
+      </div>
+
+      <!-- Panel Premi -->
+      <div id="gv-panel-premi" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600;color:var(--muted)">Premi immediati e premi estrazione finale</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-gv-premio')">+ Nuovo premio</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;border-left:3px solid var(--arancio);padding-left:8px;margin-bottom:10px">Premi immediati (grattando)</div>
+            <div class="card"><table class="table">
+              <thead><tr><th>Premio</th><th style="text-align:center">Qtà</th><th>Fornitore</th><th style="text-align:center">Ord.</th><th></th></tr></thead>
+              <tbody id="gv-premi-immediati-list"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">Nessun premio</td></tr></tbody>
+            </table></div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#2E7D32;text-transform:uppercase;letter-spacing:.08em;border-left:3px solid #2E7D32;padding-left:8px;margin-bottom:10px">Premi estrazione finale — 04/04/2027</div>
+            <div class="card"><table class="table">
+              <thead><tr><th>Premio</th><th style="text-align:center">Qtà</th><th>Fornitore</th><th style="text-align:center">Ord.</th><th></th></tr></thead>
+              <tbody id="gv-premi-estrazione-list"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">Nessun premio</td></tr></tbody>
+            </table></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -813,7 +838,7 @@ select.form-input:focus{border-color:var(--accent)}
       </div>
     </div>
 
-    <!-- ═══ MERCHANTS ═══ -->
+    <!--  MERCHANTS  -->
     <div class="section" id="section-merchants">
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
@@ -832,7 +857,7 @@ select.form-input:focus{border-color:var(--accent)}
       </div>
     </div>
 
-    <!-- ═══ CONTRATTI FOP ═══ -->
+    <!--  CONTRATTI FOP  -->
     <div class="section" id="section-fop-contratti">
       <div class="card">
         <div class="card-header">
@@ -860,7 +885,7 @@ select.form-input:focus{border-color:var(--accent)}
       </div>
     </div>
 
-    <!-- ═══ CATALOGO FOP ═══ -->
+    <!--  CATALOGO FOP  -->
     <div class="section" id="section-fop-catalogo">
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
@@ -1405,6 +1430,43 @@ select.form-input:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- MODAL: Premio GV -->
+<div class="modal-overlay" id="modal-gv-premio">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title" id="gv-premio-title">Nuovo premio</div>
+      <button class="modal-close" onclick="closeModal('modal-gv-premio')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="gv-p-id"/>
+      <div class="form-group">
+        <label>Tipo *</label>
+        <select class="form-input" id="gv-p-tipo">
+          <option value="immediato">Premio immediato (grattando)</option>
+          <option value="estrazione">Premio estrazione finale</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Descrizione *</label><input class="form-input" id="gv-p-desc" placeholder="Es. Maglia da gara autografata"/></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Quantità *</label><input class="form-input" id="gv-p-qty" type="number" min="1" value="1"/></div>
+        <div class="form-group"><label>Ordine visualizzazione</label><input class="form-input" id="gv-p-ordine" type="number" min="0" value="0"/></div>
+      </div>
+      <div class="form-group"><label>Fornitore / Sponsor</label><input class="form-input" id="gv-p-fornitore" placeholder="Es. Virtus, Nome sponsor..."/></div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="gv-p-attivo" checked style="width:15px;height:15px"/>
+          Visibile al pubblico
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-gv-premio')">Annulla</button>
+      <button class="btn btn-danger btn-sm" id="gv-p-elimina" style="display:none" onclick="eliminaGvPremio()">🗑️ Elimina</button>
+      <button class="btn btn-primary" onclick="salvaGvPremio()">Salva</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Nuovo venditore GV -->
 <div class="modal-overlay" id="modal-gv-venditore">
   <div class="modal" style="max-width:480px">
@@ -1572,7 +1634,7 @@ select.form-input:focus{border-color:var(--accent)}
 <div id="toast"></div>
 
 <script>
-// ── CONFIG ──
+//  CONFIG 
 const SUPABASE_URL = 'https://brwkwlyxkptzmkzkvava.supabase.co'
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI' // inserisci la tua anon key
 const { createClient } = supabase
@@ -1584,7 +1646,7 @@ let allPartner = []
 let categoriePartner = []
 let editingCategoriaId = null
 
-// ── AUTH ──
+//  AUTH 
 const ADMIN_PASSWORD = 'CartaVirtus2025!'
 const SUPABASE_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODUzMTc1MCwiZXhwIjoyMDk0MTA3NzUwfQ.Pb61V8euQwLt1KR-m29nr_s0F13gRXSToRiPPL6bLSQ'
 // sbAdmin con service key per operazioni privilegiate (invite, create user)
@@ -1870,7 +1932,7 @@ async function stampaCardAdmin(tifoso_id) {
   })
 }
 
-// ── MAGLIE & SCIARPE ──────────────────────────────────────
+//  MAGLIE & SCIARPE 
 let _msTab = 'maglie'
 let _msData = []
 
@@ -1920,7 +1982,7 @@ async function loadMsReport() {
 
   if (!tifosi) { el.innerHTML = '<div style="color:var(--rosso);padding:20px">Errore caricamento dati</div>'; return }
 
-  // ── CALCOLI ──
+  //  CALCOLI 
   const tot = tifosi.length
   const uomini = tifosi.filter(t => t.sesso === 'M').length
   const donne  = tifosi.filter(t => t.sesso === 'F').length
@@ -1996,7 +2058,7 @@ async function loadMsReport() {
     presenzePerGara[i.gara_id] = (presenzePerGara[i.gara_id] || 0) + 1
   })
 
-  // ── HTML ──
+  //  HTML 
   const kpiCard = (label, value, color='var(--accent)') =>
     `<div style="background:var(--bg3);border-radius:10px;padding:16px;text-align:center">
        <div style="font-size:26px;font-weight:800;color:${color}">${value}</div>
@@ -2496,7 +2558,7 @@ async function flagConsegna(membId, tipo, consegnata) {
   renderMaglieSciarpe()
 }
 
-// ── GRATTA & VINCI ADMIN ──────────────────────────────────
+//  GRATTA & VINCI ADMIN 
 let _gvVenditori = []
 let _gvTab = 'venditori'
 
@@ -2557,6 +2619,23 @@ async function loadGrattaVinci() {
     }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Nessun blocco assegnato</td></tr>'
   }
 
+  // Carica premi
+  const { data: premi } = await sbAdmin.from('gv_premi').select('*').order('tipo').order('ordine')
+  const renderRigaPremio = (p) => `<tr>
+    <td><strong>${p.descrizione}</strong>${!p.attivo ? ' <span style="font-size:10px;color:var(--muted)">(nascosto)</span>' : ''}</td>
+    <td style="text-align:center">${p.quantita}</td>
+    <td style="font-size:12px;color:var(--muted)">${p.fornitore||'—'}</td>
+    <td style="text-align:center">${p.ordine}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick='apriModGvPremio(${JSON.stringify(p).replace(/'/g,"&#39;")})'>✏️</button></td>
+  </tr>`
+
+  const pImmediati  = (premi||[]).filter(p => p.tipo === 'immediato')
+  const pEstrazione = (premi||[]).filter(p => p.tipo === 'estrazione')
+  const liIm = document.getElementById('gv-premi-immediati-list')
+  const liEs = document.getElementById('gv-premi-estrazione-list')
+  if (liIm) liIm.innerHTML = pImmediati.length ? pImmediati.map(renderRigaPremio).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:12px">Nessun premio</td></tr>'
+  if (liEs) liEs.innerHTML = pEstrazione.length ? pEstrazione.map(renderRigaPremio).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:12px">Nessun premio</td></tr>'
+
   // Aggiorna select venditore nel modal blocco
   const sel = document.getElementById('gv-b-venditore')
   if (sel) {
@@ -2571,6 +2650,7 @@ function switchGvTab(tab, btn) {
   btn.classList.add('btn-primary')
   document.getElementById('gv-panel-venditori').style.display = tab === 'venditori' ? 'block' : 'none'
   document.getElementById('gv-panel-blocchi').style.display   = tab === 'blocchi'   ? 'block' : 'none'
+  document.getElementById('gv-panel-premi').style.display     = tab === 'premi'     ? 'block' : 'none'
 }
 
 async function toggleGvAttivo() {
@@ -2580,6 +2660,51 @@ async function toggleGvAttivo() {
   if (!confirm((attivo ? 'Disattivare' : 'Attivare') + ' la sezione Gratta & Vinci nella landing page?')) return
   await sbAdmin.from('impostazioni').update({ valore: nuovoVal }).eq('chiave','gratta_vinci_attivo')
   toast((nuovoVal==='true' ? '✅ Sezione attivata' : 'Sezione disattivata'), 'success')
+  loadGrattaVinci()
+}
+
+function apriModGvPremio(p) {
+  document.getElementById('gv-premio-title').textContent = 'Modifica premio'
+  document.getElementById('gv-p-id').value       = p.id
+  document.getElementById('gv-p-tipo').value     = p.tipo
+  document.getElementById('gv-p-desc').value     = p.descrizione
+  document.getElementById('gv-p-qty').value      = p.quantita
+  document.getElementById('gv-p-ordine').value   = p.ordine
+  document.getElementById('gv-p-fornitore').value= p.fornitore||''
+  document.getElementById('gv-p-attivo').checked = p.attivo
+  document.getElementById('gv-p-elimina').style.display = 'block'
+  openModal('modal-gv-premio')
+}
+
+async function salvaGvPremio() {
+  const id = document.getElementById('gv-p-id').value
+  const payload = {
+    tipo:        document.getElementById('gv-p-tipo').value,
+    descrizione: document.getElementById('gv-p-desc').value.trim(),
+    quantita:    parseInt(document.getElementById('gv-p-qty').value)||1,
+    ordine:      parseInt(document.getElementById('gv-p-ordine').value)||0,
+    fornitore:   document.getElementById('gv-p-fornitore').value.trim()||null,
+    attivo:      document.getElementById('gv-p-attivo').checked,
+  }
+  if (!payload.descrizione) { toast('Descrizione obbligatoria','error'); return }
+  const { error } = id
+    ? await sbAdmin.from('gv_premi').update(payload).eq('id',id)
+    : await sbAdmin.from('gv_premi').insert(payload)
+  if (error) { toast('Errore: '+error.message,'error'); return }
+  document.getElementById('gv-p-id').value = ''
+  document.getElementById('gv-premio-title').textContent = 'Nuovo premio'
+  document.getElementById('gv-p-elimina').style.display = 'none'
+  toast('✅ Premio salvato','success')
+  closeModal('modal-gv-premio')
+  loadGrattaVinci()
+}
+
+async function eliminaGvPremio() {
+  const id = document.getElementById('gv-p-id').value
+  if (!id || !confirm('Eliminare questo premio?')) return
+  await sbAdmin.from('gv_premi').delete().eq('id',id)
+  toast('Premio eliminato','success')
+  closeModal('modal-gv-premio')
   loadGrattaVinci()
 }
 
@@ -2669,7 +2794,7 @@ async function eliminaGvBlocco(id) {
   loadGrattaVinci()
 }
 
-// ── NAV ──
+//  NAV 
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
@@ -2705,12 +2830,12 @@ function showSection(name) {
   if (name === 'fop-catalogo')  { loadFopProdotti(); loadFopPianta() }
 }
 
-// ── INIT ──
+//  INIT 
 async function initApp() {
   await Promise.all([loadDashboard(), loadPartnerList()])
 }
 
-// ── DASHBOARD ──
+//  DASHBOARD 
 async function loadDashboard() {
   const [{ count: nTifosi }, { count: nPartner }, { data: txData }, { count: nCoupon }, { count: nAttesa }] =
     await Promise.all([
@@ -2754,7 +2879,7 @@ async function loadDashboard() {
     </tr>`).join('')
 }
 
-// ── TIFOSI ──
+//  TIFOSI 
 async function loadTifosi() {
   const { data } = await sbAdmin.from('tifosi').select('*').order('creato_il', { ascending: false })
   allTifosi = data || []
@@ -2797,7 +2922,7 @@ function filterTifosi() {
     `${t.nome} ${t.cognome} ${t.email} ${t.citta||''} ${t.via||''}`.toLowerCase().includes(q)))
 }
 
-// ── PARTNER ──
+//  PARTNER 
 let editingPartnerId = null
 
 async function loadPartner() {
@@ -3330,7 +3455,7 @@ async function loadPartnerList() {
   document.getElementById('c-partner').innerHTML = '<option value="">— Tutti i partner —</option>' + opts
 }
 
-// ── PREMI ──
+//  PREMI 
 async function loadPremi() {
   const { data } = await sbAdmin.from('premi')
     .select('*, partner:partner_id(nome_negozio)').order('creato_il', { ascending: false })
@@ -3416,7 +3541,7 @@ async function togglePremio(id, attivo) {
   loadPremi()
 }
 
-// ── RISCATTI (ADMIN) ──
+//  RISCATTI (ADMIN) 
 let currentRiscatto = null
 
 function switchPremioTab(tab) {
@@ -3497,7 +3622,7 @@ async function annullaRiscatto() {
   loadRiscatti()
 }
 
-// ── CAMPAGNE ──
+//  CAMPAGNE 
 async function loadCampagne() {
   const { data } = await sbAdmin.from('campagne')
     .select('*, partner:partner_id(nome_negozio)').order('creato_il', { ascending: false })
@@ -3540,7 +3665,7 @@ async function disattivaCampagna(id) {
   loadCampagne()
 }
 
-// ── TRANSAZIONI ──
+//  TRANSAZIONI 
 async function loadTransazioni() {
   const { data } = await sbAdmin.from('transazioni')
     .select('*, tifoso:tifoso_id(nome,cognome), partner:partner_id(nome_negozio)')
@@ -3558,7 +3683,7 @@ async function loadTransazioni() {
     </tr>`).join('')
 }
 
-// ── REPORT ──
+//  REPORT 
 async function loadReport() {
   const { data: tx } = await sbAdmin.from('transazioni').select('tipo, punti_delta, importo_eur, partner_id, tifoso_id')
 
@@ -3597,7 +3722,7 @@ async function loadReport() {
     </tr>`).join('')
 }
 
-// ── DETTAGLIO TIFOSO ──
+//  DETTAGLIO TIFOSO 
 let currentDetTifoso = null
 
 async function openDettaglioTifoso(id) {
@@ -3777,7 +3902,7 @@ async function salvaAccompagnatore() {
   loadTifosi()
 }
 
-// ── BONUS ──
+//  BONUS 
 function openBonus(id, nome) {
   document.getElementById('bonus-tifoso-id').value = id
   document.getElementById('bonus-tifoso-nome').value = nome
@@ -3808,7 +3933,7 @@ async function salvaBonus() {
   loadTifosi()
 }
 
-// ── MODAL ──
+//  MODAL 
 function openModal(id) {
   if (id === 'modal-ricarica-diretta') loadTifosiSelectRicarica()
   document.getElementById(id).classList.add('open') }
@@ -3817,7 +3942,7 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open') })
 })
 
-// ── TOAST ──
+//  TOAST 
 function toast(msg, type = 'success') {
   const el = document.getElementById('toast')
   el.textContent = msg
@@ -3828,7 +3953,7 @@ function toast(msg, type = 'success') {
 
 
 
-// ── OPERATORI ──
+//  OPERATORI 
 let currentOpEmail = null
 let currentOpScansioni = []
 
@@ -3922,7 +4047,7 @@ function esportaScansioni() {
   URL.revokeObjectURL(url)
 }
 
-// ── GARE ──
+//  GARE 
 async function loadGare() {
   const { data, error } = await sbAdmin.from('gare')
     .select('*')
@@ -4112,7 +4237,7 @@ function esportaIngressi() {
     })
 }
 
-// ── MEMBERSHIP ──
+//  MEMBERSHIP 
 async function loadMembership(statoFiltro) {
   let query = sbAdmin.from('membership')
     .select('*, tifoso:tifoso_id(nome, cognome, email), piano:piano_id(nome, prezzo_eur)')
@@ -4170,7 +4295,7 @@ async function annullaMemb(id) {
   loadDashboard()
 }
 
-// ── GESTIONE POSTI ──
+//  GESTIONE POSTI 
 const ADMIN_MAPPA_POSTI = {
   sud: {
     file: ['E','D','C','B','A'],
@@ -4463,7 +4588,7 @@ async function setPosto(nuovoStato) {
   loadPosti()
 }
 
-// ── IMPOSTAZIONI ──
+//  IMPOSTAZIONI 
 let _tassoCorrente = 10
 
 async function loadImpostazioni() {
@@ -4512,7 +4637,7 @@ async function salvaTasso() {
   document.getElementById('tasso-ultimo-aggiornamento').textContent = 'Tasso attuale: ' + t + ' pt/€ — aggiornato ora'
 }
 
-// ── RICARICHE ──
+//  RICARICHE 
 let currentRicarica = null
 
 function switchTifosiTab(tab) {
@@ -4637,7 +4762,7 @@ async function loadTifosiSelectRicarica() {
   document.getElementById('rd-tifoso').innerHTML = '<option value="">— Seleziona tifoso —</option>' + opts
 }
 
-// ── EMETTI FAN CARD ──
+//  EMETTI FAN CARD 
 const PIANI_PREZZI = { base: 10, bronze: 30, silver: 50, gold: 100 }
 const PIANI_PUNTI_BENVENUTO = { base: 10, bronze: 30, silver: 50, gold: 100 }
 
@@ -4790,7 +4915,7 @@ async function emettiFantCard() {
     })
     if (tifErr) throw new Error('Errore tifoso: ' + tifErr.message)
 
-    // ── ACCOMPAGNATORE MINORE ──────────────────────────────
+    //  ACCOMPAGNATORE MINORE 
     if (accomp && annoMinore) {
       let docUrl = null
       if (docMinore) {
@@ -4811,7 +4936,7 @@ async function emettiFantCard() {
       }).eq('id', uid)
       if (docMinore) aggiornaContatorAccompagnatori()
     }
-    // ────────────────────────────────────────────────────────
+    // 
 
     // 3. Recupera piano_id da membership_piani
     const pianoNomeMap = { base: 'Base', bronze: 'Bronze', silver: 'Silver', gold: 'Gold' }
@@ -4905,14 +5030,14 @@ async function emettiFantCard() {
   }
 }
 
-// ── ENTER LOGIN ──
+//  ENTER LOGIN 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin()
 })
 
-// ════════════════════════════════════════════════════════
+// 
 // AREA COMMERCIALE FOP
-// ════════════════════════════════════════════════════════
+// 
 
 let fopMerchants = []
 let fopProdotti = []
@@ -4921,7 +5046,7 @@ let fopSlots = []
 let editingMerchantId = null
 let editingProdottoId = null
 
-// ── MERCHANTS ────────────────────────────────────────────
+//  MERCHANTS 
 async function loadMerchants() {
   const { data } = await sb.from('merchants').select('*').order('cognome')
   fopMerchants = data || []
@@ -5033,7 +5158,7 @@ async function toggleMerchant(id, attivo) {
   await loadMerchants()
 }
 
-// ── CONTRATTI FOP ────────────────────────────────────────
+//  CONTRATTI FOP 
 async function loadFopContratti() {
   const filtro = document.getElementById('fop-filtro-stato')?.value || ''
   let q = sb.from('fop_contratti')
@@ -5119,7 +5244,7 @@ async function annullaContratto(id) {
   await loadFopContratti()
 }
 
-// ── CATALOGO FOP ─────────────────────────────────────────
+//  CATALOGO FOP 
 async function loadFopProdotti() {
   const { data } = await sb.from('fop_prodotti').select('*').order('categoria')
   fopProdotti = data || []
@@ -5236,7 +5361,7 @@ async function resetOpzione(slotId) {
   await loadFopPianta()
 }
 
-// ── MODAL PRODOTTO FOP ────────────────────────────────────
+//  MODAL PRODOTTO FOP 
 function apriModalProdotto(id) {
   editingProdottoId = id || null
   const p = id ? fopProdotti.find(x => x.id === id) : null
@@ -5330,6 +5455,9 @@ document.addEventListener('DOMContentLoaded', function() {
   window.loadMaglieSciarpe = loadMaglieSciarpe;
   window.switchMaglieTab = switchMaglieTab;
   window.loadMsReport = loadMsReport;
+  window.apriModGvPremio = apriModGvPremio;
+  window.salvaGvPremio = salvaGvPremio;
+  window.eliminaGvPremio = eliminaGvPremio;
   window.loadGrattaVinci = loadGrattaVinci;
   window.switchGvTab = switchGvTab;
   window.toggleGvAttivo = toggleGvAttivo;
