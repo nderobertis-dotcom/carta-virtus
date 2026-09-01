@@ -1865,7 +1865,19 @@ async function loadMsReport() {
   const tifConPresenze = Object.keys(presenzeMap).length
   const mediaPresenze = tifConPresenze ? (totalIngressi / tifConPresenze).toFixed(1) : '—'
 
-  // Biglietteria stagionale
+  // Incasso Fan Card per piano
+  const prezziPiani = { Base: 10, Bronze: 30, Silver: 50, Gold: 100 }
+  const incassoFanCard = {}
+  let totIncassoFanCard = 0
+  ;['Base','Bronze','Silver','Gold'].forEach(p => {
+    const n = perPiano[p] || 0
+    const inc = n * (prezziPiani[p] || 0)
+    incassoFanCard[p] = inc
+    totIncassoFanCard += inc
+  })
+  // Rateo per gara (quota Fan Card / gare totali in calendario)
+  const totalGareCalendario = (gare||[]).length
+  const rateoFanCardPerGara = totalGareCalendario ? totIncassoFanCard / totalGareCalendario : 0
   const totBiglietti = (gare||[]).reduce((s,g) => s + (g.biglietti_venduti||0), 0)
   const totAccrediti  = (gare||[]).reduce((s,g) => s + (g.accrediti_concessi||0), 0)
   const totIncasso    = (gare||[]).reduce((s,g) => s + parseFloat(g.incasso_eur||0), 0)
@@ -1909,11 +1921,35 @@ async function loadMsReport() {
     <!-- PER PIANO -->
     <div class="card" style="margin-bottom:20px">
       <div class="card-title" style="margin-bottom:16px">🎫 Fan Card per Piano</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
-        ${['Base','Bronze','Silver','Gold'].map(p => kpiCard(p, perPiano[p] || 0,
-          p==='Base'?'#546E7A':p==='Bronze'?'#8D4925':p==='Silver'?'#455A64':'#B8860B'
-        )).join('')}
-      </div>
+      <table class="table" style="margin-bottom:12px">
+        <thead><tr>
+          <th>Piano</th><th style="text-align:center">Card emesse</th>
+          <th style="text-align:right">Prezzo</th><th style="text-align:right">Incasso</th>
+          <th style="text-align:right">Rateo/gara (${totalGareCalendario} gare)</th>
+        </tr></thead>
+        <tbody>
+          ${['Base','Bronze','Silver','Gold'].map(p => {
+            const n = perPiano[p] || 0
+            const pr = prezziPiani[p]
+            const inc = incassoFanCard[p]
+            const rateo = totalGareCalendario ? (inc/totalGareCalendario).toFixed(2) : '—'
+            return '<tr>' +
+              '<td><strong>'+p+'</strong></td>' +
+              '<td style="text-align:center">'+n+'</td>' +
+              '<td style="text-align:right">€ '+pr.toFixed(2)+'</td>' +
+              '<td style="text-align:right">€ '+inc.toFixed(2)+'</td>' +
+              '<td style="text-align:right">€ '+rateo+'</td>' +
+            '</tr>'
+          }).join('')}
+          <tr style="font-weight:700;border-top:2px solid var(--border);background:var(--bg3)">
+            <td>Totale</td>
+            <td style="text-align:center">${Object.values(perPiano).reduce((a,b)=>a+b,0)}</td>
+            <td></td>
+            <td style="text-align:right">€ ${totIncassoFanCard.toFixed(2)}</td>
+            <td style="text-align:right">€ ${rateoFanCardPerGara.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- TAGLIE MAGLIE -->
@@ -1975,7 +2011,10 @@ async function loadMsReport() {
         <thead><tr>
           <th>Gara</th><th>Data</th><th style="text-align:center">Fan Card</th>
           <th style="text-align:center">Biglietti</th><th style="text-align:center">Accrediti</th>
-          <th style="text-align:right">Incasso</th><th style="width:40px"></th>
+          <th style="text-align:right">Incasso biglietteria</th>
+          <th style="text-align:right">Rateo Fan Card</th>
+          <th style="text-align:right">Totale gara</th>
+          <th style="width:40px"></th>
         </tr></thead>
         <tbody>
           ${(gare||[]).map(g => {
@@ -1984,7 +2023,9 @@ async function loadMsReport() {
             const fanCard = presenzePerGara[g.id] || 0
             const bv = g.biglietti_venduti || 0
             const ac = g.accrediti_concessi || 0
-            const inc = parseFloat(g.incasso_eur||0).toFixed(2)
+            const inc = parseFloat(g.incasso_eur||0)
+            const rateo = rateoFanCardPerGara
+            const totGara = disputata ? (inc + rateo) : 0
             const rowStyle = disputata ? '' : 'opacity:.5'
             return '<tr style="'+rowStyle+'">' +
               '<td><strong>'+g.titolo+'</strong>'+(disputata ? '' : ' <span style="font-size:10px;color:var(--muted)">(da disputare)</span>')+'</td>' +
@@ -1992,7 +2033,9 @@ async function loadMsReport() {
               '<td style="text-align:center">'+fanCard+'</td>' +
               '<td style="text-align:center">'+(disputata ? bv : '—')+'</td>' +
               '<td style="text-align:center">'+(disputata ? ac : '—')+'</td>' +
-              '<td style="text-align:right">'+(disputata ? '€ '+inc : '—')+'</td>' +
+              '<td style="text-align:right">'+(disputata ? '€ '+inc.toFixed(2) : '—')+'</td>' +
+              '<td style="text-align:right;color:var(--muted)">€ '+rateo.toFixed(2)+'</td>' +
+              '<td style="text-align:right;font-weight:600">'+(disputata ? '€ '+totGara.toFixed(2) : '—')+'</td>' +
               '<td>'+(disputata ? '<button class="btn btn-ghost btn-sm" onclick="apriEditBiglietteria(\''+g.id+'\',\''+g.titolo.replace(/'/g,'')+'\','+bv+','+ac+','+inc+')">✏️</button>' : '')+'</td>' +
             '</tr>'
           }).join('')}
@@ -2001,12 +2044,16 @@ async function loadMsReport() {
             '<td style="text-align:center">'+totBiglietti+'</td>'+
             '<td style="text-align:center">'+totAccrediti+'</td>'+
             '<td style="text-align:right">€ '+totIncasso.toFixed(2)+'</td>'+
+            '<td style="text-align:right">€ '+totIncassoFanCard.toFixed(2)+'</td>'+
+            '<td style="text-align:right">€ '+(totIncasso+totIncassoFanCard).toFixed(2)+'</td>'+
             '<td></td></tr>' : ''}
           ${gareConDati > 1 ? '<tr style="color:var(--muted)">'+
             '<td colspan="3">Media per gara disputata</td>'+
             '<td style="text-align:center">'+mediaBiglietti+'</td>'+
             '<td style="text-align:center">'+(totAccrediti/gareConDati).toFixed(0)+'</td>'+
             '<td style="text-align:right">€ '+mediaIncasso+'</td>'+
+            '<td style="text-align:right">€ '+rateoFanCardPerGara.toFixed(2)+'</td>'+
+            '<td style="text-align:right">€ '+(parseFloat(mediaIncasso)+rateoFanCardPerGara).toFixed(2)+'</td>'+
             '<td></td></tr>' : ''}
         </tbody>
       </table>
