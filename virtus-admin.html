@@ -260,6 +260,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Categorie
     </div>
+    <div class="nav-item" onclick="showSection('gratta-vinci')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Gratta &amp; Vinci
+    </div>
     <div class="nav-item" onclick="showSection('premi')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
       Premi
@@ -463,6 +467,51 @@ select.form-input:focus{border-color:var(--accent)}
     </div>
 
     <!-- PREMI -->
+    <!-- SEZIONE: Gratta & Vinci -->
+    <div class="section" id="section-gratta-vinci">
+      <div class="section-header">
+        <div class="section-title">🎟️ Gratta &amp; Vinci Virtus</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span id="gv-stato-badge" class="badge badge-gray">—</span>
+          <button class="btn btn-primary btn-sm" onclick="toggleGvAttivo()">Attiva / Disattiva</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="card-title" style="margin-bottom:4px">Visibilità sezione pubblica</div>
+            <div style="font-size:13px;color:var(--muted)">Quando attiva la sezione appare nella landing. Quando disattivata resta nascosta.</div>
+          </div>
+          <div id="gv-toggle-stato" style="font-size:32px;cursor:pointer" onclick="toggleGvAttivo()">⬜</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button class="btn btn-primary btn-sm" id="gv-tab-venditori" onclick="switchGvTab('venditori',this)">👤 Venditori</button>
+        <button class="btn btn-ghost btn-sm" id="gv-tab-blocchi" onclick="switchGvTab('blocchi',this)">📦 Blocchi ticket</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadGrattaVinci()">↻ Aggiorna</button>
+      </div>
+      <div id="gv-panel-venditori">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600;color:var(--muted)">Venditori autorizzati</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-gv-venditore')">+ Nuovo venditore</button>
+        </div>
+        <div class="card"><table class="table">
+          <thead><tr><th>Nome</th><th>Telefono</th><th>Email</th><th>Stato</th><th>Ticket assegnati</th><th></th></tr></thead>
+          <tbody id="gv-venditori-list"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Caricamento...</td></tr></tbody>
+        </table></div>
+      </div>
+      <div id="gv-panel-blocchi" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600;color:var(--muted)">Distribuzione blocchi ticket</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-gv-blocco')">+ Assegna blocco</button>
+        </div>
+        <div class="card"><table class="table">
+          <thead><tr><th>Da N°</th><th>A N°</th><th>Qtà</th><th>Venditore</th><th>Consegnato il</th><th>Note</th><th></th></tr></thead>
+          <tbody id="gv-blocchi-list"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Caricamento...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
     <div class="section" id="section-premi">
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button class="btn btn-primary btn-sm" id="tab-catalogo" onclick="switchPremioTab('catalogo')">🎁 Catalogo premi</button>
@@ -1352,6 +1401,56 @@ select.form-input:focus{border-color:var(--accent)}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-emetti-fancard')">Annulla</button>
       <button class="btn btn-primary" id="fc-submit-btn" onclick="emettiFantCard()">🎫 Emetti e invia link</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuovo venditore GV -->
+<div class="modal-overlay" id="modal-gv-venditore">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" id="gv-venditore-title">Nuovo venditore</div>
+      <button class="modal-close" onclick="closeModal('modal-gv-venditore')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="gv-v-id"/>
+      <div class="form-grid">
+        <div class="form-group"><label>Nome *</label><input class="form-input" id="gv-v-nome"/></div>
+        <div class="form-group"><label>Cognome *</label><input class="form-input" id="gv-v-cognome"/></div>
+        <div class="form-group"><label>Telefono</label><input class="form-input" id="gv-v-tel" type="tel"/></div>
+        <div class="form-group"><label>Email</label><input class="form-input" id="gv-v-email" type="email"/></div>
+        <div class="full form-group"><label>Note</label><input class="form-input" id="gv-v-note" placeholder="Es. venditore zona nord..."/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-gv-venditore')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaGvVenditore()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Assegna blocco ticket GV -->
+<div class="modal-overlay" id="modal-gv-blocco">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" id="gv-blocco-title">Assegna blocco ticket</div>
+      <button class="modal-close" onclick="closeModal('modal-gv-blocco')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="gv-b-id"/>
+      <div class="form-grid">
+        <div class="form-group"><label>Venditore *</label>
+          <select class="form-input" id="gv-b-venditore"><option value="">— Seleziona —</option></select></div>
+        <div class="form-group"><label>Consegnato il</label><input class="form-input" id="gv-b-data" type="date"/></div>
+        <div class="form-group"><label>Da numero *</label><input class="form-input" id="gv-b-da" type="number" min="1" max="2000" onchange="aggiornaPreviewBlocco()"/></div>
+        <div class="form-group"><label>A numero *</label><input class="form-input" id="gv-b-a" type="number" min="1" max="2000" onchange="aggiornaPreviewBlocco()"/></div>
+        <div class="full form-group"><label>Note</label><input class="form-input" id="gv-b-note" placeholder="Es. gara del 15/10..."/></div>
+      </div>
+      <div id="gv-b-preview" style="font-size:13px;color:var(--accent);margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-gv-blocco')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaGvBlocco()">Salva</button>
     </div>
   </div>
 </div>
@@ -2397,6 +2496,179 @@ async function flagConsegna(membId, tipo, consegnata) {
   renderMaglieSciarpe()
 }
 
+// ── GRATTA & VINCI ADMIN ──────────────────────────────────
+let _gvVenditori = []
+let _gvTab = 'venditori'
+
+async function loadGrattaVinci() {
+  // Carica stato
+  const { data: impo } = await sbAdmin.from('impostazioni').select('valore').eq('chiave','gratta_vinci_attivo').single()
+  const attivo = impo?.valore === 'true'
+  const badge = document.getElementById('gv-stato-badge')
+  const toggle = document.getElementById('gv-toggle-stato')
+  if (badge) { badge.textContent = attivo ? 'Attiva' : 'Disattivata'; badge.className = 'badge ' + (attivo ? 'badge-green' : 'badge-gray') }
+  if (toggle) toggle.textContent = attivo ? '✅' : '⬜'
+
+  // Carica venditori
+  const { data: vend } = await sbAdmin.from('gv_venditori').select('*').order('cognome')
+  _gvVenditori = vend || []
+
+  // Carica blocchi con quantità assegnate
+  const { data: blocchi } = await sbAdmin.from('gv_blocchi').select('*, venditore:venditore_id(nome,cognome)').order('da_numero')
+
+  // Riepilogo ticket per venditore
+  const ticketPerVend = {}
+  ;(blocchi||[]).forEach(b => { if (b.venditore_id) ticketPerVend[b.venditore_id] = (ticketPerVend[b.venditore_id]||0) + (b.quantita||0) })
+
+  // Render venditori
+  const vlist = document.getElementById('gv-venditori-list')
+  if (vlist) {
+    vlist.innerHTML = _gvVenditori.length ? _gvVenditori.map(v => `<tr>
+      <td><strong>${v.nome} ${v.cognome}</strong></td>
+      <td>${v.telefono||'—'}</td>
+      <td style="font-size:12px">${v.email||'—'}</td>
+      <td><span class="badge ${v.attivo?'badge-green':'badge-gray'}">${v.attivo?'Attivo':'Inattivo'}</span></td>
+      <td style="text-align:center;font-weight:700">${ticketPerVend[v.id]||0}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick='apriModGvVenditore(${JSON.stringify(v)})'>✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleGvVenditore('${v.id}',${!v.attivo})">${v.attivo?'Disattiva':'Attiva'}</button>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Nessun venditore</td></tr>'
+  }
+
+  // Render blocchi
+  const blist = document.getElementById('gv-blocchi-list')
+  if (blist) {
+    blist.innerHTML = (blocchi||[]).length ? (blocchi||[]).map(b => {
+      const vname = b.venditore ? b.venditore.nome+' '+b.venditore.cognome : '—'
+      const dataConsegna = b.consegnato_il ? new Date(b.consegnato_il).toLocaleDateString('it-IT') : '—'
+      return `<tr>
+        <td style="font-weight:700">${b.da_numero}</td>
+        <td style="font-weight:700">${b.a_numero}</td>
+        <td style="text-align:center">${b.quantita}</td>
+        <td>${vname}</td>
+        <td style="font-size:12px">${dataConsegna}</td>
+        <td style="font-size:12px;color:var(--muted)">${b.note||'—'}</td>
+        <td style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick='apriModGvBlocco(${JSON.stringify(b)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminaGvBlocco('${b.id}')">🗑️</button>
+        </td>
+      </tr>`
+    }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Nessun blocco assegnato</td></tr>'
+  }
+
+  // Aggiorna select venditore nel modal blocco
+  const sel = document.getElementById('gv-b-venditore')
+  if (sel) {
+    sel.innerHTML = '<option value="">— Seleziona —</option>' +
+      _gvVenditori.filter(v=>v.attivo).map(v => `<option value="${v.id}">${v.nome} ${v.cognome}</option>`).join('')
+  }
+}
+
+function switchGvTab(tab, btn) {
+  _gvTab = tab
+  document.querySelectorAll('[id^="gv-tab-"]').forEach(b => b.classList.remove('btn-primary'))
+  btn.classList.add('btn-primary')
+  document.getElementById('gv-panel-venditori').style.display = tab === 'venditori' ? 'block' : 'none'
+  document.getElementById('gv-panel-blocchi').style.display   = tab === 'blocchi'   ? 'block' : 'none'
+}
+
+async function toggleGvAttivo() {
+  const badge = document.getElementById('gv-stato-badge')
+  const attivo = badge?.textContent === 'Attiva'
+  const nuovoVal = attivo ? 'false' : 'true'
+  if (!confirm((attivo ? 'Disattivare' : 'Attivare') + ' la sezione Gratta & Vinci nella landing page?')) return
+  await sbAdmin.from('impostazioni').update({ valore: nuovoVal }).eq('chiave','gratta_vinci_attivo')
+  toast((nuovoVal==='true' ? '✅ Sezione attivata' : 'Sezione disattivata'), 'success')
+  loadGrattaVinci()
+}
+
+function apriModGvVenditore(v) {
+  document.getElementById('gv-venditore-title').textContent = 'Modifica venditore'
+  document.getElementById('gv-v-id').value      = v.id
+  document.getElementById('gv-v-nome').value    = v.nome
+  document.getElementById('gv-v-cognome').value = v.cognome
+  document.getElementById('gv-v-tel').value     = v.telefono||''
+  document.getElementById('gv-v-email').value   = v.email||''
+  document.getElementById('gv-v-note').value    = v.note||''
+  openModal('modal-gv-venditore')
+}
+
+async function salvaGvVenditore() {
+  const id = document.getElementById('gv-v-id').value
+  const payload = {
+    nome:     document.getElementById('gv-v-nome').value.trim(),
+    cognome:  document.getElementById('gv-v-cognome').value.trim(),
+    telefono: document.getElementById('gv-v-tel').value.trim()||null,
+    email:    document.getElementById('gv-v-email').value.trim()||null,
+    note:     document.getElementById('gv-v-note').value.trim()||null,
+  }
+  if (!payload.nome||!payload.cognome) { toast('Nome e cognome obbligatori','error'); return }
+  const { error } = id
+    ? await sbAdmin.from('gv_venditori').update(payload).eq('id',id)
+    : await sbAdmin.from('gv_venditori').insert(payload)
+  if (error) { toast('Errore: '+error.message,'error'); return }
+  document.getElementById('gv-v-id').value = ''
+  document.getElementById('gv-venditore-title').textContent = 'Nuovo venditore'
+  toast('✅ Venditore salvato','success')
+  closeModal('modal-gv-venditore')
+  loadGrattaVinci()
+}
+
+async function toggleGvVenditore(id, attivo) {
+  await sbAdmin.from('gv_venditori').update({ attivo }).eq('id',id)
+  toast(attivo ? 'Venditore attivato' : 'Venditore disattivato','success')
+  loadGrattaVinci()
+}
+
+function apriModGvBlocco(b) {
+  document.getElementById('gv-blocco-title').textContent = 'Modifica blocco'
+  document.getElementById('gv-b-id').value        = b.id
+  document.getElementById('gv-b-venditore').value = b.venditore_id||''
+  document.getElementById('gv-b-da').value        = b.da_numero
+  document.getElementById('gv-b-a').value         = b.a_numero
+  document.getElementById('gv-b-data').value      = b.consegnato_il ? b.consegnato_il.split('T')[0] : ''
+  document.getElementById('gv-b-note').value      = b.note||''
+  aggiornaPreviewBlocco()
+  openModal('modal-gv-blocco')
+}
+
+function aggiornaPreviewBlocco() {
+  const da = parseInt(document.getElementById('gv-b-da').value)||0
+  const a  = parseInt(document.getElementById('gv-b-a').value)||0
+  const el = document.getElementById('gv-b-preview')
+  if (el && da && a && a >= da) el.textContent = 'Blocco di ' + (a-da+1) + ' ticket (N° '+da+' → '+a+')'
+  else if (el) el.textContent = ''
+}
+
+async function salvaGvBlocco() {
+  const id         = document.getElementById('gv-b-id').value
+  const vendId     = document.getElementById('gv-b-venditore').value
+  const da         = parseInt(document.getElementById('gv-b-da').value)||0
+  const a          = parseInt(document.getElementById('gv-b-a').value)||0
+  const dataConsegna = document.getElementById('gv-b-data').value||null
+  const note       = document.getElementById('gv-b-note').value.trim()||null
+  if (!vendId||!da||!a||a<da) { toast('Compila tutti i campi obbligatori','error'); return }
+  if (da < 1 || a > 2000) { toast('Numeri ticket fuori range (1-2000)','error'); return }
+  const payload = { venditore_id: vendId, da_numero: da, a_numero: a, consegnato_il: dataConsegna, note, aggiornato_il: new Date().toISOString() }
+  const { error } = id
+    ? await sbAdmin.from('gv_blocchi').update(payload).eq('id',id)
+    : await sbAdmin.from('gv_blocchi').insert(payload)
+  if (error) { toast('Errore: '+error.message,'error'); return }
+  document.getElementById('gv-b-id').value = ''
+  document.getElementById('gv-blocco-title').textContent = 'Assegna blocco ticket'
+  toast('✅ Blocco salvato','success')
+  closeModal('modal-gv-blocco')
+  loadGrattaVinci()
+}
+
+async function eliminaGvBlocco(id) {
+  if (!confirm('Eliminare questo blocco?')) return
+  await sbAdmin.from('gv_blocchi').delete().eq('id',id)
+  toast('Blocco eliminato','success')
+  loadGrattaVinci()
+}
+
 // ── NAV ──
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
@@ -2423,6 +2695,7 @@ function showSection(name) {
   if (name === 'posti')         loadPosti()
   if (name === 'transazioni')   loadTransazioni()
   if (name === 'report')        loadReport()
+  if (name === 'gratta-vinci')   loadGrattaVinci()
   if (name === 'maglie')         { loadMaglieSciarpe(); switchMaglieTab('maglie', document.getElementById('ms-tab-maglie')) }
   if (name === 'membership')    loadMembership('in_attesa')
   if (name === 'gare')          loadGare()
@@ -5057,6 +5330,16 @@ document.addEventListener('DOMContentLoaded', function() {
   window.loadMaglieSciarpe = loadMaglieSciarpe;
   window.switchMaglieTab = switchMaglieTab;
   window.loadMsReport = loadMsReport;
+  window.loadGrattaVinci = loadGrattaVinci;
+  window.switchGvTab = switchGvTab;
+  window.toggleGvAttivo = toggleGvAttivo;
+  window.salvaGvVenditore = salvaGvVenditore;
+  window.apriModGvVenditore = apriModGvVenditore;
+  window.toggleGvVenditore = toggleGvVenditore;
+  window.salvaGvBlocco = salvaGvBlocco;
+  window.apriModGvBlocco = apriModGvBlocco;
+  window.eliminaGvBlocco = eliminaGvBlocco;
+  window.aggiornaPreviewBlocco = aggiornaPreviewBlocco;
   window.stampaReportDirettivo = stampaReportDirettivo;
   window.apriEditBiglietteria = apriEditBiglietteria;
   window.salvaBiglietteria = salvaBiglietteria;
