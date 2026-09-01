@@ -60,17 +60,17 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 .posto-cell.disponibile{background:#E8F5E9;border-color:#4CAF50;color:#2E7D32}
 .posto-cell.occupato{background:#FFEBEE;border-color:#F44336;color:#C62828;opacity:.6}
 .piani-inner{max-width:1100px;margin:0 auto;padding:0 24px}
-/* ── BASE: 4 colonne desktop ── */
+/*  BASE: 4 colonne desktop  */
 .piani-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:48px}
 
-/* ── TABLET (≤1024px): 2 colonne ── */
+/*  TABLET (≤1024px): 2 colonne  */
 @media(max-width:1024px){
   .piani-grid{grid-template-columns:repeat(2,1fr) !important}
   .hero-inner{grid-template-columns:1fr;gap:40px}
   .steps{grid-template-columns:repeat(2,1fr)}
 }
 
-/* ── MOBILE (≤768px): colonna singola ── */
+/*  MOBILE (≤768px): colonna singola  */
 @media(max-width:768px){
   .piani-grid{display:flex !important;flex-direction:column !important;gap:16px !important}
   .piani-grid .piano{width:100% !important;max-width:100% !important}
@@ -87,7 +87,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
   .section{padding:48px 16px}
 }
 
-/* ── SMALL MOBILE (≤420px) ── */
+/*  SMALL MOBILE (≤420px)  */
 @media(max-width:420px){
   .piano-prezzo{font-size:38px}
   .piano-benefits li{font-size:13px}
@@ -1149,7 +1149,7 @@ const STRIPE_PRICE_IDS = {
 }
 let metodoPagamento = null
 
-// ── CAMPAGNE TIFOSO ──
+//  CAMPAGNE TIFOSO 
 async function loadCampagneTifoso() {
   const { data } = await sb.from('campagne')
     .select('*, partner:partner_id(nome_negozio)')
@@ -1187,7 +1187,7 @@ async function loadCampagneTifoso() {
   }).join('')
 }
 
-// ── PAYPAL ──
+//  PAYPAL 
 let _paypalCtx = null
 
 function apriPaypalModal(ctx) {
@@ -1259,7 +1259,7 @@ function apriPaypalModal(ctx) {
   }).render('#paypal-button-container')
 }
 
-// ── RICARICA PUNTI ──
+//  RICARICA PUNTI 
 let PUNTI_PER_EURO = 10  // valore default, aggiornato da Supabase
 let _ricaricaSelezionata = { punti: 0, importo: 0 }
 
@@ -1389,7 +1389,7 @@ async function inviaRichiestaricarica() {
 }
 
 
-// ── SCELTA POSTO ──
+//  SCELTA POSTO 
 const MAPPA_POSTI = {
   sud: {
     file: ['E','D','C','B','A'],
@@ -1731,7 +1731,7 @@ function stampaFanCard(dati) {
   win.document.close()
 }
 
-// ── GRATTA & VINCI ────────────────────────────────────────
+//  GRATTA & VINCI 
 async function caricaStatoGrattaVinci() {
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
   try {
@@ -1771,7 +1771,7 @@ function chiudiGvRegolamento() {
 window.apriGvComingSoon = apriGvComingSoon
 window.chiudiGvComingSoon = chiudiGvComingSoon
 window.apriGvRegolamento = apriGvRegolamento
-window.chiudiGvRegolamento = chiudiGvRegolamento────────────────────────────────────
+window.chiudiGvRegolamento = chiudiGvRegolamento
 let tuttiPartner = []
 let categoriaAttiva = 'tutti'
 let categorieMap = {}
@@ -1828,7 +1828,7 @@ function renderPartnerCards(partners) {
   }).join('')
 }
 
-// ── DISPONIBILITÀ POSTI PUBBLICI ──────────────────────────
+//  DISPONIBILITÀ POSTI PUBBLICI 
 const MAPPA_POSTI_PUB = {
   sud: {
     file: ['E','D','C','B','A'],
@@ -1985,7 +1985,7 @@ async function loadPartnerPubblici() {
   renderPartnerCards(tuttiPartner)
 }
 
-// ── CATALOGO PREMI ──
+//  CATALOGO PREMI 
 let currentPremioRiscatto = null
 let currentTifosoId = null
 let currentCardDati = null
