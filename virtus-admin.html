@@ -272,6 +272,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
       Maglie &amp; Sciarpe
     </div>
+    <div class="nav-item" onclick="showSection('report-stagionale')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Report
+    </div>
     <div class="nav-item" onclick="showSection('campagne')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       Campagne
@@ -550,6 +554,9 @@ select.form-input:focus{border-color:var(--accent)}
       </div>
 
     </div>
+
+    <!-- SEZIONE: Premi partner -->
+    <div class="section" id="section-premi">
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button class="btn btn-primary btn-sm" id="tab-catalogo" onclick="switchPremioTab('catalogo')">🎁 Catalogo premi</button>
         <button class="btn btn-ghost btn-sm" id="tab-riscatti" onclick="switchPremioTab('riscatti')">📋 Riscatti</button>
@@ -603,7 +610,6 @@ select.form-input:focus{border-color:var(--accent)}
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn btn-ghost btn-sm" id="ms-tab-maglie" onclick="switchMaglieTab('maglie',this)">👕 Maglie</button>
           <button class="btn btn-ghost btn-sm" id="ms-tab-sciarpe" onclick="switchMaglieTab('sciarpe',this)">🧣 Sciarpe</button>
-          <button class="btn btn-ghost btn-sm" id="ms-tab-report" onclick="switchMaglieTab('report',this)">📊 Report</button>
           <button class="btn btn-primary btn-sm" onclick="loadMaglieSciarpe()">↻ Aggiorna</button>
         </div>
       </div>
@@ -626,14 +632,18 @@ select.form-input:focus{border-color:var(--accent)}
           <tbody id="ms-list"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Seleziona una categoria</td></tr></tbody>
         </table>
       </div>
+    </div>
 
-      <!-- REPORT STATISTICO -->
-      <div id="ms-report-box" style="display:none">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
-          <button class="btn btn-primary" onclick="stampaReportDirettivo()">🖨️ Stampa / PDF Direttivo</button>
+    <!-- SEZIONE: Report -->
+    <div class="section" id="section-report-stagionale">
+      <div class="section-header">
+        <div class="section-title">📊 Report Stagionale</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="stampaReportDirettivo()">🖨️ Stampa / PDF Direttivo</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadMsReport()">↻ Aggiorna</button>
         </div>
-        <div id="ms-report-content"></div>
       </div>
+      <div id="ms-report-content"></div>
     </div>
 
     <div class="section" id="section-campagne">
@@ -1954,17 +1964,7 @@ function switchMaglieTab(tab, btn) {
   if (btn) btn.classList.add('btn-primary')
 
   const tableCard = document.querySelector('#section-maglie .card')
-  const reportBox = document.getElementById('ms-report-box')
-
-  if (tab === 'report') {
-    if (tableCard) tableCard.style.display = 'none'
-    if (reportBox) reportBox.style.display = 'block'
-    loadMsReport()
-    return
-  }
-
   if (tableCard) tableCard.style.display = 'block'
-  if (reportBox) reportBox.style.display = 'none'
   document.getElementById('ms-col-detail').textContent = tab === 'maglie' ? 'Taglia' : 'Inclusa nel piano'
   renderMaglieSciarpe()
 }
@@ -2849,7 +2849,8 @@ function showSection(name) {
   if (name === 'transazioni')   loadTransazioni()
   if (name === 'report')        loadReport()
   if (name === 'gratta-vinci')   loadGrattaVinci()
-  if (name === 'maglie')         { loadMaglieSciarpe(); switchMaglieTab('maglie', document.getElementById('ms-tab-maglie')) }
+  if (name === 'maglie')             { loadMaglieSciarpe(); switchMaglieTab('maglie', document.getElementById('ms-tab-maglie')) }
+  if (name === 'report-stagionale')  { loadMsReport() }
   if (name === 'membership')    loadMembership('in_attesa')
   if (name === 'gare')          loadGare()
   if (name === 'operatori')     loadOperatori()
