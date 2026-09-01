@@ -2079,7 +2079,7 @@ async function stampaReportDirettivo() {
 
   // Recupera dati freschi
   const { data: gare } = await sbAdmin.from('gare')
-    .select('id,titolo,data_ora,biglietti_venduti,accrediti_concessi,incasso_eur')
+    .select('id,titolo,avversario,data_ora,biglietti_venduti,accrediti_concessi,incasso_eur')
     .order('data_ora')
   const { data: tifosi } = await sbAdmin.from('tifosi').select('id,auth_user_id,nome,cognome,sesso,data_nascita,stato').eq('tipo','tifoso')
   const { data: memberships } = await sbAdmin.from('membership').select('tifoso_id,piano:piano_id(nome),stato').eq('stato','attiva')
@@ -2097,6 +2097,13 @@ async function stampaReportDirettivo() {
   const gareConDati  = gareDisputate.filter(g => (g.biglietti_venduti||0) > 0).length
   const perPiano     = {}
   ;(memberships||[]).forEach(m => { const p = m.piano?.nome||'N/D'; perPiano[p]=(perPiano[p]||0)+1 })
+
+  // Rateo Fan Card per gara
+  const prezziPiani = { Base: 10, Bronze: 30, Silver: 50, Gold: 100 }
+  let totIncassoFanCard = 0
+  ;['Base','Bronze','Silver','Gold'].forEach(p => { totIncassoFanCard += (perPiano[p]||0) * (prezziPiani[p]||0) })
+  const totalGareCalendario = (gare||[]).length
+  const rateoFanCardPerGara = totalGareCalendario ? totIncassoFanCard / totalGareCalendario : 0
 
   // Costruisce il contesto per l'AI
   const contesto = `
@@ -2205,18 +2212,34 @@ GARE RIMANENTI: ${gareDaDisputare.length}
 
   <div class="titolo-sezione">Dettaglio Gare</div>
   <table>
-    <thead><tr><th>Gara</th><th>Data</th><th style="text-align:center">Fan Card</th><th style="text-align:center">Biglietti</th><th style="text-align:center">Accrediti</th><th style="text-align:right">Incasso</th></tr></thead>
+    <thead><tr>
+      <th>Avversario</th><th>Data</th>
+      <th style="text-align:center">Fan Card</th>
+      <th style="text-align:center">Biglietti</th>
+      <th style="text-align:center">Accrediti</th>
+      <th style="text-align:right">Biglietteria</th>
+      <th style="text-align:right">Rateo Fan Card</th>
+      <th style="text-align:right">Totale gara</th>
+    </tr></thead>
     <tbody>
       ${gare.map(g => {
         const disp = new Date(g.data_ora) < ora
         const data = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Rome'})
-        return `<tr>
-          <td>${g.titolo}${!disp ? ' <em style="color:#999;font-size:10px">(da disputare)</em>' : ''}</td>
+        const fanCard = presenzePerGara[g.id] || 0
+        const bv = g.biglietti_venduti || 0
+        const ac = g.accrediti_concessi || 0
+        const inc = parseFloat(g.incasso_eur||0)
+        const rateo = rateoFanCardPerGara
+        const totGara = disp ? (inc + rateo) : 0
+        return `<tr style="${!disp ? 'opacity:.5;color:#999' : ''}">
+          <td><strong>${g.avversario || g.titolo}</strong>${!disp ? ' <em style="font-size:10px">(da disputare)</em>' : ''}</td>
           <td>${data}</td>
-          <td style="text-align:center">${presenzePerGara[g.id]||0}</td>
-          <td style="text-align:center">${disp ? (g.biglietti_venduti||0) : '—'}</td>
-          <td style="text-align:center">${disp ? (g.accrediti_concessi||0) : '—'}</td>
-          <td style="text-align:right">${disp ? '€'+parseFloat(g.incasso_eur||0).toFixed(2) : '—'}</td>
+          <td style="text-align:center">${fanCard}</td>
+          <td style="text-align:center">${disp ? bv : '—'}</td>
+          <td style="text-align:center">${disp ? ac : '—'}</td>
+          <td style="text-align:right">${disp ? '€'+inc.toFixed(2) : '—'}</td>
+          <td style="text-align:right;color:#546E7A">€${rateo.toFixed(2)}</td>
+          <td style="text-align:right;font-weight:${disp?'700':'400'}">${disp ? '€'+totGara.toFixed(2) : '—'}</td>
         </tr>`
       }).join('')}
       <tr class="total-row">
@@ -2225,13 +2248,17 @@ GARE RIMANENTI: ${gareDaDisputare.length}
         <td style="text-align:center">${totBiglietti}</td>
         <td style="text-align:center">${totAccrediti}</td>
         <td style="text-align:right">€${totIncasso.toFixed(2)}</td>
+        <td style="text-align:right">€${totIncassoFanCard.toFixed(2)}</td>
+        <td style="text-align:right">€${(totIncasso+totIncassoFanCard).toFixed(2)}</td>
       </tr>
-      ${gareConDati > 1 ? `<tr>
-        <td colspan="2" style="color:#546E7A">Media per gara disputata</td>
-        <td style="text-align:center;color:#546E7A">${gareDisputate.length ? (totIngressi/gareDisputate.length).toFixed(1) : '—'}</td>
-        <td style="text-align:center;color:#546E7A">${(totBiglietti/gareConDati).toFixed(0)}</td>
-        <td style="text-align:center;color:#546E7A">${(totAccrediti/gareConDati).toFixed(0)}</td>
-        <td style="text-align:right;color:#546E7A">€${(totIncasso/gareConDati).toFixed(2)}</td>
+      ${gareConDati > 1 ? `<tr style="color:#546E7A;font-size:10px">
+        <td colspan="2">Media per gara disputata</td>
+        <td style="text-align:center">${gareDisputate.length ? (totIngressi/gareDisputate.length).toFixed(1) : '—'}</td>
+        <td style="text-align:center">${(totBiglietti/gareConDati).toFixed(0)}</td>
+        <td style="text-align:center">${(totAccrediti/gareConDati).toFixed(0)}</td>
+        <td style="text-align:right">€${(totIncasso/gareConDati).toFixed(2)}</td>
+        <td style="text-align:right">€${rateoFanCardPerGara.toFixed(2)}</td>
+        <td style="text-align:right">€${((totIncasso/gareConDati)+rateoFanCardPerGara).toFixed(2)}</td>
       </tr>` : ''}
     </tbody>
   </table>
