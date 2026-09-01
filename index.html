@@ -608,10 +608,27 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     </div>
     <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
       <button onclick="apriGvComingSoon()" style="background:#F57C00;color:#fff;border:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">🎟️ Acquista il ticket</button>
+      <button onclick="apriGvPremi()" style="background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.3);padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">🎁 Elenco premi</button>
       <button onclick="apriGvRegolamento()" style="background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.3);padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">📋 Regolamento</button>
     </div>
   </div>
 </section>
+
+<!-- MODAL: Elenco Premi GV -->
+<div id="modal-gv-premi" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:32px;max-width:620px;width:90%;margin:24px auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #1A3A6B">
+      <div style="font-size:18px;font-weight:800;color:#1A3A6B">🎁 Elenco Premi</div>
+      <button onclick="chiudiGvPremi()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#546E7A">×</button>
+    </div>
+    <div id="gv-premi-content" style="max-height:65vh;overflow-y:auto">
+      <div style="text-align:center;color:#546E7A;padding:20px">Caricamento premi...</div>
+    </div>
+    <div style="text-align:center;margin-top:20px">
+      <button onclick="chiudiGvPremi()" style="background:#1A3A6B;color:#fff;border:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Chiudi</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: Coming Soon -->
 <div id="modal-gv-coming-soon" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center">
@@ -1752,7 +1769,53 @@ async function caricaStatoGrattaVinci() {
   } catch(e) { console.warn('GV stato:', e) }
 }
 
-function apriGvComingSoon() {
+async function apriGvPremi() {
+  const el = document.getElementById('modal-gv-premi')
+  if (el) el.style.display = 'flex'
+  const content = document.getElementById('gv-premi-content')
+  if (!content) return
+  content.innerHTML = '<div style="text-align:center;color:#546E7A;padding:20px">Caricamento...</div>'
+
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
+  try {
+    const resp = await fetch('https://brwkwlyxkptzmkzkvava.supabase.co/rest/v1/gv_premi?attivo=eq.true&order=tipo,ordine', {
+      headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+    })
+    const data = await resp.json()
+    if (!Array.isArray(data) || !data.length) {
+      content.innerHTML = '<div style="text-align:center;color:#546E7A;padding:20px">Elenco premi in aggiornamento. Riprova più tardi.</div>'
+      return
+    }
+    const immediati  = data.filter(p => p.tipo === 'immediato')
+    const estrazione = data.filter(p => p.tipo === 'estrazione')
+
+    const renderPremi = (list) => list.map(p => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f0">
+        <div style="background:#F57C00;color:#fff;font-size:11px;font-weight:800;border-radius:20px;padding:2px 10px;white-space:nowrap">x${p.quantita}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600;color:#1A3A6B">${p.descrizione}</div>
+          ${p.fornitore ? '<div style="font-size:11px;color:#546E7A">Offerto da: '+p.fornitore+'</div>' : ''}
+        </div>
+      </div>`).join('')
+
+    content.innerHTML = `
+      ${immediati.length ? `
+        <div style="font-size:11px;font-weight:800;color:#1A3A6B;text-transform:uppercase;letter-spacing:.1em;border-left:3px solid #F57C00;padding-left:8px;margin-bottom:12px">Premi immediati (grattando)</div>
+        ${renderPremi(immediati)}
+      ` : ''}
+      ${estrazione.length ? `
+        <div style="font-size:11px;font-weight:800;color:#1A3A6B;text-transform:uppercase;letter-spacing:.1em;border-left:3px solid #2E7D32;padding-left:8px;margin:20px 0 12px">Premi estrazione finale — 04/04/2027</div>
+        ${renderPremi(estrazione)}
+      ` : ''}
+      <div style="margin-top:16px;font-size:11px;color:#9E9E9E;text-align:center">I premi sono offerti da sponsor locali. Soggetti a disponibilità.</div>
+    `
+  } catch(e) {
+    content.innerHTML = '<div style="color:#e53935;padding:20px;text-align:center">Impossibile caricare i premi.</div>'
+  }
+}
+function chiudiGvPremi() { document.getElementById('modal-gv-premi').style.display = 'none' }
+window.apriGvPremi = apriGvPremi
+window.chiudiGvPremi = chiudiGvPremi
   const el = document.getElementById('modal-gv-coming-soon')
   if (el) el.style.display = 'flex'
 }
