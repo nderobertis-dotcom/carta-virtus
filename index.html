@@ -586,6 +586,70 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 
 
 
+<!-- GRATTA & VINCI VIRTUS -->
+<section id="gratta-vinci-section" style="display:none;background:linear-gradient(135deg,#0D2147 0%,#1A3A6B 100%);padding:80px 0">
+  <div style="max-width:1100px;margin:0 auto;padding:0 24px;text-align:center">
+    <div style="display:inline-block;background:#F57C00;color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:4px 14px;border-radius:20px;margin-bottom:16px">Novità</div>
+    <div style="font-size:36px;font-weight:900;color:#fff;margin-bottom:12px">🎟️ Gratta &amp; Vinci Virtus</div>
+    <div style="font-size:17px;color:rgba(255,255,255,.75);margin-bottom:40px;max-width:600px;margin-left:auto;margin-right:auto">La lotteria del tifoso. 2.000 ticket a soli € 3,00. Premi immediati e un'estrazione finale esclusiva.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:800px;margin:0 auto 40px">
+      <div style="background:rgba(255,255,255,.08);border-radius:12px;padding:24px">
+        <div style="font-size:32px;font-weight:900;color:#F57C00">2.000</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px">Ticket disponibili</div>
+      </div>
+      <div style="background:rgba(255,255,255,.08);border-radius:12px;padding:24px">
+        <div style="font-size:32px;font-weight:900;color:#F57C00">€ 3,00</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px">Prezzo per ticket</div>
+      </div>
+      <div style="background:rgba(255,255,255,.08);border-radius:12px;padding:24px">
+        <div style="font-size:32px;font-weight:900;color:#F57C00">04/04/27</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px">Estrazione finale</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+      <button onclick="apriGvComingSoon()" style="background:#F57C00;color:#fff;border:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">🎟️ Acquista il ticket</button>
+      <button onclick="apriGvRegolamento()" style="background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.3);padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">📋 Regolamento</button>
+    </div>
+  </div>
+</section>
+
+<!-- MODAL: Coming Soon -->
+<div id="modal-gv-coming-soon" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:40px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="font-size:48px;margin-bottom:12px">⏳</div>
+    <div style="font-size:22px;font-weight:800;color:#1A3A6B;margin-bottom:10px">Coming Soon</div>
+    <div style="font-size:14px;color:#546E7A;margin-bottom:24px">La vendita dei ticket sarà disponibile a breve presso il botteghino del PalaPoli durante le gare casalinghe.</div>
+    <div style="font-size:13px;color:#F57C00;font-weight:600;margin-bottom:20px">📅 Estrazione finale: 04 Aprile 2027</div>
+    <button onclick="chiudiGvComingSoon()" style="background:#1A3A6B;color:#fff;border:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Chiudi</button>
+  </div>
+</div>
+
+<!-- MODAL: Regolamento -->
+<div id="modal-gv-regolamento" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:32px;max-width:680px;width:90%;margin:24px auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #1A3A6B">
+      <div style="font-size:18px;font-weight:800;color:#1A3A6B">📋 Regolamento Gratta &amp; Vinci Virtus</div>
+      <button onclick="chiudiGvRegolamento()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#546E7A">×</button>
+    </div>
+    <div style="font-size:12px;color:#546E7A;line-height:1.8;max-height:60vh;overflow-y:auto">
+      <p><strong>Art. 1 — Soggetto promotore</strong><br>SSD Pol. Virtus 2014 Srl, Via Martiri di Via Fani c/o PalaPoli, 70056 Molfetta (BA), P.IVA 07659340728.</p>
+      <p style="margin-top:10px"><strong>Art. 2 — Oggetto e durata</strong><br>Emissione di n. 2.000 ticket a € 3,00 cadauno con premi immediati ed estrazione finale pubblica il 04/04/2027.</p>
+      <p style="margin-top:10px"><strong>Art. 3 — Partecipazione</strong><br>Aperta a chiunque acquisti un ticket. Esclusi dipendenti del Promotore e familiari di primo grado.</p>
+      <p style="margin-top:10px"><strong>Art. 4 — Modalità di vendita</strong><br>Ticket disponibili al botteghino del PalaPoli durante le gare casalinghe e presso i partner convenzionati. Vendita fino ad esaurimento e non oltre il 31/03/2027.</p>
+      <p style="margin-top:10px"><strong>Art. 5 — Premi immediati</strong><br>Premi disponibili: n. 5 maglie autografate, n. 3 abbonamenti Fan Card Silver, n. 20 gadget Virtus, n. 50 voucher sponsor locali, n. 100 gadget minori. Percentuale vincente: ~8,9%.</p>
+      <p style="margin-top:10px"><strong>Art. 6 — Ritiro premi immediati</strong><br>Entro 30 giorni dall'acquisto presso il PalaPoli, presentando ticket vincente integro e documento d'identità.</p>
+      <p style="margin-top:10px"><strong>Art. 7 — Estrazione finale</strong><br>Il talloncino integro sul retro partecipa all'estrazione pubblica del 04/04/2027 al PalaPoli. Talloncino da consegnare entro il 31/03/2027.</p>
+      <p style="margin-top:10px"><strong>Art. 8 — Premio estrazione finale</strong><br>Premio principale comunicato prima dell'estrazione. Non convertibile in denaro.</p>
+      <p style="margin-top:10px"><strong>Art. 9 — Responsabilità</strong><br>Il Promotore non è responsabile per danni derivanti dalla partecipazione, salvo dolo o colpa grave.</p>
+      <p style="margin-top:10px"><strong>Art. 10 — Privacy</strong><br>Dati trattati ai sensi del GDPR 2016/679. Titolare: SSD Pol. Virtus 2014 Srl.</p>
+      <p style="margin-top:10px"><strong>Art. 11 — Disposizioni finali</strong><br>La partecipazione implica accettazione del regolamento. Foro competente: Bari.</p>
+    </div>
+    <div style="text-align:center;margin-top:20px">
+      <button onclick="chiudiGvRegolamento()" style="background:#1A3A6B;color:#fff;border:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 <footer>
   <strong>VIRTUS FAN CARD — Nuova Virtus Basket Molfetta</strong>
   Programma fedelta ufficiale · Stagione 2026/2027
@@ -1667,7 +1731,47 @@ function stampaFanCard(dati) {
   win.document.close()
 }
 
-// ── PARTNER PUBBLICI ──────────────────────────────────────
+// ── GRATTA & VINCI ────────────────────────────────────────
+async function caricaStatoGrattaVinci() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
+  try {
+    const resp = await fetch('https://brwkwlyxkptzmkzkvava.supabase.co/rest/v1/impostazioni?chiave=eq.gratta_vinci_attivo&select=valore', {
+      headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+    })
+    const data = await resp.json()
+    const attivo = data?.[0]?.valore === 'true'
+    const section = document.getElementById('gratta-vinci-section')
+    if (section) section.style.display = attivo ? 'block' : 'block' // mostra sempre (coming soon gestito da modal)
+    // Nota: la sezione è sempre visibile se attivo=true o false
+    // Se attivo=false i pulsanti aprono il coming soon
+    // Se attivo=true i pulsanti aprono acquisto reale (futuro)
+    if (section) {
+      section.style.display = 'block'
+      section.dataset.attivo = attivo ? 'true' : 'false'
+    }
+  } catch(e) { console.warn('GV stato:', e) }
+}
+
+function apriGvComingSoon() {
+  const el = document.getElementById('modal-gv-coming-soon')
+  if (el) el.style.display = 'flex'
+}
+function chiudiGvComingSoon() {
+  const el = document.getElementById('modal-gv-coming-soon')
+  if (el) el.style.display = 'none'
+}
+function apriGvRegolamento() {
+  const el = document.getElementById('modal-gv-regolamento')
+  if (el) el.style.display = 'flex'
+}
+function chiudiGvRegolamento() {
+  const el = document.getElementById('modal-gv-regolamento')
+  if (el) el.style.display = 'none'
+}
+window.apriGvComingSoon = apriGvComingSoon
+window.chiudiGvComingSoon = chiudiGvComingSoon
+window.apriGvRegolamento = apriGvRegolamento
+window.chiudiGvRegolamento = chiudiGvRegolamento────────────────────────────────────
 let tuttiPartner = []
 let categoriaAttiva = 'tutti'
 let categorieMap = {}
@@ -2090,6 +2194,7 @@ window.addEventListener('load', async () => {
   loadCatalogoPublic(false, 0)
   loadPartnerPubblici()
   caricaPostiPubblici()
+  caricaStatoGrattaVinci()
   gestisciResetRedirect()
   const { count } = await sb.from('partner').select('*', { count: 'exact', head: true }).eq('attivo', true)
   const el = document.getElementById('stat-partner-count')
