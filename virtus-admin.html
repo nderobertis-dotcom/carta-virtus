@@ -4936,6 +4936,7 @@ async function emettiFantCard() {
 
     const { error: tifErr } = await sbAdmin.from('tifosi').insert({
       id: uid,
+      auth_user_id: uid,
       nome, cognome, email,
       telefono: telefono || null,
       data_nascita: nascita || null,
