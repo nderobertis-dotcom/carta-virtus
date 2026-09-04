@@ -4982,7 +4982,7 @@ async function emettiFantCard() {
       metodo_pagamento: metodo,
       stato: 'attiva',
       valida_dal: oggi,
-      scade_il: scadenza.toISOString().split('T')[0]
+      valida_fino: scadenza.toISOString().split('T')[0]
     }
     if (hasMaglia) {
       membPayload.maglia_taglia  = magliaTaglia
