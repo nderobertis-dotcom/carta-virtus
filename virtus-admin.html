@@ -447,7 +447,7 @@ select.form-input:focus{border-color:var(--accent)}
         </div>
         <div class="card-body">
           <table>
-            <thead><tr><th>Negozio</th><th>Categoria</th><th>CF / P.IVA</th><th>Referente</th><th>Punti/€</th><th>Accordo</th><th>Stato</th><th></th></tr></thead>
+            <thead><tr><th>Negozio</th><th>Categoria</th><th>CF / P.IVA</th><th>Referente</th><th style="text-align:center">Comunicazioni</th><th>Punti/€</th><th>Accordo</th><th>Stato</th><th></th></tr></thead>
             <tbody id="partner-list"></tbody>
           </table>
         </div>
@@ -2954,10 +2954,31 @@ function filterTifosi() {
 //  PARTNER 
 let editingPartnerId = null
 
+async function toggleEmailBenvenuto(id, stato) {
+  const payload = { email_benvenuto_inviata: stato, email_benvenuto_il: stato ? new Date().toISOString() : null }
+  const { error } = await sbAdmin.from('partner').update(payload).eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast(stato ? '✅ Email benvenuto segnata come inviata' : 'Stato email rimosso', 'success')
+  loadPartner()
+}
+
+async function toggleDocIntesa(id, stato) {
+  const payload = { documento_intesa_inviato: stato, documento_intesa_il: stato ? new Date().toISOString() : null }
+  const { error } = await sbAdmin.from('partner').update(payload).eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast(stato ? '✅ Documento intesa segnato come inviato' : 'Stato documento rimosso', 'success')
+  loadPartner()
+}
+
 async function loadPartner() {
   const { data } = await sbAdmin.from('partner').select('*').order('nome_negozio')
   allPartner = data || []
-  document.getElementById('partner-list').innerHTML = allPartner.map(p => `
+  document.getElementById('partner-list').innerHTML = allPartner.map(p => {
+    const emailInviata = p.email_benvenuto_inviata
+    const emailIl = p.email_benvenuto_il ? new Date(p.email_benvenuto_il).toLocaleDateString('it-IT') : ''
+    const docInviato = p.documento_intesa_inviato
+    const docIl = p.documento_intesa_il ? new Date(p.documento_intesa_il).toLocaleDateString('it-IT') : ''
+    return `
     <tr>
       <td><strong>${p.nome_negozio}</strong>${p.indirizzo ? `<br><span style="color:var(--muted);font-size:11px">${p.indirizzo}</span>` : ''}</td>
       <td><span class="badge badge-gray">${p.categoria}</span></td>
@@ -2967,6 +2988,18 @@ async function loadPartner() {
         ${!p.codice_fiscale && !p.partita_iva ? '—' : ''}
       </td>
       <td style="font-size:12px">${p.referente_nome || '—'}<br><span style="color:var(--muted);font-size:11px">${p.referente_email || ''}</span></td>
+      <td style="text-align:center">
+        <div style="font-size:11px;margin-bottom:3px">
+          ${emailInviata
+            ? `<span style="color:#2E7D32;cursor:pointer" title="Email benvenuto inviata il ${emailIl}" onclick="toggleEmailBenvenuto('${p.id}',false)">✅ Email (${emailIl})</span>`
+            : `<span style="color:#9E9E9E;cursor:pointer" title="Clicca per segnare come inviata" onclick="toggleEmailBenvenuto('${p.id}',true)">⬜ Email</span>`}
+        </div>
+        <div style="font-size:11px">
+          ${docInviato
+            ? `<span style="color:#2E7D32;cursor:pointer" title="Documento intesa inviato il ${docIl}" onclick="toggleDocIntesa('${p.id}',false)">✅ Intesa (${docIl})</span>`
+            : `<span style="color:#9E9E9E;cursor:pointer" title="Clicca per segnare come inviato" onclick="toggleDocIntesa('${p.id}',true)">⬜ Intesa</span>`}
+        </div>
+      </td>
       <td><span class="pts">${p.punti_per_euro}</span>/€</td>
       <td style="font-size:11px">${p.accordo_accettato_il
         ? `<span style="color:#2e7d32">✅ ${new Date(p.accordo_accettato_il).toLocaleDateString('it-IT')}</span>`
@@ -2980,7 +3013,8 @@ async function loadPartner() {
         <button class="btn btn-danger btn-sm" onclick='togglePartner("${p.id}", ${p.attivo})'>${p.attivo ? 'Sospendi' : 'Riattiva'}</button>
         <button class="btn btn-danger btn-sm" onclick='eliminaPartner("${p.id}", "${p.nome_negozio.replace(/"/g,"&quot;")}")'>🗑️</button>
       </td>
-    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessun partner</td></tr>'
+    </tr>`
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Nessun partner</td></tr>'
 }
 
 function anteprimaLogo(input) {
@@ -5518,6 +5552,8 @@ document.addEventListener('DOMContentLoaded', function() {
   window.salvaPartner = salvaPartner;
   window.rimuoviLogo = rimuoviLogo;
   window.creaAccessoPartner = creaAccessoPartner;
+  window.toggleEmailBenvenuto = toggleEmailBenvenuto;
+  window.toggleDocIntesa = toggleDocIntesa;
   window.apriModalNuovaCategoria = apriModalNuovaCategoria;
   window.salvaCategoria = salvaCategoria;
   window.switchPremioTab = switchPremioTab;
