@@ -288,6 +288,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Gare
     </div>
+    <div class="nav-item" onclick="showSection('roster')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Roster &amp; MVP
+    </div>
     <div class="nav-item" onclick="window.open('operatore.html','_blank')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>
       Pannello Operatore ↗
@@ -731,6 +735,69 @@ select.form-input:focus{border-color:var(--accent)}
             <button class="btn btn-danger" onclick="setPosto('disponibile')" id="btn-libera">🔓 Libera</button>
             <button class="btn btn-ghost" onclick="chiudiAdminPostoModal()">Annulla</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEZIONE: Roster & MVP -->
+    <div class="section" id="section-roster">
+      <div class="section-header">
+        <div class="section-title">🏀 Roster &amp; MVP</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" id="rst-tab-roster" onclick="switchRosterTab('roster',this)">👤 Roster</button>
+          <button class="btn btn-ghost btn-sm" id="rst-tab-mvp" onclick="switchRosterTab('mvp',this)">🏆 Classifica MVP</button>
+          <button class="btn btn-primary btn-sm" onclick="loadRoster()">↻ Aggiorna</button>
+        </div>
+      </div>
+
+      <!-- Panel Roster -->
+      <div id="rst-panel-roster">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:13px;color:var(--muted)">Gestione atleti in rosa</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-atleta')">+ Nuovo atleta</button>
+        </div>
+        <div class="card">
+          <table class="table">
+            <thead><tr><th>#</th><th>Atleta</th><th>Ruolo</th><th>Stato</th><th>Voti stagione</th><th>Punti stagione</th><th></th></tr></thead>
+            <tbody id="roster-list"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Caricamento...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel MVP -->
+      <div id="rst-panel-mvp" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:13px;color:var(--muted)">Gara:</label>
+            <select class="form-input" id="mvp-gara-sel" style="width:220px" onchange="loadMvpClassifica()">
+              <option value="">— Stagione completa —</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="loadMvpClassifica()">↻ Aggiorna</button>
+            <button class="btn btn-primary btn-sm" onclick="stampaMvp()">🖨️ Stampa</button>
+          </div>
+        </div>
+
+        <!-- Toggle votazioni per gara -->
+        <div class="card" style="margin-bottom:16px;padding:14px" id="mvp-toggle-box" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:13px;font-weight:600">Votazioni per la gara selezionata</div>
+              <div style="font-size:12px;color:var(--muted)" id="mvp-stato-testo">Seleziona una gara</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" id="btn-apri-voti" onclick="toggleVotazioni(true)" style="display:none">▶ Apri votazioni</button>
+              <button class="btn btn-danger btn-sm" id="btn-chiudi-voti" onclick="toggleVotazioni(false)" style="display:none">■ Chiudi votazioni</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <table class="table" id="mvp-table">
+            <thead><tr><th>Pos.</th><th>Atleta</th><th>#</th><th style="text-align:center">Voti</th><th style="text-align:center">Punti totali</th><th style="text-align:center">Tifosi votanti</th></tr></thead>
+            <tbody id="mvp-classifica-list"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Seleziona una gara o visualizza la stagione completa</td></tr></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1535,6 +1602,70 @@ select.form-input:focus{border-color:var(--accent)}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-gv-blocco')">Annulla</button>
       <button class="btn btn-primary" onclick="salvaGvBlocco()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Atleta roster -->
+<div class="modal-overlay" id="modal-atleta">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title" id="atleta-modal-title">Nuovo atleta</div>
+      <button class="modal-close" onclick="closeModal('modal-atleta')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="atleta-id"/>
+      <div class="form-grid">
+        <div class="form-group"><label>Nome *</label><input class="form-input" id="atleta-nome"/></div>
+        <div class="form-group"><label>Cognome *</label><input class="form-input" id="atleta-cognome"/></div>
+        <div class="form-group"><label>N° maglia *</label><input class="form-input" id="atleta-numero" type="number" min="0" max="99"/></div>
+        <div class="form-group"><label>Ruolo</label>
+          <select class="form-input" id="atleta-ruolo">
+            <option value="">—</option>
+            <option>Playmaker</option><option>Guardia</option><option>Ala piccola</option><option>Ala grande</option><option>Centro</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="atleta-attivo" checked style="width:15px;height:15px"/> Attivo in rosa
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-atleta')">Annulla</button>
+      <button class="btn btn-danger btn-sm" id="atleta-elimina-btn" style="display:none" onclick="eliminaAtleta()">🗑️</button>
+      <button class="btn btn-primary" onclick="salvaAtleta()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Sospensione atleta per gara -->
+<div class="modal-overlay" id="modal-sospensione">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Sospendi atleta per gara</div>
+      <button class="modal-close" onclick="closeModal('modal-sospensione')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sosp-atleta-id"/>
+      <div style="font-size:13px;font-weight:600;color:var(--blu);margin-bottom:16px" id="sosp-atleta-nome"></div>
+      <div class="form-group">
+        <label>Gara *</label>
+        <select class="form-input" id="sosp-gara-id"></select>
+      </div>
+      <div class="form-group">
+        <label>Motivo</label>
+        <select class="form-input" id="sosp-motivo">
+          <option value="infortunio">Infortunio</option>
+          <option value="squalifica">Squalifica</option>
+          <option value="altro">Altro</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-sospensione')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaSospensione()">Sospendi</button>
     </div>
   </div>
 </div>
@@ -2822,6 +2953,208 @@ async function eliminaGvBlocco(id) {
   loadGrattaVinci()
 }
 
+//  ROSTER & MVP 
+let _roster = []
+let _gareList = []
+
+async function loadRoster() {
+  const { data: atleti } = await sbAdmin.from('roster').select('*').order('numero_maglia')
+  _roster = atleti || []
+  const { data: voti } = await sbAdmin.from('mvp_voti').select('atleta_id, punti_voto')
+  const votiMap = {}
+  ;(voti||[]).forEach(v => {
+    if (!votiMap[v.atleta_id]) votiMap[v.atleta_id] = { voti:0, punti:0 }
+    votiMap[v.atleta_id].voti += 1
+    votiMap[v.atleta_id].punti += v.punti_voto
+  })
+  const { data: gare } = await sbAdmin.from('gare').select('id,titolo,avversario,data_ora,votazioni_aperte').order('data_ora')
+  _gareList = gare || []
+  const sel = document.getElementById('mvp-gara-sel')
+  if (sel) {
+    sel.innerHTML = '<option value="">— Stagione completa —</option>' +
+      _gareList.map(g => {
+        const data = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})
+        return `<option value="${g.id}" data-aperte="${g.votazioni_aperte}">${data} vs ${g.avversario||g.titolo}</option>`
+      }).join('')
+  }
+  const sospSel = document.getElementById('sosp-gara-id')
+  if (sospSel) {
+    sospSel.innerHTML = _gareList.map(g => {
+      const data = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})
+      return `<option value="${g.id}">${data} vs ${g.avversario||g.titolo}</option>`
+    }).join('')
+  }
+  const tbody = document.getElementById('roster-list')
+  if (tbody) {
+    tbody.innerHTML = _roster.length ? _roster.map(a => {
+      const v = votiMap[a.id] || { voti:0, punti:0 }
+      return `<tr>
+        <td style="font-weight:700;font-size:16px;color:var(--accent)">${a.numero_maglia}</td>
+        <td><strong>${a.cognome} ${a.nome}</strong></td>
+        <td style="font-size:12px;color:var(--muted)">${a.ruolo||'—'}</td>
+        <td><span class="badge ${a.attivo?'badge-green':'badge-gray'}">${a.attivo?'Attivo':'Inattivo'}</span></td>
+        <td style="text-align:center">${v.voti}</td>
+        <td style="text-align:center;font-weight:700;color:var(--arancio)">${v.punti}</td>
+        <td style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick='apriModAtleta(${JSON.stringify(a).replace(/'/g,"&#39;")})'>✏️</button>
+          <button class="btn btn-ghost btn-sm" onclick="apriSospensione('${a.id}','${a.cognome} ${a.nome}')">🚫</button>
+        </td>
+      </tr>`
+    }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Nessun atleta</td></tr>'
+  }
+}
+
+function switchRosterTab(tab, btn) {
+  document.querySelectorAll('[id^="rst-tab-"]').forEach(b => b.classList.remove('btn-primary'))
+  if (btn) btn.classList.add('btn-primary')
+  document.getElementById('rst-panel-roster').style.display = tab === 'roster' ? 'block' : 'none'
+  document.getElementById('rst-panel-mvp').style.display   = tab === 'mvp'    ? 'block' : 'none'
+  if (tab === 'mvp') loadMvpClassifica()
+}
+
+function apriModAtleta(a) {
+  document.getElementById('atleta-modal-title').textContent = 'Modifica atleta'
+  document.getElementById('atleta-id').value       = a.id
+  document.getElementById('atleta-nome').value     = a.nome
+  document.getElementById('atleta-cognome').value  = a.cognome
+  document.getElementById('atleta-numero').value   = a.numero_maglia
+  document.getElementById('atleta-ruolo').value    = a.ruolo||''
+  document.getElementById('atleta-attivo').checked = a.attivo
+  document.getElementById('atleta-elimina-btn').style.display = 'inline-flex'
+  openModal('modal-atleta')
+}
+
+async function salvaAtleta() {
+  const id = document.getElementById('atleta-id').value
+  const payload = {
+    nome: document.getElementById('atleta-nome').value.trim(),
+    cognome: document.getElementById('atleta-cognome').value.trim(),
+    numero_maglia: parseInt(document.getElementById('atleta-numero').value)||0,
+    ruolo: document.getElementById('atleta-ruolo').value||null,
+    attivo: document.getElementById('atleta-attivo').checked,
+  }
+  if (!payload.nome||!payload.cognome) { toast('Nome e cognome obbligatori','error'); return }
+  const { error } = id
+    ? await sbAdmin.from('roster').update(payload).eq('id',id)
+    : await sbAdmin.from('roster').insert(payload)
+  if (error) { toast('Errore: '+error.message,'error'); return }
+  document.getElementById('atleta-id').value = ''
+  document.getElementById('atleta-modal-title').textContent = 'Nuovo atleta'
+  document.getElementById('atleta-elimina-btn').style.display = 'none'
+  toast('✅ Atleta salvato','success')
+  closeModal('modal-atleta')
+  loadRoster()
+}
+
+async function eliminaAtleta() {
+  const id = document.getElementById('atleta-id').value
+  if (!id||!confirm('Eliminare questo atleta?')) return
+  await sbAdmin.from('roster').delete().eq('id',id)
+  toast('Atleta eliminato','success')
+  closeModal('modal-atleta')
+  loadRoster()
+}
+
+function apriSospensione(atletaId, nome) {
+  document.getElementById('sosp-atleta-id').value = atletaId
+  document.getElementById('sosp-atleta-nome').textContent = nome
+  openModal('modal-sospensione')
+}
+
+async function salvaSospensione() {
+  const atletaId = document.getElementById('sosp-atleta-id').value
+  const garaId   = document.getElementById('sosp-gara-id').value
+  const motivo   = document.getElementById('sosp-motivo').value
+  if (!garaId) { toast('Seleziona una gara','error'); return }
+  const { error } = await sbAdmin.from('roster_sospensioni').upsert({ atleta_id:atletaId, gara_id:garaId, motivo })
+  if (error) { toast('Errore: '+error.message,'error'); return }
+  toast('✅ Sospensione registrata','success')
+  closeModal('modal-sospensione')
+}
+
+async function toggleVotazioni(apri) {
+  const sel = document.getElementById('mvp-gara-sel')
+  const garaId = sel?.value
+  if (!garaId) { toast('Seleziona una gara','error'); return }
+  await sbAdmin.from('gare').update({ votazioni_aperte: apri }).eq('id',garaId)
+  toast(apri ? '✅ Votazioni aperte' : '■ Votazioni chiuse', 'success')
+  document.getElementById('mvp-stato-testo').textContent = apri ? '🟢 Votazioni APERTE' : '🔴 Votazioni chiuse'
+  document.getElementById('btn-apri-voti').style.display   = apri ? 'none' : 'inline-flex'
+  document.getElementById('btn-chiudi-voti').style.display = apri ? 'inline-flex' : 'none'
+  const opt = sel.options[sel.selectedIndex]
+  if (opt) opt.dataset.aperte = apri.toString()
+}
+
+async function loadMvpClassifica() {
+  const sel = document.getElementById('mvp-gara-sel')
+  const garaId = sel?.value
+  const tbody = document.getElementById('mvp-classifica-list')
+  const toggleBox = document.getElementById('mvp-toggle-box')
+  if (toggleBox) {
+    if (garaId) {
+      toggleBox.style.display = 'block'
+      const opt = sel.options[sel.selectedIndex]
+      const aperte = opt?.dataset.aperte === 'true'
+      document.getElementById('mvp-stato-testo').textContent = aperte ? '🟢 Votazioni APERTE' : '🔴 Votazioni chiuse'
+      document.getElementById('btn-apri-voti').style.display   = aperte ? 'none' : 'inline-flex'
+      document.getElementById('btn-chiudi-voti').style.display = aperte ? 'inline-flex' : 'none'
+    } else { toggleBox.style.display = 'none' }
+  }
+  let query = sbAdmin.from('mvp_voti').select('atleta_id, punti_voto')
+  if (garaId) query = query.eq('gara_id', garaId)
+  const { data: voti } = await query
+  const map = {}
+  ;(voti||[]).forEach(v => {
+    if (!map[v.atleta_id]) map[v.atleta_id] = { voti:0, punti:0 }
+    map[v.atleta_id].voti += 1
+    map[v.atleta_id].punti += v.punti_voto
+  })
+  const atleti = _roster.map(a => ({ ...a, ...( map[a.id]||{ voti:0, punti:0 }) }))
+    .sort((a,b) => b.punti - a.punti || b.voti - a.voti)
+  if (tbody) {
+    const conVoti = atleti.filter(a => a.punti > 0)
+    if (!conVoti.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Nessun voto ancora espresso</td></tr>'; return }
+    let pos = 0
+    tbody.innerHTML = atleti.map((a,i) => {
+      if (a.punti > 0) pos++
+      const medal = a.punti>0 ? (pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':pos) : '—'
+      return `<tr style="${a.punti===0?'opacity:.35':''}">
+        <td style="font-weight:700">${medal}</td>
+        <td><strong>${a.cognome} ${a.nome}</strong></td>
+        <td style="text-align:center;font-weight:700;font-size:15px;color:var(--accent)">${a.numero_maglia}</td>
+        <td style="text-align:center">${a.voti}</td>
+        <td style="text-align:center;font-weight:700;color:var(--arancio)">${a.punti}</td>
+        <td style="text-align:center">${a.voti}</td>
+      </tr>`
+    }).join('')
+  }
+}
+
+async function stampaMvp() {
+  const sel = document.getElementById('mvp-gara-sel')
+  const garaId = sel?.value
+  const titolo = garaId ? (sel.options[sel.selectedIndex]?.text||'Gara') : 'Stagione 2026/2027'
+  let query = sbAdmin.from('mvp_voti').select('atleta_id, punti_voto')
+  if (garaId) query = query.eq('gara_id', garaId)
+  const { data: voti } = await query
+  const map = {}
+  ;(voti||[]).forEach(v => { if (!map[v.atleta_id]) map[v.atleta_id]={voti:0,punti:0}; map[v.atleta_id].voti++; map[v.atleta_id].punti+=v.punti_voto })
+  const atleti = _roster.map(a=>({...a,...(map[a.id]||{voti:0,punti:0})})).sort((a,b)=>b.punti-a.punti||b.voti-a.voti).filter(a=>a.punti>0)
+  const oggi = new Date().toLocaleDateString('it-IT')
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>MVP Virtus</title>
+  <style>body{font-family:Arial,sans-serif;padding:32px;color:#0D2147;max-width:700px;margin:0 auto}.no-print{text-align:right;margin-bottom:20px}.no-print button{background:#0D2147;color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer}h2{color:#0D2147;border-bottom:3px solid #F57C00;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#0D2147;color:#fff;padding:8px;text-align:left;font-size:12px;text-transform:uppercase}td{padding:8px;border-bottom:1px solid #eee;font-size:13px}tr:first-child td{background:#FFF8E1;font-weight:700}.footer{margin-top:24px;font-size:11px;color:#9E9E9E;text-align:center;border-top:1px solid #eee;padding-top:10px}@media print{.no-print{display:none}}</style>
+  </head><body>
+  <div class="no-print"><button onclick="window.print()">🖨️ Stampa</button></div>
+  <h2>🏆 Classifica MVP — ${titolo}</h2>
+  <p style="font-size:12px;color:#546E7A">Emesso il ${oggi} — Nuova Virtus Basket Molfetta</p>
+  <table><thead><tr><th>Pos.</th><th>#</th><th>Atleta</th><th style="text-align:center">Voti</th><th style="text-align:center">Punti</th></tr></thead>
+  <tbody>${atleti.map((a,i)=>`<tr><td>${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td><td style="font-weight:700;font-size:16px">${a.numero_maglia}</td><td><strong>${a.cognome} ${a.nome}</strong></td><td style="text-align:center">${a.voti}</td><td style="text-align:center;font-weight:700;color:#F57C00">${a.punti}</td></tr>`).join('')}</tbody></table>
+  <div class="footer">SSD Pol. Virtus 2014 Srl · Via Martiri di Via Fani c/o PalaPoli · 70056 Molfetta (BA)</div>
+  </body></html>`
+  const win = window.open('','_blank','width=800,height:900')
+  win.document.open(); win.document.write(html); win.document.close()
+}
+
 //  NAV 
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
@@ -2848,6 +3181,7 @@ function showSection(name) {
   if (name === 'posti')         loadPosti()
   if (name === 'transazioni')   loadTransazioni()
   if (name === 'report')        loadReport()
+  if (name === 'roster')          { loadRoster(); switchRosterTab('roster', document.getElementById('rst-tab-roster')) }
   if (name === 'gratta-vinci')   loadGrattaVinci()
   if (name === 'maglie')             { loadMaglieSciarpe(); switchMaglieTab('maglie', document.getElementById('ms-tab-maglie')) }
   if (name === 'report-stagionale')  { loadMsReport() }
@@ -5525,6 +5859,16 @@ document.addEventListener('DOMContentLoaded', function() {
   window.salvaGvPremio = salvaGvPremio;
   window.eliminaGvPremio = eliminaGvPremio;
   window.loadGrattaVinci = loadGrattaVinci;
+  window.loadRoster = loadRoster;
+  window.switchRosterTab = switchRosterTab;
+  window.apriModAtleta = apriModAtleta;
+  window.salvaAtleta = salvaAtleta;
+  window.eliminaAtleta = eliminaAtleta;
+  window.apriSospensione = apriSospensione;
+  window.salvaSospensione = salvaSospensione;
+  window.toggleVotazioni = toggleVotazioni;
+  window.loadMvpClassifica = loadMvpClassifica;
+  window.stampaMvp = stampaMvp;
   window.switchGvTab = switchGvTab;
   window.toggleGvAttivo = toggleGvAttivo;
   window.salvaGvVenditore = salvaGvVenditore;
