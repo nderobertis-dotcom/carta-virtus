@@ -882,6 +882,39 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     </div>
   </div>
 
+  <!-- VOTO MVP -->
+  <div class="tifoso-content" style="padding-top:0;padding-bottom:0" id="mvp-area" style="display:none">
+    <div style="max-width:1100px;margin:0 auto;padding:0 24px 32px">
+      <div class="t-card" id="mvp-card">
+        <div class="t-card-title">🏆 Vota l'MVP della gara</div>
+        <div id="mvp-status-msg" style="font-size:13px;color:var(--muted);margin-bottom:16px">Votazioni non ancora aperte.</div>
+        <div id="mvp-voting-ui" style="display:none">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:16px" id="mvp-punti-info"></div>
+          <div id="mvp-roster-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px"></div>
+          <!-- Slider punti (non BASE) -->
+          <div id="mvp-punti-box" style="display:none;margin-bottom:16px;background:#F0F6FF;border-radius:10px;padding:14px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px">Punti da assegnare: <span id="mvp-punti-val" style="color:var(--blu);font-weight:800">1</span></div>
+            <input type="range" id="mvp-punti-slider" min="1" value="1" style="width:100%" oninput="aggiornaPuntiMvp(this.value)"/>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+              <span>1 pt (gratuito)</span><span id="mvp-max-label">Max: —</span>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:6px">
+              Votare con 1 punto = gratis + ricevi 1 punto credito.<br>
+              Votare con più punti = costo a scalare dal tuo borsellino.
+            </div>
+          </div>
+          <div id="mvp-atleta-sel-info" style="font-size:13px;color:var(--muted);margin-bottom:12px">Seleziona un atleta per votare.</div>
+          <button class="btn-hero btn-hero-primary" id="mvp-vota-btn" style="display:none;font-size:13px" onclick="inviaMvpVoto()">🏆 Conferma voto</button>
+          <div id="mvp-error" style="display:none;font-size:12px;color:var(--rosso);margin-top:8px"></div>
+        </div>
+        <div id="mvp-voted-msg" style="display:none;text-align:center;padding:20px">
+          <div style="font-size:32px">🏆</div>
+          <div style="font-size:16px;font-weight:700;color:var(--blu);margin-top:8px" id="mvp-voted-testo"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- CATALOGO PREMI AREA TIFOSO -->
   <div class="tifoso-content" style="padding-top:0">
     <div style="max-width:1100px;margin:0 auto;padding:0 24px 60px">
@@ -1844,6 +1877,153 @@ window.apriGvComingSoon = apriGvComingSoon
 window.chiudiGvComingSoon = chiudiGvComingSoon
 window.apriGvRegolamento = apriGvRegolamento
 window.chiudiGvRegolamento = chiudiGvRegolamento
+//  MVP VOTO 
+let _mvpGaraId = null
+let _mvpAtletaSelezionato = null
+let _mvpPianoTifoso = null
+let _mvpPuntiTifoso = 0
+
+async function caricaMvpVoto(tifosoId, pianoNome, puntiSaldo) {
+  _mvpPianoTifoso = pianoNome
+  _mvpPuntiTifoso = puntiSaldo
+
+  const { data: gare } = await sb.from('gare')
+    .select('id,titolo,avversario,data_ora')
+    .eq('votazioni_aperte', true)
+    .order('data_ora', { ascending: false })
+    .limit(1)
+
+  const mvpArea = document.getElementById('mvp-area')
+  if (mvpArea) mvpArea.style.display = 'block'
+
+  if (!gare || !gare.length) {
+    document.getElementById('mvp-status-msg').textContent = 'Nessuna votazione in corso al momento.'
+    document.getElementById('mvp-voting-ui').style.display = 'none'
+    return
+  }
+
+  _mvpGaraId = gare[0].id
+  const opp = gare[0].avversario || gare[0].titolo
+  const data = new Date(gare[0].data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})
+
+  // Verifica presenza (ingresso scansionato)
+  const { data: ingresso } = await sb.from('ingressi_gare')
+    .select('id').eq('gara_id', _mvpGaraId).eq('tifoso_id', tifosoId).maybeSingle()
+
+  if (!ingresso) {
+    document.getElementById('mvp-status-msg').innerHTML =
+      `<strong>Votazioni aperte</strong> — ${data} vs ${opp}<br>` +
+      `<span style="color:var(--rosso);font-size:12px">Devi essere presente al palazzetto per votare.</span>`
+    return
+  }
+
+  // Verifica se ha già votato
+  const { data: votoEsistente } = await sb.from('mvp_voti')
+    .select('id,atleta_id,punti_voto').eq('gara_id', _mvpGaraId).eq('tifoso_id', tifosoId).maybeSingle()
+
+  if (votoEsistente) {
+    const { data: atleta } = await sb.from('roster').select('nome,cognome,numero_maglia').eq('id', votoEsistente.atleta_id).single()
+    const nomeAtleta = atleta ? `#${atleta.numero_maglia} ${atleta.cognome} ${atleta.nome}` : '—'
+    document.getElementById('mvp-status-msg').style.display = 'none'
+    document.getElementById('mvp-voting-ui').style.display = 'none'
+    const votedMsg = document.getElementById('mvp-voted-msg')
+    votedMsg.style.display = 'block'
+    document.getElementById('mvp-voted-testo').innerHTML =
+      `Hai votato <strong>${nomeAtleta}</strong> con <strong>${votoEsistente.punti_voto} pt</strong> — ${data} vs ${opp}`
+    return
+  }
+
+  // Carica roster disponibile
+  const { data: sospesi } = await sb.from('roster_sospensioni').select('atleta_id').eq('gara_id', _mvpGaraId)
+  const sospesiIds = (sospesi||[]).map(s => s.atleta_id)
+  const { data: atleti } = await sb.from('roster').select('*').eq('attivo', true).order('numero_maglia')
+  const atletiDisp = (atleti||[]).filter(a => !sospesiIds.includes(a.id))
+
+  document.getElementById('mvp-status-msg').innerHTML =
+    `Votazioni aperte — <strong>${data} vs ${opp}</strong>. Scegli il tuo MVP!`
+  document.getElementById('mvp-voting-ui').style.display = 'block'
+
+  const isBase = pianoNome === 'Base'
+  if (isBase) {
+    document.getElementById('mvp-punti-info').textContent = 'Con Fan Card Base puoi votare (voto conteggiato ma senza accumulo punti).'
+  } else {
+    document.getElementById('mvp-punti-info').textContent =
+      `Saldo: ${puntiSaldo} pt. Con 1 pt voti gratis e ricevi +1 pt credito. Con più punti, il costo scala dal tuo borsellino.`
+    const slider = document.getElementById('mvp-punti-slider')
+    if (slider) { slider.max = Math.max(1, puntiSaldo); slider.value = 1 }
+    document.getElementById('mvp-max-label').textContent = `Max: ${puntiSaldo} pt`
+    document.getElementById('mvp-punti-box').style.display = 'block'
+  }
+
+  document.getElementById('mvp-roster-list').innerHTML = atletiDisp.map(a => `
+    <div class="mvp-atleta-card" data-id="${a.id}" data-nome="${a.cognome} ${a.nome}"
+      onclick="selezionaAtletaMvp(this,'${a.id}','${a.cognome} ${a.nome}')"
+      style="border:2px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;text-align:center;transition:all .15s">
+      <div style="font-size:28px;font-weight:900;color:var(--accent)">${a.numero_maglia}</div>
+      <div style="font-size:13px;font-weight:700;margin-top:4px">${a.cognome}</div>
+      <div style="font-size:12px;color:var(--muted)">${a.nome}</div>
+      ${a.ruolo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">${a.ruolo}</div>` : ''}
+    </div>`).join('')
+}
+
+function selezionaAtletaMvp(el, atletaId, nome) {
+  document.querySelectorAll('.mvp-atleta-card').forEach(c => { c.style.borderColor='var(--border)'; c.style.background='' })
+  el.style.borderColor = 'var(--blu)'; el.style.background = '#EEF4FF'
+  _mvpAtletaSelezionato = atletaId
+  document.getElementById('mvp-atleta-sel-info').innerHTML = `Selezionato: <strong>${nome}</strong>`
+  document.getElementById('mvp-vota-btn').style.display = 'block'
+}
+
+function aggiornaPuntiMvp(val) {
+  const el = document.getElementById('mvp-punti-val')
+  if (el) el.textContent = val
+}
+
+async function inviaMvpVoto() {
+  if (!_mvpAtletaSelezionato) return
+  const errEl = document.getElementById('mvp-error')
+  errEl.style.display = 'none'
+
+  const isBase = _mvpPianoTifoso === 'Base'
+  const puntiVoto = isBase ? 1 : parseInt(document.getElementById('mvp-punti-slider')?.value||1)
+
+  if (!isBase && puntiVoto > _mvpPuntiTifoso) {
+    errEl.textContent = 'Punti insufficienti.'; errEl.style.display = 'block'; return
+  }
+
+  const { data: { user } } = await sb.auth.getUser()
+  const { data: tifoso } = await sb.from('tifosi').select('id,punti_saldo').eq('auth_user_id', user.id).single()
+  if (!tifoso) return
+
+  const { error } = await sb.from('mvp_voti').insert({
+    gara_id: _mvpGaraId, tifoso_id: tifoso.id,
+    atleta_id: _mvpAtletaSelezionato, punti_voto: puntiVoto
+  })
+  if (error) { errEl.textContent = error.message; errEl.style.display='block'; return }
+
+  if (!isBase) {
+    if (puntiVoto === 1) {
+      await sb.from('tifosi').update({ punti_saldo: tifoso.punti_saldo + 1 }).eq('id', tifoso.id)
+      await sb.from('transazioni').insert({ tifoso_id:tifoso.id, tipo:'BONUS', punti_delta:1, saldo_dopo:tifoso.punti_saldo+1, note:'Bonus voto MVP' })
+    } else {
+      await sb.from('tifosi').update({ punti_saldo: tifoso.punti_saldo - puntiVoto }).eq('id', tifoso.id)
+      await sb.from('transazioni').insert({ tifoso_id:tifoso.id, tipo:'SPESA', punti_delta:-puntiVoto, saldo_dopo:tifoso.punti_saldo-puntiVoto, note:`Voto MVP ${puntiVoto} pt` })
+    }
+  }
+
+  const nomeAtleta = document.querySelector(`.mvp-atleta-card[data-id="${_mvpAtletaSelezionato}"]`)?.dataset.nome || '—'
+  document.getElementById('mvp-voting-ui').style.display = 'none'
+  document.getElementById('mvp-status-msg').style.display = 'none'
+  document.getElementById('mvp-voted-msg').style.display = 'block'
+  document.getElementById('mvp-voted-testo').innerHTML =
+    `Voto registrato! Hai votato <strong>${nomeAtleta}</strong> con <strong>${puntiVoto} pt</strong>.` +
+    (!isBase && puntiVoto===1 ? '<br><span style="color:#2E7D32;font-size:12px">+1 punto accreditato!</span>' : '')
+}
+
+window.selezionaAtletaMvp = selezionaAtletaMvp
+window.aggiornaPuntiMvp = aggiornaPuntiMvp
+window.inviaMvpVoto = inviaMvpVoto
+
 let tuttiPartner = []
 let categoriaAttiva = 'tutti'
 let categorieMap = {}
@@ -2707,6 +2887,9 @@ async function caricaAreaTifoso(user) {
       postoDisplay.style.display = 'block'
     }
   }
+
+  // Carica sezione MVP voto
+  await caricaMvpVoto(tifoso.id, pianoNome, tifoso.punti_saldo)
 
   // Popola sezione profilo
   const { data: membProfilo } = await sb.from('membership')
