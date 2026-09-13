@@ -726,7 +726,7 @@ select.form-input:focus{border-color:var(--accent)}
             <select class="form-input" id="admin-posto-tifoso">
               <option value="">— Seleziona tifoso —</option>
             </select>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">Tifosi Silver, Gold e VIP con membership attiva e senza posto assegnato. I VIP sono mostrati per primi.</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">Solo tifosi VIP con membership attiva e senza posto già assegnato.</div>
           </div>
 
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -5054,45 +5054,31 @@ async function apriAdminPostoModal(t, f, n) {
 }
 
 async function caricaTifosiPerAssegnazione() {
-  // Recupera tifosi con membership Silver, Gold o VIP attiva
-  const { data: pianiIds } = await sbAdmin.from('membership_piani')
-    .select('id,nome').in('nome', ['Silver','Gold','VIP'])
-  const idMap = {}
-  ;(pianiIds||[]).forEach(p => { idMap[p.id] = p.nome })
+  // Solo VIP — Silver e Gold scelgono il posto in autonomia durante la registrazione
+  const { data: pianiVip } = await sbAdmin.from('membership_piani').select('id').eq('nome','VIP')
+  const vipId = pianiVip?.[0]?.id
+  const sel = document.getElementById('admin-posto-tifoso')
+  if (!vipId) { sel.innerHTML = '<option value="">Nessun piano VIP configurato</option>'; return }
 
   const { data: membs } = await sbAdmin.from('membership')
-    .select('tifoso_id, piano_id, tifosi:tifoso_id(id, nome, cognome, azienda)')
-    .eq('stato', 'attiva')
-    .in('piano_id', Object.keys(idMap))
+    .select('tifoso_id, tifosi:tifoso_id(nome, cognome, azienda)')
+    .eq('stato','attiva').eq('piano_id', vipId)
 
-  // Recupera tifosi che hanno già un posto assegnato
   const { data: postiOccupati } = await sbAdmin.from('posti')
     .select('tifoso_id').in('stato',['assegnato','accompagnatore'])
   const tifosiConPosto = new Set((postiOccupati||[]).map(p=>p.tifoso_id))
 
-  const sel = document.getElementById('admin-posto-tifoso')
-  sel.innerHTML = '<option value="">— Seleziona —</option>'
-
-  // Raggruppa per piano per ordine visivo
-  const vip    = (membs||[]).filter(m => idMap[m.piano_id]==='VIP'    && !tifosiConPosto.has(m.tifoso_id))
-  const silver = (membs||[]).filter(m => idMap[m.piano_id]==='Silver' && !tifosiConPosto.has(m.tifoso_id))
-  const gold   = (membs||[]).filter(m => idMap[m.piano_id]==='Gold'   && !tifosiConPosto.has(m.tifoso_id))
-
-  const addGruppo = (lista, label) => {
-    if (!lista.length) return
-    sel.innerHTML += `<option disabled> ${label} </option>`
-    lista.forEach(m => {
-      const t = m.tifosi
-      const nome = t?.cognome + ' ' + t?.nome +
-        (t?.azienda ? ' · ' + t.azienda : '') +
-        ' (' + (idMap[m.piano_id]||'') + ')'
-      sel.innerHTML += `<option value="${m.tifoso_id}">${nome}</option>`
-    })
+  const disponibili = (membs||[]).filter(m => !tifosiConPosto.has(m.tifoso_id))
+  if (!disponibili.length) {
+    sel.innerHTML = '<option value="">Nessun VIP senza posto assegnato</option>'
+    return
   }
-
-  addGruppo(vip, '⭐ VIP')
-  addGruppo(gold, '🥇 Gold')
-  addGruppo(silver, '🥈 Silver')
+  sel.innerHTML = '<option value="">— Seleziona VIP —</option>' +
+    disponibili.map(m => {
+      const t = m.tifosi
+      const label = `${t?.cognome} ${t?.nome}${t?.azienda ? ' · '+t.azienda : ''}`
+      return `<option value="${m.tifoso_id}">⭐ ${label}</option>`
+    }).join('')
 }
 
 function chiudiAdminPostoModal() {
