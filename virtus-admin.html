@@ -3346,6 +3346,8 @@ async function stampaTifosiVotanti() {
   const win = window.open('', '_blank', 'width=800,height:900')
   win.document.open(); win.document.write(html); win.document.close()
 }
+
+async function loadMvpClassifica() {
   const sel = document.getElementById('mvp-gara-sel')
   const garaId = sel?.value
   const tbody = document.getElementById('mvp-classifica-list')
