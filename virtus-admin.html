@@ -1615,6 +1615,14 @@ select.form-input:focus{border-color:var(--accent)}
     </div>
     <div class="modal-body">
       <input type="hidden" id="atleta-id"/>
+      <input type="hidden" id="atleta-foto-url"/>
+      <div class="form-group" style="grid-column:1/-1;text-align:center">
+        <div id="atleta-foto-preview" style="width:90px;height:90px;border-radius:50%;background:#f0f4ff;border:2px dashed var(--border);margin:0 auto 10px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:32px">👤</div>
+        <label style="cursor:pointer;font-size:12px;color:var(--blu);font-weight:600">
+          📷 Carica foto atleta
+          <input type="file" id="atleta-foto-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="anteprimaFotoAtleta(this)"/>
+        </label>
+      </div>
       <div class="form-grid">
         <div class="form-group"><label>Nome *</label><input class="form-input" id="atleta-nome"/></div>
         <div class="form-group"><label>Cognome *</label><input class="form-input" id="atleta-cognome"/></div>
@@ -2988,9 +2996,17 @@ async function loadRoster() {
   if (tbody) {
     tbody.innerHTML = _roster.length ? _roster.map(a => {
       const v = votiMap[a.id] || { voti:0, punti:0 }
+      const fotoHtml = a.foto_url
+        ? `<img src="${a.foto_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--border)" onerror="this.style.display='none'"/>`
+        : `<div style="width:36px;height:36px;border-radius:50%;background:#f0f4ff;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid var(--border)">👤</div>`
       return `<tr>
         <td style="font-weight:700;font-size:16px;color:var(--accent)">${a.numero_maglia}</td>
-        <td><strong>${a.cognome} ${a.nome}</strong></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            ${fotoHtml}
+            <strong>${a.cognome} ${a.nome}</strong>
+          </div>
+        </td>
         <td style="font-size:12px;color:var(--muted)">${a.ruolo||'—'}</td>
         <td><span class="badge ${a.attivo?'badge-green':'badge-gray'}">${a.attivo?'Attivo':'Inattivo'}</span></td>
         <td style="text-align:center">${v.voti}</td>
@@ -3012,36 +3028,87 @@ function switchRosterTab(tab, btn) {
   if (tab === 'mvp') loadMvpClassifica()
 }
 
+function anteprimaFotoAtleta(input) {
+  const file = input.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const prev = document.getElementById('atleta-foto-preview')
+    prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"/>`
+  }
+  reader.readAsDataURL(file)
+}
+
+async function uploadFotoAtleta(atletaId) {
+  const input = document.getElementById('atleta-foto-input')
+  if (!input.files[0]) return document.getElementById('atleta-foto-url').value || null
+  const file = input.files[0]
+  const ext = file.name.split('.').pop()
+  const path = `${atletaId}.${ext}`
+  const { error } = await sbAdmin.storage.from('atleti').upload(path, file, { upsert: true, contentType: file.type })
+  if (error) { toast('Errore upload foto: ' + error.message, 'error'); return null }
+  const { data } = sbAdmin.storage.from('atleti').getPublicUrl(path)
+  return data.publicUrl + '?t=' + Date.now()
+}
+
 function apriModAtleta(a) {
   document.getElementById('atleta-modal-title').textContent = 'Modifica atleta'
   document.getElementById('atleta-id').value       = a.id
+  document.getElementById('atleta-foto-url').value = a.foto_url || ''
   document.getElementById('atleta-nome').value     = a.nome
   document.getElementById('atleta-cognome').value  = a.cognome
   document.getElementById('atleta-numero').value   = a.numero_maglia
-  document.getElementById('atleta-ruolo').value    = a.ruolo||''
+  document.getElementById('atleta-ruolo').value    = a.ruolo || ''
   document.getElementById('atleta-attivo').checked = a.attivo
   document.getElementById('atleta-elimina-btn').style.display = 'inline-flex'
+  document.getElementById('atleta-foto-input').value = ''
+  // Mostra foto esistente
+  const prev = document.getElementById('atleta-foto-preview')
+  if (a.foto_url) {
+    prev.innerHTML = `<img src="${a.foto_url}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='👤'"/>`
+  } else {
+    prev.innerHTML = '👤'
+  }
   openModal('modal-atleta')
 }
 
 async function salvaAtleta() {
   const id = document.getElementById('atleta-id').value
   const payload = {
-    nome: document.getElementById('atleta-nome').value.trim(),
-    cognome: document.getElementById('atleta-cognome').value.trim(),
-    numero_maglia: parseInt(document.getElementById('atleta-numero').value)||0,
-    ruolo: document.getElementById('atleta-ruolo').value||null,
-    attivo: document.getElementById('atleta-attivo').checked,
+    nome:          document.getElementById('atleta-nome').value.trim(),
+    cognome:       document.getElementById('atleta-cognome').value.trim(),
+    numero_maglia: parseInt(document.getElementById('atleta-numero').value) || 0,
+    ruolo:         document.getElementById('atleta-ruolo').value || null,
+    attivo:        document.getElementById('atleta-attivo').checked,
   }
-  if (!payload.nome||!payload.cognome) { toast('Nome e cognome obbligatori','error'); return }
-  const { error } = id
-    ? await sbAdmin.from('roster').update(payload).eq('id',id)
-    : await sbAdmin.from('roster').insert(payload)
-  if (error) { toast('Errore: '+error.message,'error'); return }
+  if (!payload.nome || !payload.cognome) { toast('Nome e cognome obbligatori', 'error'); return }
+
+  // Prima salva per ottenere l'ID se è nuovo
+  let atletaId = id
+  if (!id) {
+    const { data, error } = await sbAdmin.from('roster').insert(payload).select('id').single()
+    if (error) { toast('Errore: ' + error.message, 'error'); return }
+    atletaId = data.id
+  }
+
+  // Upload foto se presente
+  const fotoUrl = await uploadFotoAtleta(atletaId)
+  if (fotoUrl) payload.foto_url = fotoUrl
+
+  // Aggiorna (o completa l'insert con la foto)
+  if (id) {
+    const { error } = await sbAdmin.from('roster').update(payload).eq('id', id)
+    if (error) { toast('Errore: ' + error.message, 'error'); return }
+  } else if (fotoUrl) {
+    await sbAdmin.from('roster').update({ foto_url: fotoUrl }).eq('id', atletaId)
+  }
+
   document.getElementById('atleta-id').value = ''
+  document.getElementById('atleta-foto-url').value = ''
   document.getElementById('atleta-modal-title').textContent = 'Nuovo atleta'
   document.getElementById('atleta-elimina-btn').style.display = 'none'
-  toast('✅ Atleta salvato','success')
+  document.getElementById('atleta-foto-preview').innerHTML = '👤'
+  toast('✅ Atleta salvato', 'success')
   closeModal('modal-atleta')
   loadRoster()
 }
@@ -5859,6 +5926,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.salvaGvPremio = salvaGvPremio;
   window.eliminaGvPremio = eliminaGvPremio;
   window.loadGrattaVinci = loadGrattaVinci;
+  window.anteprimaFotoAtleta = anteprimaFotoAtleta;
   window.loadRoster = loadRoster;
   window.switchRosterTab = switchRosterTab;
   window.apriModAtleta = apriModAtleta;
