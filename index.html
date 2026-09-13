@@ -586,6 +586,17 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 
 
 
+<!-- BANNER CONSENSO NOTIFICHE -->
+<div id="banner-notifiche" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:1500;background:#0D2147;color:#fff;border-radius:12px;padding:14px 20px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;align-items:center;gap:12px">
+  <div style="font-size:22px">🔔</div>
+  <div style="flex:1">
+    <div style="font-size:13px;font-weight:700">Ricevi le notifiche MVP</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">Saprai subito quando le votazioni sono aperte</div>
+  </div>
+  <button onclick="accettaNotifiche()" style="background:#F57C00;color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Attiva</button>
+  <button onclick="rifiutaNotifiche()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer;padding:4px">×</button>
+</div>
+
 <!-- GRATTA & VINCI VIRTUS -->
 <section id="gratta-vinci-section" style="display:none;background:linear-gradient(135deg,#0D2147 0%,#1A3A6B 100%);padding:80px 0">
   <div style="max-width:1100px;margin:0 auto;padding:0 24px;text-align:center">
@@ -1943,6 +1954,15 @@ async function caricaMvpVoto(tifosoId, pianoNome, puntiSaldo) {
     `Votazioni aperte — <strong>${data} vs ${opp}</strong>. Scegli il tuo MVP!`
   document.getElementById('mvp-voting-ui').style.display = 'block'
 
+  // Notifica push apertura votazioni (con eventuale sponsor)
+  const sponsor = await caricaSponsorGara(_mvpGaraId)
+  const sponsorTxt = sponsor ? ` · Con ${sponsor.nome_sponsor}` : ''
+  mostraNotificaLocale(
+    '🏀 Vota l\'MVP di gara!',
+    `Virtus vs ${opp} — ${data}. Esprimi il tuo voto ora!${sponsorTxt}`,
+    'virtus-mvp'
+  )
+
   const isBase = pianoNome === 'Base' || pianoNome === 'VIP'
   if (isBase) {
     const msg = pianoNome === 'VIP'
@@ -2019,17 +2039,71 @@ async function inviaMvpVoto() {
   }
 
   const nomeAtleta = document.querySelector(`.mvp-atleta-card[data-id="${_mvpAtletaSelezionato}"]`)?.dataset.nome || '—'
+  // Carica sponsor gara
+  const sponsor = await caricaSponsorGara(_mvpGaraId)
   document.getElementById('mvp-voting-ui').style.display = 'none'
   document.getElementById('mvp-status-msg').style.display = 'none'
   document.getElementById('mvp-voted-msg').style.display = 'block'
   document.getElementById('mvp-voted-testo').innerHTML =
     `Voto registrato! Hai votato <strong>${nomeAtleta}</strong> con <strong>${puntiVoto} pt</strong>.` +
-    (!isBase && puntiVoto===1 ? '<br><span style="color:#2E7D32;font-size:12px">+1 punto accreditato!</span>' : '')
+    (!isBase && puntiVoto===1 ? '<br><span style="color:#2E7D32;font-size:12px">+1 punto accreditato!</span>' : '') +
+    renderSponsorBanner(sponsor)
 }
 
 window.selezionaAtletaMvp = selezionaAtletaMvp
 window.aggiornaPuntiMvp = aggiornaPuntiMvp
 window.inviaMvpVoto = inviaMvpVoto
+
+//  NOTIFICHE PUSH & SPONSOR MVP 
+let _swRegistration = null
+
+async function inizializzaNotifiche() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return
+  try {
+    _swRegistration = await navigator.serviceWorker.register('/sw.js')
+    console.log('SW registrato')
+  } catch(e) { console.warn('SW:', e) }
+}
+
+async function chiediConsensoNotifiche() {
+  if (!('Notification' in window)) return false
+  if (Notification.permission === 'granted') return true
+  if (Notification.permission === 'denied') return false
+  const result = await Notification.requestPermission()
+  return result === 'granted'
+}
+
+function mostraNotificaLocale(title, body, tag) {
+  if (Notification.permission !== 'granted') return
+  try {
+    if (_swRegistration) {
+      _swRegistration.showNotification(title, { body, icon: '/logo_192.png', tag: tag||'virtus', badge: '/logo_192.png' })
+    } else {
+      new Notification(title, { body, icon: '/logo_192.png' })
+    }
+  } catch(e) { console.warn('Notifica:', e) }
+}
+
+async function caricaSponsorGara(garaId) {
+  if (!garaId) return null
+  try {
+    const { data } = await sb.from('mvp_sponsor_gara').select('*').eq('gara_id', garaId).eq('attivo', true).maybeSingle()
+    return data || null
+  } catch(e) { return null }
+}
+
+function renderSponsorBanner(sponsor) {
+  if (!sponsor) return ''
+  return `<div style="margin-top:14px;padding:10px 14px;background:linear-gradient(90deg,#0D2147,#1A3A6B);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    ${sponsor.logo_url ? `<img src="${sponsor.logo_url}" style="height:28px;object-fit:contain;border-radius:3px" onerror="this.style.display='none'"/>` : ''}
+    <div style="font-size:11px;color:rgba(255,255,255,.55)">Con il supporto di</div>
+    <div style="font-size:13px;font-weight:700;color:#fff">${sponsor.nome_sponsor}</div>
+    ${sponsor.claim ? `<div style="font-size:11px;color:#F57C00;margin-left:auto;font-style:italic">${sponsor.claim}</div>` : ''}
+  </div>`
+}
+
+window.inizializzaNotifiche = inizializzaNotifiche
+window.chiediConsensoNotifiche = chiediConsensoNotifiche
 
 let tuttiPartner = []
 let categoriaAttiva = 'tutti'
@@ -2454,6 +2528,7 @@ window.addEventListener('load', async () => {
   loadPartnerPubblici()
   caricaPostiPubblici()
   caricaStatoGrattaVinci()
+  inizializzaNotifiche()
   gestisciResetRedirect()
   const { count } = await sb.from('partner').select('*', { count: 'exact', head: true }).eq('attivo', true)
   const el = document.getElementById('stat-partner-count')
@@ -2897,6 +2972,9 @@ async function caricaAreaTifoso(user) {
 
   // Carica sezione MVP voto
   await caricaMvpVoto(tifoso.id, pianoNome, tifoso.punti_saldo)
+
+  // Mostra banner consenso notifiche (se non ancora risposto)
+  setTimeout(mostraBannerNotifiche, 2000)
 
   // Popola sezione profilo
   const { data: membProfilo } = await sb.from('membership')
