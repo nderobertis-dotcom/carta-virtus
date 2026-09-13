@@ -782,7 +782,7 @@ select.form-input:focus{border-color:var(--accent)}
 
         <!-- Toggle votazioni per gara -->
         <div class="card" style="margin-bottom:16px;padding:14px" id="mvp-toggle-box" style="display:none">
-          <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div>
               <div style="font-size:13px;font-weight:600">Votazioni per la gara selezionata</div>
               <div style="font-size:12px;color:var(--muted)" id="mvp-stato-testo">Seleziona una gara</div>
@@ -790,6 +790,22 @@ select.form-input:focus{border-color:var(--accent)}
             <div style="display:flex;gap:8px">
               <button class="btn btn-primary btn-sm" id="btn-apri-voti" onclick="toggleVotazioni(true)" style="display:none">▶ Apri votazioni</button>
               <button class="btn btn-danger btn-sm" id="btn-chiudi-voti" onclick="toggleVotazioni(false)" style="display:none">■ Chiudi votazioni</button>
+            </div>
+          </div>
+          <!-- Sponsor gara -->
+          <div style="border-top:1px solid var(--border);padding-top:12px">
+            <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">🤝 Sponsor delle votazioni (opzionale)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div class="form-group" style="margin:0"><label style="font-size:11px">Nome sponsor *</label><input class="form-input form-input-sm" id="sp-nome" placeholder="Es. Farmacia Rossi"/></div>
+              <div class="form-group" style="margin:0"><label style="font-size:11px">Claim / slogan</label><input class="form-input form-input-sm" id="sp-claim" placeholder="Es. Al tuo fianco da 20 anni"/></div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="form-group" style="margin:0;flex:1"><label style="font-size:11px">Logo sponsor</label>
+                <input type="file" id="sp-logo-input" accept="image/*" style="font-size:11px;width:100%" onchange="anteprimaSponsorLogo(this)"/>
+              </div>
+              <div id="sp-logo-preview" style="width:48px;height:48px;border-radius:6px;background:#f0f4ff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🤝</div>
+              <button class="btn btn-primary btn-sm" onclick="salvaSponsorGara()">💾 Salva sponsor</button>
+              <button class="btn btn-ghost btn-sm" onclick="rimuoviSponsorGara()">🗑️</button>
             </div>
           </div>
         </div>
@@ -3179,6 +3195,72 @@ async function salvaSospensione() {
   closeModal('modal-sospensione')
 }
 
+function anteprimaSponsorLogo(input) {
+  const file = input.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const prev = document.getElementById('sp-logo-preview')
+    prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;border-radius:6px"/>`
+  }
+  reader.readAsDataURL(file)
+}
+
+async function salvaSponsorGara() {
+  const sel = document.getElementById('mvp-gara-sel')
+  const garaId = sel?.value
+  if (!garaId) { toast('Seleziona prima una gara','error'); return }
+  const nome = document.getElementById('sp-nome').value.trim()
+  if (!nome) { toast('Inserisci il nome dello sponsor','error'); return }
+  const claim = document.getElementById('sp-claim').value.trim() || null
+
+  // Upload logo se presente
+  let logoUrl = null
+  const logoInput = document.getElementById('sp-logo-input')
+  if (logoInput.files[0]) {
+    const file = logoInput.files[0]
+    const ext = file.name.split('.').pop()
+    const path = `${garaId}.${ext}`
+    const { error: upErr } = await sbAdmin.storage.from('mvp-sponsor').upload(path, file, { upsert: true, contentType: file.type })
+    if (!upErr) {
+      const { data } = sbAdmin.storage.from('mvp-sponsor').getPublicUrl(path)
+      logoUrl = data.publicUrl + '?t=' + Date.now()
+    }
+  }
+
+  const payload = { gara_id: garaId, nome_sponsor: nome, claim, attivo: true }
+  if (logoUrl) payload.logo_url = logoUrl
+
+  const { error } = await sbAdmin.from('mvp_sponsor_gara').upsert(payload, { onConflict: 'gara_id' })
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('✅ Sponsor salvato', 'success')
+}
+
+async function rimuoviSponsorGara() {
+  const sel = document.getElementById('mvp-gara-sel')
+  const garaId = sel?.value
+  if (!garaId || !confirm('Rimuovere lo sponsor per questa gara?')) return
+  await sbAdmin.from('mvp_sponsor_gara').delete().eq('gara_id', garaId)
+  document.getElementById('sp-nome').value = ''
+  document.getElementById('sp-claim').value = ''
+  document.getElementById('sp-logo-input').value = ''
+  document.getElementById('sp-logo-preview').innerHTML = '🤝'
+  toast('Sponsor rimosso', 'success')
+}
+
+async function caricaSponsorPerGara(garaId) {
+  if (!garaId) return
+  const { data } = await sbAdmin.from('mvp_sponsor_gara').select('*').eq('gara_id', garaId).maybeSingle()
+  document.getElementById('sp-nome').value  = data?.nome_sponsor || ''
+  document.getElementById('sp-claim').value = data?.claim || ''
+  const prev = document.getElementById('sp-logo-preview')
+  if (data?.logo_url) {
+    prev.innerHTML = `<img src="${data.logo_url}" style="width:100%;height:100%;object-fit:contain;border-radius:6px"/>`
+  } else {
+    prev.innerHTML = '🤝'
+  }
+}
+
 async function toggleVotazioni(apri) {
   const sel = document.getElementById('mvp-gara-sel')
   const garaId = sel?.value
@@ -3360,6 +3442,7 @@ async function loadMvpClassifica() {
       document.getElementById('mvp-stato-testo').textContent = aperte ? '🟢 Votazioni APERTE' : '🔴 Votazioni chiuse'
       document.getElementById('btn-apri-voti').style.display   = aperte ? 'none' : 'inline-flex'
       document.getElementById('btn-chiudi-voti').style.display = aperte ? 'inline-flex' : 'none'
+      caricaSponsorPerGara(garaId)
     } else { toggleBox.style.display = 'none' }
   }
   let query = sbAdmin.from('mvp_voti').select('atleta_id, punti_voto')
@@ -6142,6 +6225,10 @@ document.addEventListener('DOMContentLoaded', function() {
   window.eliminaAtleta = eliminaAtleta;
   window.apriSospensione = apriSospensione;
   window.salvaSospensione = salvaSospensione;
+  window.anteprimaSponsorLogo = anteprimaSponsorLogo;
+  window.salvaSponsorGara = salvaSponsorGara;
+  window.rimuoviSponsorGara = rimuoviSponsorGara;
+  window.caricaSponsorPerGara = caricaSponsorPerGara;
   window.toggleVotazioni = toggleVotazioni;
   window.loadMvpClassifica = loadMvpClassifica;
   window.stampaMvp = stampaMvp;
