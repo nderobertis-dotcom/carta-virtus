@@ -746,6 +746,7 @@ select.form-input:focus{border-color:var(--accent)}
         <div style="display:flex;gap:8px">
           <button class="btn btn-ghost btn-sm" id="rst-tab-roster" onclick="switchRosterTab('roster',this)">👤 Roster</button>
           <button class="btn btn-ghost btn-sm" id="rst-tab-mvp" onclick="switchRosterTab('mvp',this)">🏆 Classifica MVP</button>
+          <button class="btn btn-ghost btn-sm" id="rst-tab-tifosi" onclick="switchRosterTab('tifosi',this)">❤️ Tifosi Votanti</button>
           <button class="btn btn-primary btn-sm" onclick="loadRoster()">↻ Aggiorna</button>
         </div>
       </div>
@@ -797,6 +798,36 @@ select.form-input:focus{border-color:var(--accent)}
           <table class="table" id="mvp-table">
             <thead><tr><th>Pos.</th><th>Atleta</th><th>#</th><th style="text-align:center">Voti</th><th style="text-align:center">Punti totali</th><th style="text-align:center">Tifosi votanti</th></tr></thead>
             <tbody id="mvp-classifica-list"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Seleziona una gara o visualizza la stagione completa</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel Tifosi Votanti -->
+      <div id="rst-panel-tifosi" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:13px;color:var(--muted)">Partecipazione tifosi alle votazioni MVP — stagione 2026/2027</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="loadTifosiVotanti()">↻ Aggiorna</button>
+            <button class="btn btn-primary btn-sm" onclick="stampaTifosiVotanti()">🖨️ Stampa</button>
+          </div>
+        </div>
+
+        <!-- KPI riepilogo -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="tv-kpi"></div>
+
+        <!-- Tabella -->
+        <div class="card">
+          <table class="table">
+            <thead><tr>
+              <th style="text-align:center">Pos.</th>
+              <th>Tifoso</th>
+              <th>Piano</th>
+              <th style="text-align:center">Gare votate</th>
+              <th style="text-align:center">Punti inviati</th>
+              <th style="text-align:center">Media pt/voto</th>
+              <th style="text-align:center">Premio</th>
+            </tr></thead>
+            <tbody id="tv-list"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Caricamento...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -3023,9 +3054,11 @@ async function loadRoster() {
 function switchRosterTab(tab, btn) {
   document.querySelectorAll('[id^="rst-tab-"]').forEach(b => b.classList.remove('btn-primary'))
   if (btn) btn.classList.add('btn-primary')
-  document.getElementById('rst-panel-roster').style.display = tab === 'roster' ? 'block' : 'none'
-  document.getElementById('rst-panel-mvp').style.display   = tab === 'mvp'    ? 'block' : 'none'
+  document.getElementById('rst-panel-roster').style.display  = tab === 'roster' ? 'block' : 'none'
+  document.getElementById('rst-panel-mvp').style.display     = tab === 'mvp'    ? 'block' : 'none'
+  document.getElementById('rst-panel-tifosi').style.display  = tab === 'tifosi' ? 'block' : 'none'
   if (tab === 'mvp') loadMvpClassifica()
+  if (tab === 'tifosi') loadTifosiVotanti()
 }
 
 function anteprimaFotoAtleta(input) {
@@ -3152,7 +3185,160 @@ async function toggleVotazioni(apri) {
   if (opt) opt.dataset.aperte = apri.toString()
 }
 
-async function loadMvpClassifica() {
+async function loadTifosiVotanti() {
+  const tbody = document.getElementById('tv-list')
+  const kpiEl = document.getElementById('tv-kpi')
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Caricamento...</td></tr>'
+
+  // Carica tutti i voti con dati tifoso e piano (senza atleta)
+  const { data: voti } = await sbAdmin.from('mvp_voti')
+    .select('tifoso_id, gara_id, punti_voto, creato_il')
+    .order('creato_il')
+
+  // Carica tifosi e membership
+  const { data: tifosi } = await sbAdmin.from('tifosi')
+    .select('id, nome, cognome')
+  const { data: memb } = await sbAdmin.from('membership')
+    .select('tifoso_id, piano:piano_id(nome)')
+    .eq('stato', 'attiva')
+
+  const tifosiMap = {}
+  ;(tifosi||[]).forEach(t => { tifosiMap[t.id] = t })
+  const membMap = {}
+  ;(memb||[]).forEach(m => { membMap[m.tifoso_id] = m.piano?.nome || '—' })
+
+  // Aggrega per tifoso
+  const aggr = {}
+  ;(voti||[]).forEach(v => {
+    if (!aggr[v.tifoso_id]) aggr[v.tifoso_id] = { gare: new Set(), puntiTot: 0, voti: 0 }
+    aggr[v.tifoso_id].gare.add(v.gara_id)
+    aggr[v.tifoso_id].puntiTot += v.punti_voto
+    aggr[v.tifoso_id].voti += 1
+  })
+
+  // Ordina per punti totali inviati (metrica principale premialità)
+  const lista = Object.entries(aggr)
+    .map(([tid, d]) => ({
+      tid,
+      nome: tifosiMap[tid] ? tifosiMap[tid].cognome + ' ' + tifosiMap[tid].nome : '—',
+      piano: membMap[tid] || '—',
+      gareVotate: d.gare.size,
+      puntiInviati: d.puntiTot,
+      voti: d.voti,
+      media: (d.puntiTot / d.voti).toFixed(1)
+    }))
+    .sort((a, b) => b.puntiInviati - a.puntiInviati || b.gareVotate - a.gareVotate)
+
+  // KPI
+  const totVotanti = lista.length
+  const totVoti    = lista.reduce((s, x) => s + x.voti, 0)
+  const totPunti   = lista.reduce((s, x) => s + x.puntiInviati, 0)
+  const totGare    = _gareList.length
+
+  if (kpiEl) kpiEl.innerHTML = `
+    <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center">
+      <div style="font-size:26px;font-weight:800;color:var(--accent)">${totVotanti}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Tifosi votanti</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center">
+      <div style="font-size:26px;font-weight:800;color:#2E7D32">${totVoti}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Voti espressi</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center">
+      <div style="font-size:26px;font-weight:800;color:var(--arancio)">${totPunti}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Punti inviati</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center">
+      <div style="font-size:26px;font-weight:800;color:var(--gold)">${totGare}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Gare in calendario</div>
+    </div>`
+
+  // Render tabella
+  if (!lista.length) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Nessun voto ancora espresso</td></tr>'
+    return
+  }
+
+  // Top 3 ricevono badge premio
+  if (tbody) tbody.innerHTML = lista.map((r, i) => {
+    const pos = i + 1
+    const medal = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : ''
+    const premio = pos <= 3 ? `<span class="badge badge-amber">${medal} Top ${pos}</span>` :
+                   r.gareVotate === totGare && totGare > 0 ? '<span class="badge badge-green">✅ Fedele</span>' : '—'
+    return `<tr>
+      <td style="text-align:center;font-weight:700">${medal || pos}</td>
+      <td><strong>${r.nome}</strong></td>
+      <td><span class="badge badge-gray">${r.piano}</span></td>
+      <td style="text-align:center;font-weight:700">${r.gareVotate}</td>
+      <td style="text-align:center;font-weight:700;color:var(--arancio)">${r.puntiInviati}</td>
+      <td style="text-align:center;color:var(--muted)">${r.media}</td>
+      <td style="text-align:center">${premio}</td>
+    </tr>`
+  }).join('')
+}
+
+async function stampaTifosiVotanti() {
+  const { data: voti } = await sbAdmin.from('mvp_voti').select('tifoso_id, gara_id, punti_voto')
+  const { data: tifosi } = await sbAdmin.from('tifosi').select('id, nome, cognome')
+  const { data: memb } = await sbAdmin.from('membership').select('tifoso_id, piano:piano_id(nome)').eq('stato', 'attiva')
+
+  const tifosiMap = {}; (tifosi||[]).forEach(t => { tifosiMap[t.id] = t })
+  const membMap = {};   (memb||[]).forEach(m => { membMap[m.tifoso_id] = m.piano?.nome || '—' })
+
+  const aggr = {}
+  ;(voti||[]).forEach(v => {
+    if (!aggr[v.tifoso_id]) aggr[v.tifoso_id] = { gare: new Set(), puntiTot: 0, voti: 0 }
+    aggr[v.tifoso_id].gare.add(v.gara_id)
+    aggr[v.tifoso_id].puntiTot += v.punti_voto
+    aggr[v.tifoso_id].voti += 1
+  })
+
+  const lista = Object.entries(aggr).map(([tid, d]) => ({
+    nome: tifosiMap[tid] ? tifosiMap[tid].cognome + ' ' + tifosiMap[tid].nome : '—',
+    piano: membMap[tid] || '—',
+    gareVotate: d.gare.size,
+    puntiInviati: d.puntiTot,
+    media: (d.puntiTot / d.voti).toFixed(1)
+  })).sort((a, b) => b.puntiInviati - a.puntiInviati || b.gareVotate - a.gareVotate)
+
+  const oggi = new Date().toLocaleDateString('it-IT')
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Tifosi Votanti MVP</title>
+  <style>body{font-family:Arial,sans-serif;padding:32px;color:#0D2147;max-width:750px;margin:0 auto}
+  .no-print{text-align:right;margin-bottom:20px}.no-print button{background:#0D2147;color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer}
+  h2{color:#0D2147;border-bottom:3px solid #F57C00;padding-bottom:8px}
+  table{width:100%;border-collapse:collapse;margin-top:16px}
+  th{background:#0D2147;color:#fff;padding:8px;text-align:left;font-size:11px;text-transform:uppercase}
+  td{padding:7px 8px;border-bottom:1px solid #eee;font-size:12px}
+  tr:nth-child(1) td,tr:nth-child(2) td,tr:nth-child(3) td{background:#FFF8E1}
+  .footer{margin-top:24px;font-size:10px;color:#9E9E9E;text-align:center;border-top:1px solid #eee;padding-top:10px}
+  @media print{.no-print{display:none}}</style>
+  </head><body>
+  <div class="no-print"><button onclick="window.print()">🖨️ Stampa</button></div>
+  <h2>❤️ Tifosi Votanti MVP — Stagione 2026/2027</h2>
+  <p style="font-size:11px;color:#546E7A">Emesso il ${oggi} · Riservato al Direttivo · I voti espressi non indicano a chi è stato votato</p>
+  <table>
+    <thead><tr>
+      <th>Pos.</th><th>Tifoso</th><th>Piano</th>
+      <th style="text-align:center">Gare votate</th>
+      <th style="text-align:center">Punti inviati</th>
+      <th style="text-align:center">Media pt/voto</th>
+    </tr></thead>
+    <tbody>
+      ${lista.map((r,i) => {
+        const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':''
+        return `<tr><td>${medal||i+1}</td><td><strong>${r.nome}</strong></td><td>${r.piano}</td>
+          <td style="text-align:center">${r.gareVotate}</td>
+          <td style="text-align:center;font-weight:700;color:#F57C00">${r.puntiInviati}</td>
+          <td style="text-align:center;color:#546E7A">${r.media}</td></tr>`
+      }).join('')}
+    </tbody>
+  </table>
+  <div class="footer">SSD Pol. Virtus 2014 Srl · Via Martiri di Via Fani c/o PalaPoli · 70056 Molfetta (BA) · virtusfanmolfetta.com</div>
+  </body></html>`
+
+  const win = window.open('', '_blank', 'width=800,height:900')
+  win.document.open(); win.document.write(html); win.document.close()
+}
   const sel = document.getElementById('mvp-gara-sel')
   const garaId = sel?.value
   const tbody = document.getElementById('mvp-classifica-list')
@@ -5928,6 +6114,8 @@ document.addEventListener('DOMContentLoaded', function() {
   window.loadGrattaVinci = loadGrattaVinci;
   window.anteprimaFotoAtleta = anteprimaFotoAtleta;
   window.loadRoster = loadRoster;
+  window.loadTifosiVotanti = loadTifosiVotanti;
+  window.stampaTifosiVotanti = stampaTifosiVotanti;
   window.switchRosterTab = switchRosterTab;
   window.apriModAtleta = apriModAtleta;
   window.salvaAtleta = salvaAtleta;
