@@ -1943,10 +1943,10 @@ async function caricaMvpVoto(tifosoId, pianoNome, puntiSaldo) {
     `Votazioni aperte — <strong>${data} vs ${opp}</strong>. Scegli il tuo MVP!`
   document.getElementById('mvp-voting-ui').style.display = 'block'
 
-  const isBase = pianoNome === 'Base' || pianoNome === 'Sponsor'
+  const isBase = pianoNome === 'Base' || pianoNome === 'VIP'
   if (isBase) {
-    const msg = pianoNome === 'Sponsor'
-      ? 'Fan Card Sponsor: hai diritto a 1 voto gratuito per ogni gara casalinga.'
+    const msg = pianoNome === 'VIP'
+      ? 'Fan Card VIP: hai diritto a 1 voto gratuito per ogni gara casalinga.'
       : 'Con Fan Card Base puoi votare (voto conteggiato ma senza accumulo punti).'
     document.getElementById('mvp-punti-info').textContent = msg
   } else {
@@ -1991,7 +1991,7 @@ async function inviaMvpVoto() {
   const errEl = document.getElementById('mvp-error')
   errEl.style.display = 'none'
 
-  const isBase = _mvpPianoTifoso === 'Base' || _mvpPianoTifoso === 'Sponsor'
+  const isBase = _mvpPianoTifoso === 'Base' || _mvpPianoTifoso === 'VIP'
   const puntiVoto = isBase ? 1 : parseInt(document.getElementById('mvp-punti-slider')?.value||1)
 
   if (!isBase && puntiVoto > _mvpPuntiTifoso) {

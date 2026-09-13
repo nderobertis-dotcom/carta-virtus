@@ -726,7 +726,7 @@ select.form-input:focus{border-color:var(--accent)}
             <select class="form-input" id="admin-posto-tifoso">
               <option value="">— Seleziona tifoso —</option>
             </select>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">Solo tifosi Silver o Gold con membership attiva e senza posto assegnato.</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">Tifosi Silver, Gold e VIP con membership attiva e senza posto assegnato. I VIP sono mostrati per primi.</div>
           </div>
 
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1474,7 +1474,14 @@ select.form-input:focus{border-color:var(--accent)}
           <option value="bronze">🥉 Bronze — € 30/anno</option>
           <option value="silver">🥈 Silver — € 50/anno</option>
           <option value="gold">🥇 Gold — € 100/anno</option>
+          <option value="vip">⭐ VIP — Sponsor / Ospite</option>
         </select>
+      </div>
+
+      <!-- Campo azienda (solo VIP) -->
+      <div id="fc-azienda-box" style="display:none;grid-column:1/-1" class="form-group">
+        <label>Azienda / Ente (opzionale)</label>
+        <input class="form-input" id="fc-azienda" placeholder="Es. Rossi Srl, Studio Bianchi..."/>
       </div>
 
       <!-- DATI MAGLIA (Silver e Gold) -->
@@ -4380,9 +4387,9 @@ async function openDettaglioTifoso(id) {
   if (!t) return
   currentDetTifoso = t
 
-  document.getElementById('det-nome-title').textContent = t.nome + ' ' + t.cognome
+  document.getElementById('det-nome-title').textContent = t.nome + ' ' + t.cognome + (t.azienda ? ' — ' + t.azienda : '')
   document.getElementById('det-nome').textContent = t.nome + ' ' + t.cognome
-  document.getElementById('det-email').textContent = t.email
+  document.getElementById('det-email').textContent = t.email + (t.azienda ? ' · ' + t.azienda : '')
   document.getElementById('det-tel').value = t.telefono || ''
   document.getElementById('det-nascita').value = t.data_nascita ? t.data_nascita.split('T')[0] : ''
   document.getElementById('det-sesso').value = t.sesso || ''
@@ -5047,29 +5054,45 @@ async function apriAdminPostoModal(t, f, n) {
 }
 
 async function caricaTifosiPerAssegnazione() {
-  // Recupera tifosi con membership Silver o Gold attiva
+  // Recupera tifosi con membership Silver, Gold o VIP attiva
+  const { data: pianiIds } = await sbAdmin.from('membership_piani')
+    .select('id,nome').in('nome', ['Silver','Gold','VIP'])
+  const idMap = {}
+  ;(pianiIds||[]).forEach(p => { idMap[p.id] = p.nome })
+
   const { data: membs } = await sbAdmin.from('membership')
-    .select('tifoso_id, piano:piano_id(nome), tifosi:tifoso_id(nome, cognome)')
+    .select('tifoso_id, piano_id, tifosi:tifoso_id(id, nome, cognome, azienda)')
     .eq('stato', 'attiva')
-    .in('piano_id',
-      await sbAdmin.from('membership_piani')
-        .select('id').in('nome', ['Silver','Gold'])
-        .then(r => (r.data||[]).map(p=>p.id))
-    )
+    .in('piano_id', Object.keys(idMap))
 
   // Recupera tifosi che hanno già un posto assegnato
   const { data: postiOccupati } = await sbAdmin.from('posti')
-    .select('tifoso_id').eq('stato','occupato')
+    .select('tifoso_id').in('stato',['assegnato','accompagnatore'])
   const tifosiConPosto = new Set((postiOccupati||[]).map(p=>p.tifoso_id))
 
   const sel = document.getElementById('admin-posto-tifoso')
-  sel.innerHTML = '<option value="">— Seleziona tifoso —</option>'
-  ;(membs||[])
-    .filter(m => !tifosiConPosto.has(m.tifoso_id))
-    .forEach(m => {
-      const nome = m.tifosi?.nome+' '+m.tifosi?.cognome+' ('+m.piano?.nome+')'
+  sel.innerHTML = '<option value="">— Seleziona —</option>'
+
+  // Raggruppa per piano per ordine visivo
+  const vip    = (membs||[]).filter(m => idMap[m.piano_id]==='VIP'    && !tifosiConPosto.has(m.tifoso_id))
+  const silver = (membs||[]).filter(m => idMap[m.piano_id]==='Silver' && !tifosiConPosto.has(m.tifoso_id))
+  const gold   = (membs||[]).filter(m => idMap[m.piano_id]==='Gold'   && !tifosiConPosto.has(m.tifoso_id))
+
+  const addGruppo = (lista, label) => {
+    if (!lista.length) return
+    sel.innerHTML += `<option disabled> ${label} </option>`
+    lista.forEach(m => {
+      const t = m.tifosi
+      const nome = t?.cognome + ' ' + t?.nome +
+        (t?.azienda ? ' · ' + t.azienda : '') +
+        ' (' + (idMap[m.piano_id]||'') + ')'
       sel.innerHTML += `<option value="${m.tifoso_id}">${nome}</option>`
     })
+  }
+
+  addGruppo(vip, '⭐ VIP')
+  addGruppo(gold, '🥇 Gold')
+  addGruppo(silver, '🥈 Silver')
 }
 
 function chiudiAdminPostoModal() {
@@ -5414,7 +5437,7 @@ async function loadTifosiSelectRicarica() {
 
 //  EMETTI FAN CARD 
 const PIANI_PREZZI = { base: 10, bronze: 30, silver: 50, gold: 100 }
-const PIANI_PUNTI_BENVENUTO = { base: 10, bronze: 30, silver: 50, gold: 100 }
+const PIANI_PUNTI_BENVENUTO = { base: 10, bronze: 30, silver: 50, gold: 100, vip: 0 }
 
 function toggleFcAccompagnatore(checked) {
   document.getElementById('fc-campi-accompagnatore').style.display = checked ? 'block' : 'none'
@@ -5427,15 +5450,18 @@ async function caricaAnnoSogliaFc() {
 }
 
 function toggleFcMaglia(piano) {
-  const box = document.getElementById('fc-maglia-box')
-  const postoBox = document.getElementById('fc-posto-box')
-  const hasPosto = piano === 'silver' || piano === 'gold'
-  if (box) box.style.display = hasPosto ? 'block' : 'none'
-  if (postoBox) postoBox.style.display = hasPosto ? 'block' : 'none'
-  // Reset posto selezionato
+  const box       = document.getElementById('fc-maglia-box')
+  const postoBox  = document.getElementById('fc-posto-box')
+  const aziendaBox = document.getElementById('fc-azienda-box')
+  const hasMaglia = piano === 'silver' || piano === 'gold'
+  const haPosto   = piano === 'silver' || piano === 'gold' || piano === 'vip'
+  const isVip     = piano === 'vip'
+  if (box)        box.style.display        = hasMaglia ? 'block' : 'none'
+  if (postoBox)   postoBox.style.display   = haPosto   ? 'block' : 'none'
+  if (aziendaBox) aziendaBox.style.display = isVip     ? 'block' : 'none'
   document.getElementById('fc-posto-tribuna').value = ''
-  document.getElementById('fc-posto-fila').value = ''
-  document.getElementById('fc-posto-numero').value = ''
+  document.getElementById('fc-posto-fila').value    = ''
+  document.getElementById('fc-posto-numero').value  = ''
   document.getElementById('fc-posto-selezionato').style.display = 'none'
   document.getElementById('fc-pianta-container').innerHTML = ''
 }
@@ -5522,6 +5548,9 @@ async function emettiFantCard() {
     }
   }
 
+  // Azienda (solo VIP)
+  const azienda = piano === 'vip' ? (document.getElementById('fc-azienda').value.trim() || null) : null
+
   // Validazione accompagnatore
   const accomp = document.getElementById('fc-accompagnatore').checked
   const annoMinore = parseInt(document.getElementById('fc-anno-minore').value) || null
@@ -5561,6 +5590,7 @@ async function emettiFantCard() {
       nome, cognome, email,
       telefono: telefono || null,
       data_nascita: nascita || null,
+      azienda: azienda || null,
       punti_saldo: PIANI_PUNTI_BENVENUTO[piano],
       stato: 'attivo'
     })
@@ -5668,6 +5698,8 @@ async function emettiFantCard() {
     document.getElementById('fc-posto-numero').value = ''
     document.getElementById('fc-posto-selezionato').style.display = 'none'
     document.getElementById('fc-pianta-container').innerHTML = ''
+    document.getElementById('fc-azienda-box').style.display = 'none'
+    document.getElementById('fc-azienda').value = ''
     _fcStatiPosti = {}
 
     loadTifosi()
