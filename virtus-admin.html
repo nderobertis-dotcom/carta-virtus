@@ -2249,7 +2249,7 @@ async function loadMsReport() {
     const piano = m.piano?.nome || 'N/D'
     const prezzo = prezziPiani[piano] || 0
     let canale = (m.metodo_pagamento || '').toLowerCase()
-    if (canale === 'sportello') canale = 'cassa'
+    if (canale === 'sportello' || canale === 'contanti') canale = 'cassa'
     if (!canali.hasOwnProperty(canale)) canale = 'altro'
     canali[canale] += prezzo
     canaliN[canale]++
