@@ -1732,6 +1732,33 @@ select.form-input:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- MODAL: Modifica metodo pagamento -->
+<div class="modal-overlay" id="modal-mod-metodo">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Modifica metodo di pagamento</div>
+      <button class="modal-close" onclick="closeModal('modal-mod-metodo')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mod-metodo-memb-id"/>
+      <div class="form-group">
+        <label>Metodo di pagamento</label>
+        <select class="form-input" id="mod-metodo-sel">
+          <option value="cassa">💵 Cassa (contanti)</option>
+          <option value="pos">💳 POS</option>
+          <option value="stripe">🌐 Stripe</option>
+          <option value="paypal">🅿️ PayPal</option>
+        </select>
+      </div>
+      <div style="font-size:12px;color:var(--muted)">Usa questa funzione per correggere errori di inserimento allo sportello.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-mod-metodo')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaModMetodo()">Salva</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Biglietteria gara -->
 <div class="modal-overlay" id="modal-biglietteria-gara">
   <div class="modal" style="max-width:420px">
@@ -2206,9 +2233,14 @@ async function loadMsReport() {
   const membMap = {}
   ;(memberships || []).forEach(m => { membMap[m.tifoso_id] = m })
   const perPiano = {}
+  const perPianoMetodi = {} // { Base: { cassa:2, stripe:1 }, ... }
   ;(memberships || []).forEach(m => {
     const p = m.piano?.nome || 'N/D'
     perPiano[p] = (perPiano[p] || 0) + 1
+    let canale = (m.metodo_pagamento || 'n/d').toLowerCase()
+    if (canale === 'sportello' || canale === 'contanti') canale = 'cassa'
+    if (!perPianoMetodi[p]) perPianoMetodi[p] = {}
+    perPianoMetodi[p][canale] = (perPianoMetodi[p][canale] || 0) + 1
   })
 
   // Taglie maglie
@@ -2360,6 +2392,7 @@ async function loadMsReport() {
       <table class="table" style="margin-bottom:12px">
         <thead><tr>
           <th>Piano</th><th style="text-align:center">Card emesse</th>
+          <th>Metodi di pagamento</th>
           <th style="text-align:right">Prezzo</th><th style="text-align:right">Incasso</th>
           <th style="text-align:right">Rateo/gara (${totalGareCalendario} gare)</th>
         </tr></thead>
@@ -2369,9 +2402,17 @@ async function loadMsReport() {
             const pr = prezziPiani[p]
             const inc = incassoFanCard[p]
             const rateo = totalGareCalendario ? (inc/totalGareCalendario).toFixed(2) : '—'
+            const metodi = perPianoMetodi[p] || {}
+            const metodiStr = Object.entries(metodi)
+              .map(([k,v]) => {
+                const icone = { cassa:'💵', pos:'💳', stripe:'🌐', paypal:'🅿️' }
+                const ico = icone[k] || '📋'
+                return `<span style="font-size:11px;background:var(--bg3);padding:2px 6px;border-radius:4px;margin-right:3px">${ico} ${k} ×${v}</span>`
+              }).join('') || '—'
             return '<tr>' +
               '<td><strong>'+p+'</strong></td>' +
               '<td style="text-align:center">'+n+'</td>' +
+              '<td>'+metodiStr+'</td>' +
               '<td style="text-align:right">€ '+pr.toFixed(2)+'</td>' +
               '<td style="text-align:right">€ '+inc.toFixed(2)+'</td>' +
               '<td style="text-align:right">€ '+rateo+'</td>' +
@@ -5075,12 +5116,39 @@ function renderMembership(list) {
       : m.stato === 'attiva'
         ? '<button class="btn btn-danger btn-sm" onclick="sospendiMemb(\'' + m.id + '\')">Sospendi</button>'
         : ''
-    return '<tr><td><strong>' + nome + '</strong><br><span style="color:var(--muted);font-size:11px">' + email + '</span></td><td><span class="pts">' + piano + '</span><br><span style="color:var(--muted);font-size:11px">€ ' + prezzo + '</span></td><td style="font-size:12px;text-transform:capitalize">' + (m.metodo_pagamento || '—') + '</td><td style="font-size:11px;color:var(--muted)">' + dal + '</td><td style="font-size:11px;color:var(--muted)">' + fino + '</td><td><span class="badge ' + badge + '">' + m.stato + '</span></td><td>' + btns + '</td></tr>'
+    const metodoBadge = (() => {
+      const met = (m.metodo_pagamento||'').toLowerCase()
+      if (met==='stripe') return '🌐 Stripe'
+      if (met==='paypal') return '🅿️ PayPal'
+      if (met==='pos') return '💳 POS'
+      if (met==='cassa'||met==='contanti'||met==='sportello') return '💵 Cassa'
+      return '📋 ' + (m.metodo_pagamento||'—')
+    })()
+    return '<tr><td><strong>' + nome + '</strong><br><span style="color:var(--muted);font-size:11px">' + email + '</span></td><td><span class="pts">' + piano + '</span><br><span style="color:var(--muted);font-size:11px">€ ' + prezzo + '</span></td><td><span style="font-size:11px;background:var(--bg3);padding:2px 7px;border-radius:4px">' + metodoBadge + '</span><br><button class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:3px" onclick="apriModMetodo(\'' + m.id + '\',\'' + (m.metodo_pagamento||'') + '\')">✏️ Cambia</button></td><td style="font-size:11px;color:var(--muted)">' + dal + '</td><td style="font-size:11px;color:var(--muted)">' + fino + '</td><td><span class="badge ' + badge + '">' + m.stato + '</span></td><td>' + btns + '</td></tr>'
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessuna membership trovata</td></tr>'
 }
 
 function filtraMembership(stato) {
   loadMembership(stato)
+}
+
+function apriModMetodo(membId, metodoAttuale) {
+  document.getElementById('mod-metodo-memb-id').value = membId
+  const sel = document.getElementById('mod-metodo-sel')
+  let normalized = metodoAttuale.toLowerCase()
+  if (normalized === 'sportello' || normalized === 'contanti') normalized = 'cassa'
+  sel.value = normalized || 'cassa'
+  openModal('modal-mod-metodo')
+}
+
+async function salvaModMetodo() {
+  const id = document.getElementById('mod-metodo-memb-id').value
+  const metodo = document.getElementById('mod-metodo-sel').value
+  const { error } = await sbAdmin.from('membership').update({ metodo_pagamento: metodo }).eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('✅ Metodo aggiornato', 'success')
+  closeModal('modal-mod-metodo')
+  loadMembership()
 }
 
 async function attivaMemb(id) {
@@ -6350,6 +6418,8 @@ document.addEventListener('DOMContentLoaded', function() {
   window.filtraMembership = filtraMembership;
   window.attivaMemb = attivaMemb;
   window.sospendiMemb = sospendiMemb;
+  window.apriModMetodo = apriModMetodo;
+  window.salvaModMetodo = salvaModMetodo;
   window.annullaMemb = annullaMemb;
   window.salvaAccompagnatore = salvaAccompagnatore;
   window.eseguiRicaricaDiretta = eseguiRicaricaDiretta;
