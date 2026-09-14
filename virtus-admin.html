@@ -2231,20 +2231,6 @@ async function loadMsReport() {
   const tifConPresenze = Object.keys(presenzeMap).length
   const mediaPresenze = tifConPresenze ? (totalIngressi / tifConPresenze).toFixed(1) : '—'
 
-  // Incasso per canale di pagamento
-  const canali = { cassa: 0, pos: 0, stripe: 0, paypal: 0, sportello: 0, altro: 0 }
-  const canaliN = { cassa: 0, pos: 0, stripe: 0, paypal: 0, sportello: 0, altro: 0 }
-  ;(memberships || []).forEach(m => {
-    const piano = m.piano?.nome || 'N/D'
-    const prezzo = prezziPiani[piano] || 0
-    let canale = (m.metodo_pagamento || '').toLowerCase()
-    // Normalizza: sportello e cassa sono la stessa cosa
-    if (canale === 'sportello') canale = 'cassa'
-    if (!canali.hasOwnProperty(canale)) canale = 'altro'
-    canali[canale] += prezzo
-    canaliN[canale]++
-  })
-
   // Incasso Fan Card per piano
   const prezziPiani = { Base: 10, Bronze: 30, Silver: 50, Gold: 100 }
   const incassoFanCard = {}
@@ -2254,6 +2240,19 @@ async function loadMsReport() {
     const inc = n * (prezziPiani[p] || 0)
     incassoFanCard[p] = inc
     totIncassoFanCard += inc
+  })
+
+  // Incasso per canale di pagamento
+  const canali = { cassa: 0, pos: 0, stripe: 0, paypal: 0, sportello: 0, altro: 0 }
+  const canaliN = { cassa: 0, pos: 0, stripe: 0, paypal: 0, sportello: 0, altro: 0 }
+  ;(memberships || []).forEach(m => {
+    const piano = m.piano?.nome || 'N/D'
+    const prezzo = prezziPiani[piano] || 0
+    let canale = (m.metodo_pagamento || '').toLowerCase()
+    if (canale === 'sportello') canale = 'cassa'
+    if (!canali.hasOwnProperty(canale)) canale = 'altro'
+    canali[canale] += prezzo
+    canaliN[canale]++
   })
   // Rateo per gara (quota Fan Card / gare totali in calendario)
   const totalGareCalendario = (gare||[]).length
