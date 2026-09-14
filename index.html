@@ -586,6 +586,22 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 
 
 
+<script>
+function accettaNotifiche() {
+  const banner = document.getElementById('banner-notifiche')
+  if (banner) banner.style.display = 'none'
+  if (!('Notification' in window)) return
+  Notification.requestPermission().then(r => {
+    if (r === 'granted' && typeof showToast === 'function') showToast('Notifiche MVP attivate!', false)
+  })
+}
+function rifiutaNotifiche() {
+  localStorage.setItem('notifiche_rifiutate', '1')
+  const banner = document.getElementById('banner-notifiche')
+  if (banner) banner.style.display = 'none'
+}
+</script>
+
 <!-- BANNER CONSENSO NOTIFICHE -->
 <div id="banner-notifiche" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:1500;background:#0D2147;color:#fff;border-radius:12px;padding:14px 20px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;align-items:center;gap:12px">
   <div style="font-size:22px">🔔</div>
@@ -3154,12 +3170,15 @@ SITO: virtusfanmolfetta.com`
         })
       })
       const data = await resp.json()
-      const risposta = data.content?.[0]?.text || 'Ops, non riesco a rispondere ora. Riprova!'
+      console.log('Wuanna API response:', JSON.stringify(data).slice(0,200))
+      const risposta = data.content?.[0]?.text ||
+        (data.error?.message ? 'Errore: ' + data.error.message : 'Ops, non riesco a rispondere ora. Riprova!')
       typing.remove()
       aggiungiMsg(risposta, 'bot')
       cronologia.push({ role: 'assistant', content: risposta })
       if (cronologia.length > 20) cronologia = cronologia.slice(-20)
     } catch(e) {
+      console.error('Wuanna fetch error:', e)
       typing.remove()
       aggiungiMsg('Connessione non disponibile. Riprova tra poco!', 'bot')
     }
