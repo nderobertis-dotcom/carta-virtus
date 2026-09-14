@@ -2172,9 +2172,9 @@ async function loadMsReport() {
     .select('id, auth_user_id, nome, cognome, sesso, data_nascita, stato, creato_il, tipo')
     .eq('tipo', 'tifoso')
 
-  // Carica membership con piano
+  // Carica membership con piano e metodo pagamento
   const { data: memberships } = await sbAdmin.from('membership')
-    .select('tifoso_id, piano:piano_id(nome), stato, maglia_taglia, maglia_cognome, maglia_numero, valida_dal')
+    .select('tifoso_id, piano:piano_id(nome), stato, maglia_taglia, maglia_cognome, maglia_numero, valida_dal, metodo_pagamento')
     .eq('stato', 'attiva')
 
   // Carica ingressi per presenze
@@ -2231,6 +2231,20 @@ async function loadMsReport() {
   const tifConPresenze = Object.keys(presenzeMap).length
   const mediaPresenze = tifConPresenze ? (totalIngressi / tifConPresenze).toFixed(1) : '—'
 
+  // Incasso per canale di pagamento
+  const canali = { cassa: 0, pos: 0, stripe: 0, paypal: 0, sportello: 0, altro: 0 }
+  const canaliN = { cassa: 0, pos: 0, stripe: 0, paypal: 0, sportello: 0, altro: 0 }
+  ;(memberships || []).forEach(m => {
+    const piano = m.piano?.nome || 'N/D'
+    const prezzo = prezziPiani[piano] || 0
+    let canale = (m.metodo_pagamento || '').toLowerCase()
+    // Normalizza: sportello e cassa sono la stessa cosa
+    if (canale === 'sportello') canale = 'cassa'
+    if (!canali.hasOwnProperty(canale)) canale = 'altro'
+    canali[canale] += prezzo
+    canaliN[canale]++
+  })
+
   // Incasso Fan Card per piano
   const prezziPiani = { Base: 10, Bronze: 30, Silver: 50, Gold: 100 }
   const incassoFanCard = {}
@@ -2282,6 +2296,63 @@ async function loadMsReport() {
         ${kpiCard('Range età', etaMin + '–' + etaMax + ' anni', '#546E7A')}
       </div>
       <div style="font-size:12px;color:var(--muted)">${senzaSesso > 0 ? `⚠️ ${senzaSesso} tifosi senza sesso indicato` : '✅ Tutti i tifosi hanno indicato il sesso'}</div>
+    </div>
+
+    <!-- INCASSI PER CANALE -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:16px">💳 Incassi per canale di pagamento</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+        ${[
+          { label:'💵 Cassa', key:'cassa', color:'#2E7D32' },
+          { label:'💳 POS', key:'pos', color:'#1565C0' },
+          { label:'🌐 Stripe', key:'stripe', color:'#635BFF' },
+          { label:'🅿️ PayPal', key:'paypal', color:'#003087' },
+          { label:'📋 Altro', key:'altro', color:'#546E7A' },
+        ].filter(c => canali[c.key] > 0 || canaliN[c.key] > 0).map(c => `
+          <div style="background:var(--bg3);border-radius:10px;padding:16px;text-align:center;border-left:3px solid ${c.color}">
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px">${c.label}</div>
+            <div style="font-size:24px;font-weight:800;color:${c.color}">€ ${canali[c.key].toFixed(2)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">${canaliN[c.key]} abbonament${canaliN[c.key]===1?'o':'i'}</div>
+          </div>`).join('')}
+      </div>
+      <table class="table">
+        <thead><tr>
+          <th>Canale</th>
+          <th style="text-align:center">Abbonamenti</th>
+          <th style="text-align:right">Incasso</th>
+          <th style="text-align:right">% sul totale</th>
+        </tr></thead>
+        <tbody>
+          ${[
+            { label:'💵 Cassa', key:'cassa' },
+            { label:'💳 POS', key:'pos' },
+            { label:'🌐 Stripe', key:'stripe' },
+            { label:'🅿️ PayPal', key:'paypal' },
+            { label:'📋 Altro', key:'altro' },
+          ].filter(c => canaliN[c.key] > 0).map(c => {
+            const pct = totIncassoFanCard ? ((canali[c.key]/totIncassoFanCard)*100).toFixed(1) : '0.0'
+            return `<tr>
+              <td><strong>${c.label}</strong></td>
+              <td style="text-align:center">${canaliN[c.key]}</td>
+              <td style="text-align:right">€ ${canali[c.key].toFixed(2)}</td>
+              <td style="text-align:right">
+                <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
+                  <div style="width:60px;height:6px;background:var(--border);border-radius:3px">
+                    <div style="width:${pct}%;height:6px;background:var(--accent);border-radius:3px"></div>
+                  </div>
+                  ${pct}%
+                </div>
+              </td>
+            </tr>`
+          }).join('')}
+          <tr style="font-weight:700;border-top:2px solid var(--border);background:var(--bg3)">
+            <td>TOTALE</td>
+            <td style="text-align:center">${(memberships||[]).length}</td>
+            <td style="text-align:right">€ ${totIncassoFanCard.toFixed(2)}</td>
+            <td style="text-align:right">100%</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- PER PIANO -->
