@@ -586,6 +586,46 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 
 
 
+<!--  CHATBOT & NOTIFICHE: funzioni globali  -->
+<script>
+function toggleChat() {
+  const win = document.getElementById('chat-window')
+  const icon = document.getElementById('chat-fab-icon')
+  const close = document.getElementById('chat-fab-close')
+  const dot = document.getElementById('chat-fab-dot')
+  const isOpen = win.style.display === 'flex'
+  win.style.display = isOpen ? 'none' : 'flex'
+  win.style.flexDirection = 'column'
+  icon.style.display = isOpen ? 'block' : 'none'
+  close.style.display = isOpen ? 'none' : 'block'
+  dot.style.display = 'none'
+  if (!isOpen) document.getElementById('chat-input').focus()
+}
+
+async function accettaNotifiche() {
+  const banner = document.getElementById('banner-notifiche')
+  if (banner) banner.style.display = 'none'
+  if (!('Notification' in window)) return
+  const result = await Notification.requestPermission()
+  if (result === 'granted' && typeof showToast === 'function') {
+    showToast('Notifiche MVP attivate!', false)
+  }
+}
+
+function rifiutaNotifiche() {
+  localStorage.setItem('notifiche_rifiutate', '1')
+  const banner = document.getElementById('banner-notifiche')
+  if (banner) banner.style.display = 'none'
+}
+
+function inviaQuick(testo) {
+  document.getElementById('chat-quick')?.remove()
+  document.getElementById('chat-input').value = testo
+  if (window.inviaMessaggio) window.inviaMessaggio()
+  else if (window._inviaMsg) window._inviaMsg()
+}
+</script>
+
 <!-- BANNER CONSENSO NOTIFICHE -->
 <div id="banner-notifiche" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:1500;background:#0D2147;color:#fff;border-radius:12px;padding:14px 20px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;align-items:center;gap:12px">
   <div style="font-size:22px">🔔</div>
@@ -3092,26 +3132,7 @@ POSTI: Silver/Gold scelgono autonomamente. VIP assegnati da admin. Tribuna Sud f
 
 SITO: virtusfanmolfetta.com - PALAZZETTO: PalaPoli Via Martiri di Via Fani Molfetta BA`
 
-  window.toggleChat = function() {
-    chatOpen = !chatOpen
-    const win = document.getElementById(\'chat-window\')
-    const icon = document.getElementById(\'chat-fab-icon\')
-    const close = document.getElementById(\'chat-fab-close\')
-    const dot = document.getElementById(\'chat-fab-dot\')
-    win.style.display = chatOpen ? \'flex\' : \'none\'
-    win.style.flexDirection = \'column\'
-    icon.style.display = chatOpen ? \'none\' : \'block\'
-    close.style.display = chatOpen ? \'block\' : \'none\'
-    dot.style.display = \'none\'
-    if (chatOpen) document.getElementById(\'chat-input\').focus()
-  }
-
-  window.inviaQuick = function(testo) {
-    document.getElementById(\'chat-quick\')?.remove()
-    document.getElementById(\'chat-input\').value = testo
-    inviaMessaggio()
-  }
-
+  window._inviaMsg = inviaMessaggio
   window.inviaMessaggio = async function() {
     const input = document.getElementById(\'chat-input\')
     const testo = input.value.trim()
