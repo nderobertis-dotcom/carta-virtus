@@ -288,6 +288,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Gare
     </div>
+    <div class="nav-item" onclick="showSection('trasferta')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Notifiche Trasferta
+    </div>
     <div class="nav-item" onclick="showSection('roster')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Roster &amp; MVP
@@ -859,6 +863,86 @@ select.form-input:focus{border-color:var(--accent)}
           <table>
             <thead><tr><th>Titolo</th><th>Avversario</th><th>Data e ora</th><th>Luogo</th><th>Stagione</th><th>Stato</th><th>Ingressi</th><th></th></tr></thead>
             <tbody id="gare-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICHE TRASFERTA -->
+    <div class="section" id="section-trasferta">
+      <div class="section-header">
+        <div class="section-title">📍 Notifiche Trasferta</div>
+        <button class="btn btn-ghost btn-sm" onclick="loadTrasferta()">↻ Aggiorna</button>
+      </div>
+
+      <!-- Selezione gara -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title" style="margin-bottom:10px">Seleziona gara in trasferta</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select class="form-input" id="trasferta-gara-sel" style="max-width:320px" onchange="caricaDatiTrasferta()">
+            <option value="">— Seleziona gara —</option>
+          </select>
+          <div id="trasferta-abbonati-info" style="font-size:13px;color:var(--muted)"></div>
+        </div>
+      </div>
+
+      <!-- Pannello risultati + sponsor -->
+      <div id="trasferta-panel" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+          <!-- Parziale 3° quarto -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">🏀 Parziale — Fine 3° Quarto</div>
+            <div class="form-group">
+              <label>Risultato parziale</label>
+              <input class="form-input" id="trasferta-parziale" placeholder="es. Virtus 58 – Avversario 62"/>
+            </div>
+            <div class="form-group">
+              <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
+                <input type="checkbox" id="trasferta-parziale-inviata" disabled style="width:13px;height:13px"/>
+                Notifica già inviata
+              </label>
+            </div>
+            <button class="btn btn-primary" onclick="inviaNotificaTrasferta('parziale')">
+              📲 Invia notifica parziale
+            </button>
+          </div>
+
+          <!-- Risultato finale -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">🏆 Risultato Finale</div>
+            <div class="form-group">
+              <label>Risultato finale</label>
+              <input class="form-input" id="trasferta-finale" placeholder="es. Virtus 78 – Avversario 82"/>
+            </div>
+            <div class="form-group">
+              <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
+                <input type="checkbox" id="trasferta-finale-inviata" disabled style="width:13px;height:13px"/>
+                Notifica già inviata
+              </label>
+            </div>
+            <button class="btn btn-primary" onclick="inviaNotificaTrasferta('finale')">
+              📲 Invia notifica finale
+            </button>
+          </div>
+        </div>
+
+        <!-- Sponsor notifica -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">🤝 Sponsor della notifica (opzionale)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div class="form-group" style="margin:0"><label style="font-size:11px">Nome sponsor</label><input class="form-input form-input-sm" id="trasferta-sponsor-nome" placeholder="Es. Farmacia De Giglio"/></div>
+            <div class="form-group" style="margin:0"><label style="font-size:11px">Logo URL (opzionale)</label><input class="form-input form-input-sm" id="trasferta-sponsor-logo" placeholder="https://..."/></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="salvaSponsorTrasferta()">💾 Salva sponsor</button>
+        </div>
+
+        <!-- Log tifosi -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title" style="margin-bottom:10px">👥 Tifosi abbonati con notifiche trasferta attive</div>
+          <table class="table">
+            <thead><tr><th>Tifoso</th><th>Piano</th><th>Email</th></tr></thead>
+            <tbody id="trasferta-tifosi-list"><tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">Seleziona una gara</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1732,33 +1816,6 @@ select.form-input:focus{border-color:var(--accent)}
   </div>
 </div>
 
-<!-- MODAL: Modifica metodo pagamento -->
-<div class="modal-overlay" id="modal-mod-metodo">
-  <div class="modal" style="max-width:380px">
-    <div class="modal-header">
-      <div class="modal-title">✏️ Modifica metodo di pagamento</div>
-      <button class="modal-close" onclick="closeModal('modal-mod-metodo')">×</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="mod-metodo-memb-id"/>
-      <div class="form-group">
-        <label>Metodo di pagamento</label>
-        <select class="form-input" id="mod-metodo-sel">
-          <option value="cassa">💵 Cassa (contanti)</option>
-          <option value="pos">💳 POS</option>
-          <option value="stripe">🌐 Stripe</option>
-          <option value="paypal">🅿️ PayPal</option>
-        </select>
-      </div>
-      <div style="font-size:12px;color:var(--muted)">Usa questa funzione per correggere errori di inserimento allo sportello.</div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-mod-metodo')">Annulla</button>
-      <button class="btn btn-primary" onclick="salvaModMetodo()">Salva</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL: Biglietteria gara -->
 <div class="modal-overlay" id="modal-biglietteria-gara">
   <div class="modal" style="max-width:420px">
@@ -2233,14 +2290,9 @@ async function loadMsReport() {
   const membMap = {}
   ;(memberships || []).forEach(m => { membMap[m.tifoso_id] = m })
   const perPiano = {}
-  const perPianoMetodi = {} // { Base: { cassa:2, stripe:1 }, ... }
   ;(memberships || []).forEach(m => {
     const p = m.piano?.nome || 'N/D'
     perPiano[p] = (perPiano[p] || 0) + 1
-    let canale = (m.metodo_pagamento || 'n/d').toLowerCase()
-    if (canale === 'sportello' || canale === 'contanti') canale = 'cassa'
-    if (!perPianoMetodi[p]) perPianoMetodi[p] = {}
-    perPianoMetodi[p][canale] = (perPianoMetodi[p][canale] || 0) + 1
   })
 
   // Taglie maglie
@@ -2392,7 +2444,6 @@ async function loadMsReport() {
       <table class="table" style="margin-bottom:12px">
         <thead><tr>
           <th>Piano</th><th style="text-align:center">Card emesse</th>
-          <th>Metodi di pagamento</th>
           <th style="text-align:right">Prezzo</th><th style="text-align:right">Incasso</th>
           <th style="text-align:right">Rateo/gara (${totalGareCalendario} gare)</th>
         </tr></thead>
@@ -2402,17 +2453,9 @@ async function loadMsReport() {
             const pr = prezziPiani[p]
             const inc = incassoFanCard[p]
             const rateo = totalGareCalendario ? (inc/totalGareCalendario).toFixed(2) : '—'
-            const metodi = perPianoMetodi[p] || {}
-            const metodiStr = Object.entries(metodi)
-              .map(([k,v]) => {
-                const icone = { cassa:'💵', pos:'💳', stripe:'🌐', paypal:'🅿️' }
-                const ico = icone[k] || '📋'
-                return `<span style="font-size:11px;background:var(--bg3);padding:2px 6px;border-radius:4px;margin-right:3px">${ico} ${k} ×${v}</span>`
-              }).join('') || '—'
             return '<tr>' +
               '<td><strong>'+p+'</strong></td>' +
               '<td style="text-align:center">'+n+'</td>' +
-              '<td>'+metodiStr+'</td>' +
               '<td style="text-align:right">€ '+pr.toFixed(2)+'</td>' +
               '<td style="text-align:right">€ '+inc.toFixed(2)+'</td>' +
               '<td style="text-align:right">€ '+rateo+'</td>' +
@@ -3611,6 +3654,128 @@ async function stampaMvp() {
   win.document.open(); win.document.write(html); win.document.close()
 }
 
+//  NOTIFICHE TRASFERTA 
+let _trasfertaGare = []
+
+async function loadTrasferta() {
+  // Carica gare NON casalinghe (trasferta)
+  const { data: gare } = await sbAdmin.from('gare')
+    .select('id,titolo,avversario,data_ora,parziale_3q,risultato_finale,notifica_parziale_inviata,notifica_finale_inviata,sponsor_notifica,sponsor_notifica_logo')
+    .not('luogo','ilike','%palap%')
+    .order('data_ora')
+  _trasfertaGare = gare || []
+
+  const sel = document.getElementById('trasferta-gara-sel')
+  if (sel) {
+    sel.innerHTML = '<option value="">— Seleziona gara —</option>' +
+      _trasfertaGare.map(g => {
+        const data = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})
+        return `<option value="${g.id}">${data} a ${g.avversario||g.titolo}</option>`
+      }).join('')
+  }
+}
+
+async function caricaDatiTrasferta() {
+  const garaId = document.getElementById('trasferta-gara-sel')?.value
+  const panel = document.getElementById('trasferta-panel')
+  if (!garaId) { if(panel) panel.style.display='none'; return }
+  if(panel) panel.style.display='block'
+
+  const gara = _trasfertaGare.find(g => g.id === garaId)
+  if (!gara) return
+
+  // Popola campi risultati
+  document.getElementById('trasferta-parziale').value        = gara.parziale_3q || ''
+  document.getElementById('trasferta-finale').value          = gara.risultato_finale || ''
+  document.getElementById('trasferta-parziale-inviata').checked = gara.notifica_parziale_inviata || false
+  document.getElementById('trasferta-finale-inviata').checked   = gara.notifica_finale_inviata || false
+  document.getElementById('trasferta-sponsor-nome').value   = gara.sponsor_notifica || ''
+  document.getElementById('trasferta-sponsor-logo').value   = gara.sponsor_notifica_logo || ''
+
+  // Carica tifosi con notifiche trasferta attive
+  const { data: tifosi } = await sbAdmin.from('tifosi')
+    .select('cognome, nome, email, membership:membership(piano:piano_id(nome))')
+    .eq('notifiche_trasferta', true)
+    .eq('stato', 'attivo')
+
+  const abbonati = (tifosi||[]).filter(t => t.membership?.length > 0)
+  const info = document.getElementById('trasferta-abbonati-info')
+  if (info) info.textContent = `${abbonati.length} tifosi con notifiche attive`
+
+  const tbody = document.getElementById('trasferta-tifosi-list')
+  if (tbody) {
+    tbody.innerHTML = abbonati.length ? abbonati.map(t =>
+      `<tr>
+        <td><strong>${t.cognome} ${t.nome}</strong></td>
+        <td><span class="badge badge-gray">${t.membership?.[0]?.piano?.nome||'—'}</span></td>
+        <td style="font-size:12px;color:var(--muted)">${t.email}</td>
+      </tr>`
+    ).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:12px">Nessun tifoso con notifiche attive</td></tr>'
+  }
+}
+
+async function salvaSponsorTrasferta() {
+  const garaId = document.getElementById('trasferta-gara-sel')?.value
+  if (!garaId) return
+  const nome = document.getElementById('trasferta-sponsor-nome').value.trim() || null
+  const logo = document.getElementById('trasferta-sponsor-logo').value.trim() || null
+  await sbAdmin.from('gare').update({ sponsor_notifica: nome, sponsor_notifica_logo: logo }).eq('id', garaId)
+  toast('✅ Sponsor salvato', 'success')
+}
+
+async function inviaNotificaTrasferta(tipo) {
+  const garaId = document.getElementById('trasferta-gara-sel')?.value
+  if (!garaId) { toast('Seleziona una gara', 'error'); return }
+
+  const gara = _trasfertaGare.find(g => g.id === garaId)
+  const opp = gara?.avversario || 'Avversario'
+
+  let risultato, campoInviata, checkEl
+  if (tipo === 'parziale') {
+    risultato    = document.getElementById('trasferta-parziale').value.trim()
+    campoInviata = 'notifica_parziale_inviata'
+    checkEl      = document.getElementById('trasferta-parziale-inviata')
+  } else {
+    risultato    = document.getElementById('trasferta-finale').value.trim()
+    campoInviata = 'notifica_finale_inviata'
+    checkEl      = document.getElementById('trasferta-finale-inviata')
+  }
+
+  if (!risultato) { toast('Inserisci il risultato prima di inviare', 'error'); return }
+
+  const sponsor = document.getElementById('trasferta-sponsor-nome').value.trim()
+  const sponsorTxt = sponsor ? ` · ${sponsor}` : ''
+
+  const emoji   = tipo === 'parziale' ? '🏀' : '🏆'
+  const titolo  = tipo === 'parziale' ? `${emoji} Fine 3° Quarto — vs ${opp}` : `${emoji} Risultato Finale — vs ${opp}`
+  const body    = `${risultato}${sponsorTxt}`
+
+  if (!confirm(`Stai per inviare una notifica push a tutti i tifosi con notifiche trasferta attive.\n\nTitolo: ${titolo}\nMessaggio: ${body}\n\nConfermi?`)) return
+
+  // Salva risultato nel DB
+  const update = { [tipo === 'parziale' ? 'parziale_3q' : 'risultato_finale']: risultato, [campoInviata]: true }
+  await sbAdmin.from('gare').update(update).eq('id', garaId)
+
+  // Invia notifica tramite Worker
+  try {
+    const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/notify-trasferta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ garaId, tipo, titolo, body })
+    })
+    if (resp.ok) {
+      toast(`✅ Notifica ${tipo === 'parziale' ? 'parziale' : 'finale'} inviata`, 'success')
+      if (checkEl) checkEl.checked = true
+      // Aggiorna lista locale
+      if (gara) gara[campoInviata] = true
+    } else {
+      toast('Errore nell\'invio — risultato salvato', 'error')
+    }
+  } catch(e) {
+    toast('Risultato salvato. Errore di connessione al servizio notifiche.', 'error')
+  }
+}
+
 //  NAV 
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
@@ -3642,6 +3807,7 @@ function showSection(name) {
   if (name === 'maglie')             { loadMaglieSciarpe(); switchMaglieTab('maglie', document.getElementById('ms-tab-maglie')) }
   if (name === 'report-stagionale')  { loadMsReport() }
   if (name === 'membership')    loadMembership('in_attesa')
+  if (name === 'trasferta')     loadTrasferta()
   if (name === 'gare')          loadGare()
   if (name === 'operatori')     loadOperatori()
   if (name === 'merchants')     loadMerchants()
@@ -5116,39 +5282,12 @@ function renderMembership(list) {
       : m.stato === 'attiva'
         ? '<button class="btn btn-danger btn-sm" onclick="sospendiMemb(\'' + m.id + '\')">Sospendi</button>'
         : ''
-    const metodoBadge = (() => {
-      const met = (m.metodo_pagamento||'').toLowerCase()
-      if (met==='stripe') return '🌐 Stripe'
-      if (met==='paypal') return '🅿️ PayPal'
-      if (met==='pos') return '💳 POS'
-      if (met==='cassa'||met==='contanti'||met==='sportello') return '💵 Cassa'
-      return '📋 ' + (m.metodo_pagamento||'—')
-    })()
-    return '<tr><td><strong>' + nome + '</strong><br><span style="color:var(--muted);font-size:11px">' + email + '</span></td><td><span class="pts">' + piano + '</span><br><span style="color:var(--muted);font-size:11px">€ ' + prezzo + '</span></td><td><span style="font-size:11px;background:var(--bg3);padding:2px 7px;border-radius:4px">' + metodoBadge + '</span><br><button class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:3px" onclick="apriModMetodo(\'' + m.id + '\',\'' + (m.metodo_pagamento||'') + '\')">✏️ Cambia</button></td><td style="font-size:11px;color:var(--muted)">' + dal + '</td><td style="font-size:11px;color:var(--muted)">' + fino + '</td><td><span class="badge ' + badge + '">' + m.stato + '</span></td><td>' + btns + '</td></tr>'
+    return '<tr><td><strong>' + nome + '</strong><br><span style="color:var(--muted);font-size:11px">' + email + '</span></td><td><span class="pts">' + piano + '</span><br><span style="color:var(--muted);font-size:11px">€ ' + prezzo + '</span></td><td style="font-size:12px;text-transform:capitalize">' + (m.metodo_pagamento || '—') + '</td><td style="font-size:11px;color:var(--muted)">' + dal + '</td><td style="font-size:11px;color:var(--muted)">' + fino + '</td><td><span class="badge ' + badge + '">' + m.stato + '</span></td><td>' + btns + '</td></tr>'
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessuna membership trovata</td></tr>'
 }
 
 function filtraMembership(stato) {
   loadMembership(stato)
-}
-
-function apriModMetodo(membId, metodoAttuale) {
-  document.getElementById('mod-metodo-memb-id').value = membId
-  const sel = document.getElementById('mod-metodo-sel')
-  let normalized = metodoAttuale.toLowerCase()
-  if (normalized === 'sportello' || normalized === 'contanti') normalized = 'cassa'
-  sel.value = normalized || 'cassa'
-  openModal('modal-mod-metodo')
-}
-
-async function salvaModMetodo() {
-  const id = document.getElementById('mod-metodo-memb-id').value
-  const metodo = document.getElementById('mod-metodo-sel').value
-  const { error } = await sbAdmin.from('membership').update({ metodo_pagamento: metodo }).eq('id', id)
-  if (error) { toast('Errore: ' + error.message, 'error'); return }
-  toast('✅ Metodo aggiornato', 'success')
-  closeModal('modal-mod-metodo')
-  loadMembership()
 }
 
 async function attivaMemb(id) {
@@ -6339,6 +6478,10 @@ document.addEventListener('DOMContentLoaded', function() {
   window.emettiFantCard = emettiFantCard;
   window.stampaCardAdmin = stampaCardAdmin;
   window.apriNuovaGara = apriNuovaGara;
+  window.loadTrasferta = loadTrasferta;
+  window.caricaDatiTrasferta = caricaDatiTrasferta;
+  window.salvaSponsorTrasferta = salvaSponsorTrasferta;
+  window.inviaNotificaTrasferta = inviaNotificaTrasferta;
   window.apriModificaGara = apriModificaGara;
   window.salvaGara = salvaGara;
   window.confermaEliminaGara = confermaEliminaGara;
@@ -6418,8 +6561,6 @@ document.addEventListener('DOMContentLoaded', function() {
   window.filtraMembership = filtraMembership;
   window.attivaMemb = attivaMemb;
   window.sospendiMemb = sospendiMemb;
-  window.apriModMetodo = apriModMetodo;
-  window.salvaModMetodo = salvaModMetodo;
   window.annullaMemb = annullaMemb;
   window.salvaAccompagnatore = salvaAccompagnatore;
   window.eseguiRicaricaDiretta = eseguiRicaricaDiretta;
