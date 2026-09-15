@@ -586,9 +586,6 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 
 
 
-<!-- BANNER CONSENSO NOTIFICHE -->
-<div id="banner-notifiche" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:1500;background:#0D2147;color:#fff;border-radius:12px;padding:14px 20px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;align-items:center;gap:12px">
-  <div style="font-size:22px">🔔</div>
   <div style="flex:1">
     <div style="font-size:13px;font-weight:700">Ricevi le notifiche MVP</div>
     <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">Saprai subito quando le votazioni sono aperte</div>
@@ -3016,8 +3013,6 @@ async function caricaAreaTifoso(user) {
   await caricaMvpVoto(tifoso.id, pianoNome, tifoso.punti_saldo)
   await caricaPreferenzaTrasferta(tifoso.id)
 
-  // Mostra banner consenso notifiche (se non ancora risposto)
-  setTimeout(mostraBannerNotifiche, 2000)
 
   // Popola sezione profilo
   const { data: membProfilo } = await sb.from('membership')
