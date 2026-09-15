@@ -886,40 +886,60 @@ select.form-input:focus{border-color:var(--accent)}
         </div>
       </div>
 
-      <!-- Pannello risultati -->
+      <!-- Pannello risultati 4 quarti -->
       <div id="ge-panel" style="display:none">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
 
-          <!-- Parziale 3Q -->
+          <!-- 1° Quarto -->
           <div class="card">
-            <div class="card-title" style="margin-bottom:12px">🏀 Parziale — Fine 3° Quarto</div>
-            <div class="form-group">
-              <label>Risultato parziale</label>
-              <input class="form-input" id="ge-parziale" placeholder="es. Virtus 58 – Avversario 62"/>
+            <div class="card-title" style="margin-bottom:10px">🏀 Fine 1° Quarto</div>
+            <div class="form-group" style="margin-bottom:8px">
+              <input class="form-input form-input-sm" id="ge-1q" placeholder="es. Virtus 18 – Avv 22"/>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;font-size:12px;color:var(--muted)">
-              <input type="checkbox" id="ge-parziale-inviata" disabled style="width:13px;height:13px"/>
-              Notifica già inviata
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;color:var(--muted)">
+              <input type="checkbox" id="ge-1q-inviata" disabled style="width:12px;height:12px"/>
+              Notifica inviata
             </div>
-            <button class="btn btn-primary" style="width:100%" onclick="inviaNotificaEsterna('parziale')">
-              📲 Invia notifica parziale
-            </button>
+            <button class="btn btn-primary btn-sm" style="width:100%" onclick="inviaNotificaEsterna('1q')">📲 Invia parziale 1°Q</button>
           </div>
 
-          <!-- Risultato finale -->
+          <!-- 2° Quarto -->
           <div class="card">
-            <div class="card-title" style="margin-bottom:12px">🏆 Risultato Finale</div>
-            <div class="form-group">
-              <label>Risultato finale</label>
-              <input class="form-input" id="ge-finale" placeholder="es. Virtus 78 – Avversario 82"/>
+            <div class="card-title" style="margin-bottom:10px">🏀 Fine 2° Quarto</div>
+            <div class="form-group" style="margin-bottom:8px">
+              <input class="form-input form-input-sm" id="ge-2q" placeholder="es. Virtus 38 – Avv 41"/>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;font-size:12px;color:var(--muted)">
-              <input type="checkbox" id="ge-finale-inviata" disabled style="width:13px;height:13px"/>
-              Notifica già inviata
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;color:var(--muted)">
+              <input type="checkbox" id="ge-2q-inviata" disabled style="width:12px;height:12px"/>
+              Notifica inviata
             </div>
-            <button class="btn btn-primary" style="width:100%" onclick="inviaNotificaEsterna('finale')">
-              📲 Invia notifica finale
-            </button>
+            <button class="btn btn-primary btn-sm" style="width:100%" onclick="inviaNotificaEsterna('2q')">📲 Invia parziale 2°Q</button>
+          </div>
+
+          <!-- 3° Quarto -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom:10px">🏀 Fine 3° Quarto</div>
+            <div class="form-group" style="margin-bottom:8px">
+              <input class="form-input form-input-sm" id="ge-3q" placeholder="es. Virtus 58 – Avv 62"/>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;color:var(--muted)">
+              <input type="checkbox" id="ge-3q-inviata" disabled style="width:12px;height:12px"/>
+              Notifica inviata
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%" onclick="inviaNotificaEsterna('3q')">📲 Invia parziale 3°Q</button>
+          </div>
+
+          <!-- Finale -->
+          <div class="card" style="border:2px solid var(--accent)">
+            <div class="card-title" style="margin-bottom:10px;color:var(--accent)">🏆 Risultato Finale</div>
+            <div class="form-group" style="margin-bottom:8px">
+              <input class="form-input form-input-sm" id="ge-finale" placeholder="es. Virtus 78 – Avv 82"/>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;color:var(--muted)">
+              <input type="checkbox" id="ge-finale-inviata" disabled style="width:12px;height:12px"/>
+              Notifica inviata
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;background:var(--accent)" onclick="inviaNotificaEsterna('finale')">📲 Invia risultato finale</button>
           </div>
         </div>
 
@@ -3664,7 +3684,7 @@ let _gareEsterne = []
 async function loadGareEsterne() {
   // Gare fuori casa: luogo non contiene PalaPoli
   const { data: gare } = await sbAdmin.from('gare')
-    .select('id,titolo,avversario,data_ora,parziale_3q,risultato_finale,notifica_parziale_inviata,notifica_finale_inviata,sponsor_notifica,sponsor_notifica_logo')
+    .select('id,titolo,avversario,data_ora,parziale_1q,parziale_2q,parziale_3q,risultato_finale,notifica_1q_inviata,notifica_2q_inviata,notifica_parziale_inviata,notifica_finale_inviata,sponsor_notifica,sponsor_notifica_logo')
     .not('luogo','ilike','%palap%')
     .order('data_ora')
   _gareEsterne = gare || []
@@ -3696,10 +3716,14 @@ async function caricaDatiGaraEsterna() {
   const g = _gareEsterne.find(x => x.id===garaId)
   if (!g) return
 
-  document.getElementById('ge-parziale').value         = g.parziale_3q||''
-  document.getElementById('ge-finale').value           = g.risultato_finale||''
-  document.getElementById('ge-parziale-inviata').checked = g.notifica_parziale_inviata||false
-  document.getElementById('ge-finale-inviata').checked   = g.notifica_finale_inviata||false
+  document.getElementById('ge-1q').value              = g.parziale_1q||''
+  document.getElementById('ge-2q').value              = g.parziale_2q||''
+  document.getElementById('ge-3q').value              = g.parziale_3q||''
+  document.getElementById('ge-finale').value          = g.risultato_finale||''
+  document.getElementById('ge-1q-inviata').checked    = g.notifica_1q_inviata||false
+  document.getElementById('ge-2q-inviata').checked    = g.notifica_2q_inviata||false
+  document.getElementById('ge-3q-inviata').checked    = g.notifica_parziale_inviata||false
+  document.getElementById('ge-finale-inviata').checked = g.notifica_finale_inviata||false
   document.getElementById('ge-sponsor-nome').value     = g.sponsor_notifica||''
   document.getElementById('ge-sponsor-logo').value     = g.sponsor_notifica_logo||''
 
@@ -3743,23 +3767,22 @@ async function inviaNotificaEsterna(tipo) {
   const g = _gareEsterne.find(x=>x.id===garaId)
   const opp = g?.avversario||'Avversario'
 
-  const risultato = document.getElementById(tipo==='parziale'?'ge-parziale':'ge-finale').value.trim()
+  const risultato = document.getElementById(`ge-${tipo}`).value.trim()
 
   if (!risultato) { toast('Inserisci il risultato prima di inviare','error'); return }
 
   const sponsor = document.getElementById('ge-sponsor-nome').value.trim()
   const sponsorTxt = sponsor ? ` · ${sponsor}` : ''
-  const emoji  = tipo==='parziale' ? '🏀' : '🏆'
-  const titolo = tipo==='parziale'
-    ? `${emoji} Fine 3° Quarto — vs ${opp}`
-    : `${emoji} Risultato Finale — vs ${opp}`
+  const labels = { '1q':'Fine 1° Quarto', '2q':'Fine 2° Quarto', '3q':'Fine 3° Quarto', 'finale':'Risultato Finale' }
+  const emoji  = tipo==='finale' ? '🏆' : '🏀'
+  const titolo = `${emoji} ${labels[tipo]} — vs ${opp}`
   const body   = `${risultato}${sponsorTxt}`
 
   if (!confirm(`Stai per inviare una notifica push a tutti i tifosi con notifiche trasferta attive.\n\nTitolo: ${titolo}\nMessaggio: ${body}\n\nConfermi?`)) return
 
-  const campoRis    = tipo==='parziale' ? 'parziale_3q' : 'risultato_finale'
-  const campoInv    = tipo==='parziale' ? 'notifica_parziale_inviata' : 'notifica_finale_inviata'
-  const checkEl     = document.getElementById(tipo==='parziale'?'ge-parziale-inviata':'ge-finale-inviata')
+  const campoRis = { '1q':'parziale_1q', '2q':'parziale_2q', '3q':'parziale_3q', 'finale':'risultato_finale' }[tipo]
+  const campoInv = { '1q':'notifica_1q_inviata', '2q':'notifica_2q_inviata', '3q':'notifica_parziale_inviata', 'finale':'notifica_finale_inviata' }[tipo]
+  const checkEl  = document.getElementById(`ge-${tipo}-inviata`)
 
   await sbAdmin.from('gare').update({ [campoRis]:risultato, [campoInv]:true }).eq('id',garaId)
 
