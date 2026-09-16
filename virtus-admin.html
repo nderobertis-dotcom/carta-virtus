@@ -353,6 +353,15 @@ select.form-input:focus{border-color:var(--accent)}
 
     <!-- DASHBOARD -->
     <div class="section active" id="section-dashboard">
+
+      <!-- ALERT POSTI MANCANTI -->
+      <div id="alert-posti-mancanti" style="display:none;background:#fff3e0;border:1px solid #F57C00;border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:12px">
+        <div style="font-size:22px;flex-shrink:0">⚠️</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:#E65100;margin-bottom:6px">Silver/Gold senza posto assegnato</div>
+          <div id="alert-posti-lista" style="font-size:12px;color:#BF360C;line-height:1.8"></div>
+        </div>
+      </div>
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Tifosi attivi</div>
@@ -3898,6 +3907,32 @@ async function loadDashboard() {
     .filter(t => ['ACCUMULO','BONUS'].includes(t.tipo))
     .reduce((s, t) => s + t.punti_delta, 0)
   document.getElementById('stat-punti').textContent = puntiEmessi.toLocaleString('it-IT')
+
+  //  ALERT: Silver/Gold senza posto assegnato 
+  const { data: pianiConPosto } = await sbAdmin.from('membership_piani').select('id,nome').in('nome',['Silver','Gold'])
+  const pianiIds = (pianiConPosto||[]).map(p => p.id)
+  if (pianiIds.length) {
+    const { data: membSenzaPosto } = await sbAdmin.from('membership')
+      .select('tifoso_id, piano:piano_id(nome), tifosi:tifoso_id(nome,cognome,email)')
+      .eq('stato','attiva').in('piano_id', pianiIds)
+    const { data: postiAssegnati } = await sbAdmin.from('posti')
+      .select('tifoso_id').in('stato',['assegnato','accompagnatore'])
+    const conPosto = new Set((postiAssegnati||[]).map(p => p.tifoso_id))
+    const senzaPosto = (membSenzaPosto||[]).filter(m => !conPosto.has(m.tifoso_id))
+    const alertBox  = document.getElementById('alert-posti-mancanti')
+    const alertList = document.getElementById('alert-posti-lista')
+    if (senzaPosto.length && alertBox && alertList) {
+      alertBox.style.display = 'flex'
+      alertList.innerHTML = senzaPosto.map(m => {
+        const t = m.tifosi
+        return `<span style="display:inline-block;background:#fff;border:1px solid #F57C00;border-radius:4px;padding:2px 8px;margin:2px">
+          ${t?.cognome} ${t?.nome} <span style="color:#E65100">(${m.piano?.nome})</span>
+        </span>`
+      }).join('')
+    } else if (alertBox) {
+      alertBox.style.display = 'none'
+    }
+  }
 
   // Ultimi tifosi
   const { data: ultTifosi } = await sbAdmin.from('tifosi').select('nome, cognome, punti_saldo, stato')
