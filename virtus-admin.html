@@ -881,7 +881,23 @@ select.form-input:focus{border-color:var(--accent)}
     <div class="section" id="section-gare-esterne">
       <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div class="section-title">📍 Gare Esterne — Notifiche risultati</div>
-        <button class="btn btn-ghost btn-sm" onclick="loadGareEsterne()">↻ Aggiorna</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="loadGareEsterne()">↻ Aggiorna</button>
+          <button class="btn btn-primary btn-sm" onclick="apriNuovaGara('esterna')">+ Nuova gara esterna</button>
+        </div>
+      </div>
+
+      <!-- Calendario gare esterne -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">Calendario gare in trasferta</div>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Avversario</th><th>Data e ora</th><th>Luogo</th><th>Stagione</th><th></th></tr></thead>
+            <tbody id="gare-esterne-list"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">Caricamento...</td></tr></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Selezione gara -->
@@ -3706,6 +3722,26 @@ async function loadGareEsterne() {
     .order('data_ora')
   _gareEsterne = gare || []
 
+  // Calendario tabella
+  const tbody = document.getElementById('gare-esterne-list')
+  if (tbody) {
+    tbody.innerHTML = _gareEsterne.length ? _gareEsterne.map(g => {
+      const dt = new Date(g.data_ora)
+      const data = dt.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit'})
+      const ora  = dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})
+      const parz = g.notifica_finale_inviata ? `<span class="badge badge-green">Conclusa</span>` :
+                   g.notifica_parziale_inviata ? `<span class="badge badge-amber">In corso</span>` :
+                   `<span class="badge badge-gray">Programmata</span>`
+      return `<tr>
+        <td><strong>${g.avversario||g.titolo||'—'}</strong></td>
+        <td style="font-size:12px;color:var(--muted)">${data} ${ora}</td>
+        <td style="font-size:12px;color:var(--muted)">${g.luogo||'—'}</td>
+        <td style="font-size:12px;color:var(--muted)">${g.stagione||'—'}</td>
+        <td>${parz}</td>
+      </tr>`
+    }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">Nessuna gara esterna</td></tr>'
+  }
+
   const sel = document.getElementById('ge-gara-sel')
   if (sel) {
     sel.innerHTML = '<option value="">— Seleziona gara —</option>' +
@@ -5214,17 +5250,24 @@ function apriModificaGara(g) {
   const dp = {}; parts.forEach(p => dp[p.type] = p.value)
   document.getElementById('g-data').value    = `${dp.year}-${dp.month}-${dp.day}T${dp.hour}:${dp.minute}`
   document.getElementById('g-luogo').value   = g.luogo || 'PalaPoli, Molfetta'
+  const isInterna = (g.luogo||'').toLowerCase().includes('palap')
+  document.getElementById('g-luogo').readOnly = isInterna
+  document.getElementById('g-luogo').style.background = isInterna ? 'var(--bg3)' : ''
   document.getElementById('g-stagione').value = g.stagione || '2026/2027'
   openModal('modal-gara')
 }
 
-function apriNuovaGara() {
-  document.getElementById('modal-gara-title').textContent = 'Nuova gara'
+function apriNuovaGara(tipo) {
+  const esterna = tipo === 'esterna'
+  document.getElementById('modal-gara-title').textContent = esterna ? 'Nuova gara esterna' : 'Nuova gara interna'
   document.getElementById('g-id').value = ''
   document.getElementById('g-titolo').value = ''
   document.getElementById('g-avversario').value = ''
   document.getElementById('g-data').value = ''
-  document.getElementById('g-luogo').value = 'PalaPoli, Molfetta'
+  document.getElementById('g-luogo').value = esterna ? '' : 'PalaPoli, Molfetta'
+  document.getElementById('g-luogo').readOnly = !esterna
+  document.getElementById('g-luogo').style.background = esterna ? '' : 'var(--bg3)'
+  document.getElementById('g-luogo').placeholder = esterna ? 'Es. PalaTenda, Taranto' : 'PalaPoli, Molfetta'
   document.getElementById('g-stagione').value = '2026/2027'
   openModal('modal-gara')
 }
