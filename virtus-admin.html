@@ -2322,9 +2322,11 @@ async function loadMsReport() {
   const { data: ingressi } = await sbAdmin.from('ingressi_gare')
     .select('tifoso_id, piano_nome, gara_id')
 
-  // Carica gare
+  // Carica solo gare casalinghe (esclude trasferte)
   const { data: gare } = await sbAdmin.from('gare')
-    .select('id, titolo, data_ora').order('data_ora')
+    .select('id, titolo, data_ora, luogo')
+    .ilike('luogo', '%palap%')
+    .order('data_ora')
 
   if (!tifosi) { el.innerHTML = '<div style="color:var(--rosso);padding:20px">Errore caricamento dati</div>'; return }
 
