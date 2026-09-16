@@ -3949,12 +3949,16 @@ async function loadDashboard() {
   const pianiIds = (pianiConPosto||[]).map(p => p.id)
   if (pianiIds.length) {
     const { data: membSenzaPosto } = await sbAdmin.from('membership')
-      .select('tifoso_id, piano:piano_id(nome), tifosi:tifoso_id(nome,cognome,email)')
+      .select('tifoso_id, piano:piano_id(nome), tifosi:tifoso_id(id,nome,cognome,email,auth_user_id)')
       .eq('stato','attiva').in('piano_id', pianiIds)
     const { data: postiAssegnati } = await sbAdmin.from('posti')
       .select('tifoso_id').in('stato',['assegnato','accompagnatore'])
+    // posti.tifoso_id contiene auth_user_id, non tifosi.id
     const conPosto = new Set((postiAssegnati||[]).map(p => p.tifoso_id))
-    const senzaPosto = (membSenzaPosto||[]).filter(m => !conPosto.has(m.tifoso_id))
+    const senzaPosto = (membSenzaPosto||[]).filter(m => {
+      const authId = m.tifosi?.auth_user_id
+      return authId && !conPosto.has(authId)
+    })
     const alertBox  = document.getElementById('alert-posti-mancanti')
     const alertList = document.getElementById('alert-posti-lista')
     if (senzaPosto.length && alertBox && alertList) {
