@@ -950,6 +950,34 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
   </div>
 </div>
 
+<!-- MODAL PAGAMENTO OK -->
+<div class="modal-overlay" id="modal-pagamento-ok">
+  <div class="modal" style="max-width:420px;text-align:center">
+    <div style="font-size:56px;margin-bottom:12px">🎉</div>
+    <div style="font-size:20px;font-weight:700;color:#0D2147;margin-bottom:8px">Registrazione completata!</div>
+    <div style="font-size:14px;color:#546E7A;margin-bottom:16px;line-height:1.6">
+      Il tuo pagamento è andato a buon fine e la tua <strong>Virtus Fan Card</strong> è attiva.
+    </div>
+    <div style="background:#f0f4ff;border-radius:10px;padding:14px;margin-bottom:20px;text-align:left">
+      <div style="font-size:13px;font-weight:600;color:#0D2147;margin-bottom:8px">Cosa fare adesso:</div>
+      <div style="font-size:13px;color:#333;line-height:1.8">
+        1️⃣ Accedi alla tua <strong>area riservata</strong> con l'email e la password che hai scelto<br>
+        2️⃣ Troverai il tuo <strong>abbonamento attivo</strong>, i tuoi punti e la tua card digitale<br>
+        3️⃣ Mostra il <strong>QR code</strong> all'ingresso ad ogni gara casalinga
+      </div>
+    </div>
+    <div style="font-size:12px;color:#888;margin-bottom:20px">
+      Non hai ricevuto l'email di conferma? Controlla la cartella spam o contattaci su WhatsApp.
+    </div>
+    <button class="btn-primary" style="width:100%;padding:13px;font-size:15px" onclick="document.getElementById('modal-pagamento-ok').classList.remove('open');document.getElementById('modal-login').classList.add('open')">
+      🔐 Accedi alla tua area riservata
+    </button>
+    <button class="btn-ghost" style="width:100%;margin-top:8px;padding:10px;font-size:13px" onclick="document.getElementById('modal-pagamento-ok').classList.remove('open')">
+      Chiudi
+    </button>
+  </div>
+</div>
+
 <!-- MODAL REGISTRAZIONE -->
 <div class="modal-overlay" id="modal-reg">
   <div class="modal">
@@ -2860,13 +2888,26 @@ window.salvaNuovaPassword = salvaNuovaPassword
 async function gestisciResetRedirect() {
   const hash = window.location.hash
   const params = new URLSearchParams(window.location.search)
+
+  //  Pagamento completato 
+  if (params.get('payment') === 'success') {
+    const method = params.get('method') || 'stripe'
+    window.history.replaceState({}, '', window.location.pathname)
+    document.getElementById('modal-pagamento-ok').classList.add('open')
+    return
+  }
+
+  //  Pagamento annullato 
+  if (params.get('payment') === 'cancel') {
+    window.history.replaceState({}, '', window.location.pathname)
+    if (typeof showToast === 'function') showToast('Pagamento annullato. Puoi riprovare quando vuoi.', true)
+    return
+  }
+
   if (params.get('reset') === '1' || hash.includes('type=recovery')) {
-    // Supabase gestisce automaticamente la sessione dal token nell'hash
     const { data: { session } } = await sb.auth.getSession()
     if (session) {
-      // Mostra modal nuova password
       document.getElementById('modal-nuova-pw').classList.add('open')
-      // Pulisci l'URL
       window.history.replaceState({}, '', window.location.pathname)
     }
   }
