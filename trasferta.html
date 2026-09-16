@@ -50,6 +50,12 @@ select:focus,input[type=text]:focus{border-color:#0D2147}
 .btn-invia.finale{background:#F57C00}
 .btn-invia.finale:hover{background:#E65100}
 .btn-invia:disabled{background:#bbb;cursor:not-allowed}
+.score-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.score-team{font-size:10px;font-weight:600;color:#546E7A;white-space:nowrap;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis}
+.score-team.virtus{color:#0D2147}
+.score-num{width:52px;flex-shrink:0;border:2px solid #ddd;border-radius:6px;padding:6px 6px;font-size:16px;font-weight:700;text-align:center;outline:none;color:#222}
+.score-num:focus{border-color:#0D2147}
+.score-sep{font-size:16px;font-weight:700;color:#bbb;flex-shrink:0}
 
 .sponsor-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 @media(max-width:480px){.sponsor-row{grid-template-columns:1fr}}
@@ -107,22 +113,46 @@ select:focus,input[type=text]:focus{border-color:#0D2147}
   <div class="grid2" id="quarti-panel" style="display:none">
     <div class="q-card">
       <div class="q-title">🏀 Fine 1° Quarto <span class="done" id="done-1q" style="display:none">✅ Inviato</span></div>
-      <input class="q-input" id="r-1q" placeholder="es. Virtus 18 – Avv 22"/>
+      <div class="score-row">
+        <span class="score-team" id="team-casa-1q">Casa</span>
+        <input class="score-num" id="pts-casa-1q" type="number" min="0" max="999" placeholder="00"/>
+        <span class="score-sep">–</span>
+        <input class="score-num" id="pts-virtus-1q" type="number" min="0" max="999" placeholder="00"/>
+        <span class="score-team virtus">Virtus Molfetta</span>
+      </div>
       <button class="btn-invia" id="btn-1q" onclick="invia('1q')">📲 Invia parziale 1°Q</button>
     </div>
     <div class="q-card">
       <div class="q-title">🏀 Fine 2° Quarto <span class="done" id="done-2q" style="display:none">✅ Inviato</span></div>
-      <input class="q-input" id="r-2q" placeholder="es. Virtus 38 – Avv 41"/>
+      <div class="score-row">
+        <span class="score-team" id="team-casa-2q">Casa</span>
+        <input class="score-num" id="pts-casa-2q" type="number" min="0" max="999" placeholder="00"/>
+        <span class="score-sep">–</span>
+        <input class="score-num" id="pts-virtus-2q" type="number" min="0" max="999" placeholder="00"/>
+        <span class="score-team virtus">Virtus Molfetta</span>
+      </div>
       <button class="btn-invia" id="btn-2q" onclick="invia('2q')">📲 Invia parziale 2°Q</button>
     </div>
     <div class="q-card">
       <div class="q-title">🏀 Fine 3° Quarto <span class="done" id="done-3q" style="display:none">✅ Inviato</span></div>
-      <input class="q-input" id="r-3q" placeholder="es. Virtus 58 – Avv 62"/>
+      <div class="score-row">
+        <span class="score-team" id="team-casa-3q">Casa</span>
+        <input class="score-num" id="pts-casa-3q" type="number" min="0" max="999" placeholder="00"/>
+        <span class="score-sep">–</span>
+        <input class="score-num" id="pts-virtus-3q" type="number" min="0" max="999" placeholder="00"/>
+        <span class="score-team virtus">Virtus Molfetta</span>
+      </div>
       <button class="btn-invia" id="btn-3q" onclick="invia('3q')">📲 Invia parziale 3°Q</button>
     </div>
     <div class="q-card finale">
       <div class="q-title">🏆 Risultato Finale <span class="done" id="done-finale" style="display:none">✅ Inviato</span></div>
-      <input class="q-input" id="r-finale" placeholder="es. Virtus 78 – Avv 82"/>
+      <div class="score-row">
+        <span class="score-team" id="team-casa-finale">Casa</span>
+        <input class="score-num" id="pts-casa-finale" type="number" min="0" max="999" placeholder="00"/>
+        <span class="score-sep">–</span>
+        <input class="score-num" id="pts-virtus-finale" type="number" min="0" max="999" placeholder="00"/>
+        <span class="score-team virtus">Virtus Molfetta</span>
+      </div>
       <button class="btn-invia finale" id="btn-finale" onclick="invia('finale')">📲 Invia risultato finale</button>
     </div>
   </div>
@@ -220,12 +250,32 @@ function caricaGara() {
   panel.style.display = 'grid'
   spPanel.style.display = 'block'
 
-  document.getElementById('gara-label').textContent = `${new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})} vs ${g.avversario||g.titolo}`
+  const dataGara = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})
+  const opp = g.avversario||g.titolo||'Avversario'
+  document.getElementById('gara-label').textContent = `${dataGara} vs ${opp}`
+
+  // Imposta nome squadra casa in tutti i quarti
+  ;['1q','2q','3q','finale'].forEach(t => {
+    const el = document.getElementById(`team-casa-${t}`)
+    if (el) el.textContent = opp
+  })
 
   const map = { '1q':'parziale_1q','2q':'parziale_2q','3q':'parziale_3q','finale':'risultato_finale' }
   const invMap = { '1q':'notifica_1q_inviata','2q':'notifica_2q_inviata','3q':'notifica_parziale_inviata','finale':'notifica_finale_inviata' }
   for (const [tipo, campo] of Object.entries(map)) {
-    document.getElementById(`r-${tipo}`).value = g[campo]||''
+    // Ripristina punteggi salvati se presenti
+    const val = g[campo]||''
+    if (val) {
+      const parts = val.split('–').map(s => s.trim())
+      if (parts.length === 2) {
+        const ptsCasa   = parts[0].replace(/[^0-9]/g,'')
+        const ptsVirtus = parts[1].replace(/[^0-9]/g,'')
+        const elCasa   = document.getElementById(`pts-casa-${tipo}`)
+        const elVirtus = document.getElementById(`pts-virtus-${tipo}`)
+        if (elCasa)   elCasa.value   = ptsCasa
+        if (elVirtus) elVirtus.value = ptsVirtus
+      }
+    }
     const inviato = g[invMap[tipo]]||false
     const doneEl = document.getElementById(`done-${tipo}`)
     const btnEl  = document.getElementById(`btn-${tipo}`)
@@ -239,8 +289,12 @@ function caricaGara() {
 
 async function invia(tipo) {
   if (!_garaCorrente) { showToast('Seleziona una gara','err'); return }
-  const risultato = document.getElementById(`r-${tipo}`).value.trim()
-  if (!risultato) { showToast('Inserisci il risultato','err'); return }
+  const ptsCasa   = document.getElementById(`pts-casa-${tipo}`)?.value?.trim()
+  const ptsVirtus = document.getElementById(`pts-virtus-${tipo}`)?.value?.trim()
+  if (!ptsCasa && !ptsVirtus) { showToast('Inserisci i punteggi','err'); return }
+  const opp2 = _garaCorrente?.avversario||'Avversario'
+  const risultato = `${opp2} ${ptsCasa||0} – Virtus Molfetta ${ptsVirtus||0}`
+
 
   const opp    = _garaCorrente.avversario||'Avversario'
   const labels = { '1q':'Fine 1° Quarto','2q':'Fine 2° Quarto','3q':'Fine 3° Quarto','finale':'Risultato Finale' }
