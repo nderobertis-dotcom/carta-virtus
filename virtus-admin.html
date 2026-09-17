@@ -5510,6 +5510,7 @@ function esportaScansioni() {
 async function loadGare() {
   const { data, error } = await sbAdmin.from('gare')
     .select('*')
+    .ilike('luogo', '%palap%')
     .order('data_ora', { ascending: false })
 
   if (error) { toast('Errore: ' + error.message, 'error'); return }
@@ -5612,7 +5613,13 @@ async function salvaGara() {
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast(id ? 'Gara aggiornata ✓' : 'Gara aggiunta ✓', 'success')
   closeModal('modal-gara')
-  loadGare()
+  // Ricarica la sezione corretta in base al luogo
+  const luogo = payload.luogo.toLowerCase()
+  if (luogo.includes('palap') || luogo === '' || !luogo) {
+    loadGare()
+  } else {
+    loadGareEsterne()
+  }
 }
 
 async function confermaEliminaGara(id, titolo) {
