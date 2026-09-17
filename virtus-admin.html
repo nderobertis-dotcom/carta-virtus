@@ -272,6 +272,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
       Maglie &amp; Sciarpe
     </div>
+    <div class="nav-item" onclick="showSection('comunicazioni')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Comunicazioni
+    </div>
     <div class="nav-item" onclick="showSection('report-stagionale')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Report
@@ -648,6 +652,122 @@ select.form-input:focus{border-color:var(--accent)}
           </tr></thead>
           <tbody id="ms-list"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Seleziona una categoria</td></tr></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- SEZIONE: Comunicazioni -->
+    <div class="section" id="section-comunicazioni">
+      <div class="card">
+        <div class="section-title">💬 Comunicazioni Tifosi</div>
+        <p style="color:#6b7280;margin-bottom:1rem">Registro delle comunicazioni inviate ai tifosi tramite WhatsApp o altri canali.</p>
+
+        <div style="display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center">
+          <input id="com-search" type="text" placeholder="🔍 Cerca tifoso..." style="padding:.5rem .75rem;border:1px solid #d1d5db;border-radius:.5rem;font-size:.9rem;flex:1;min-width:180px" oninput="filtraComunicazioni()">
+          <select id="com-filter-canale" style="padding:.5rem .75rem;border:1px solid #d1d5db;border-radius:.5rem;font-size:.9rem" onchange="filtraComunicazioni()">
+            <option value="">Tutti i canali</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="email">Email</option>
+            <option value="telefono">Telefono</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="openModalNuovaCom()">+ Nuova Comunicazione</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadComunicazioni()">↻ Aggiorna</button>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="table" id="tbl-comunicazioni">
+            <thead>
+              <tr>
+                <th>Tifoso</th>
+                <th>Email</th>
+                <th>Telefono</th>
+                <th style="text-align:center">Comunicazioni</th>
+                <th style="text-align:center">Ultima</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-comunicazioni">
+              <tr><td colspan="6" style="text-align:center;padding:2rem;color:#9ca3af">Caricamento...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dettaglio comunicazioni tifoso -->
+      <div id="com-dettaglio-card" class="card" style="display:none;margin-top:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <div>
+            <div class="section-title" style="margin:0" id="com-dettaglio-nome">—</div>
+            <div style="color:#6b7280;font-size:.85rem" id="com-dettaglio-info">—</div>
+          </div>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-primary btn-sm" onclick="openModalNuovaCom(comTifosoCorrente)">+ Aggiungi</button>
+            <button class="btn btn-ghost btn-sm" onclick="chiudiDettaglio()">✕ Chiudi</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Titolo</th>
+                <th>Canale</th>
+                <th style="text-align:center">Inviata</th>
+                <th>Note</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-com-dettaglio">
+              <tr><td colspan="6" style="text-align:center;color:#9ca3af">Nessuna comunicazione</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Nuova Comunicazione -->
+    <div id="modal-nuova-com" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:1rem;padding:2rem;width:min(520px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.25)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+          <h3 style="margin:0;font-size:1.1rem">💬 Nuova Comunicazione</h3>
+          <button onclick="closeModalNuovaCom()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#6b7280">✕</button>
+        </div>
+
+        <div style="margin-bottom:.9rem">
+          <label style="font-size:.85rem;font-weight:600;color:#374151;display:block;margin-bottom:.35rem">Tifoso *</label>
+          <select id="com-modal-tifoso" style="width:100%;padding:.6rem .75rem;border:1px solid #d1d5db;border-radius:.5rem;font-size:.9rem">
+            <option value="">— Seleziona tifoso —</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:.9rem">
+          <label style="font-size:.85rem;font-weight:600;color:#374151;display:block;margin-bottom:.35rem">Titolo comunicazione *</label>
+          <input id="com-modal-titolo" type="text" placeholder="es. Invio credenziali webapp" style="width:100%;padding:.6rem .75rem;border:1px solid #d1d5db;border-radius:.5rem;font-size:.9rem;box-sizing:border-box">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.9rem">
+          <div>
+            <label style="font-size:.85rem;font-weight:600;color:#374151;display:block;margin-bottom:.35rem">Canale</label>
+            <select id="com-modal-canale" style="width:100%;padding:.6rem .75rem;border:1px solid #d1d5db;border-radius:.5rem;font-size:.9rem">
+              <option value="whatsapp">📱 WhatsApp</option>
+              <option value="email">📧 Email</option>
+              <option value="telefono">📞 Telefono</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem;padding-top:1.5rem">
+            <input type="checkbox" id="com-modal-inviata" style="width:1.1rem;height:1.1rem;cursor:pointer" checked>
+            <label for="com-modal-inviata" style="font-size:.9rem;cursor:pointer;font-weight:600">✅ Già inviata</label>
+          </div>
+        </div>
+
+        <div style="margin-bottom:1.25rem">
+          <label style="font-size:.85rem;font-weight:600;color:#374151;display:block;margin-bottom:.35rem">Note (opzionale)</label>
+          <textarea id="com-modal-note" rows="2" placeholder="Eventuali note aggiuntive..." style="width:100%;padding:.6rem .75rem;border:1px solid #d1d5db;border-radius:.5rem;font-size:.9rem;box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+
+        <div style="display:flex;gap:.75rem;justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="closeModalNuovaCom()">Annulla</button>
+          <button class="btn btn-primary" onclick="salvaComunicazione()">💾 Salva</button>
+        </div>
       </div>
     </div>
 
@@ -2980,6 +3100,190 @@ async function flagConsegna(membId, tipo, consegnata) {
 let _gvVenditori = []
 let _gvTab = 'venditori'
 
+// ─── COMUNICAZIONI ────────────────────────────────────────────────────
+let _tifosi_com = [];       // cache tifosi per la sezione comunicazioni
+let _com_all = [];          // cache tutte le comunicazioni
+let comTifosoCorrente = null; // tifoso selezionato per il dettaglio
+
+async function loadComunicazioni() {
+  const tbody = document.getElementById('tbody-comunicazioni');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#9ca3af">Caricamento...</td></tr>';
+
+  // Carica tifosi + comunicazioni in parallelo
+  const [{ data: tifosi }, { data: comAll }] = await Promise.all([
+    supabase.from('tifosi').select('id,nome,cognome,email,telefono').order('cognome'),
+    supabase.from('comunicazioni_tifosi').select('*').order('data_invio', { ascending: false })
+  ]);
+
+  _tifosi_com = tifosi || [];
+  _com_all = comAll || [];
+
+  // Popola select nel modal
+  const sel = document.getElementById('com-modal-tifoso');
+  if (sel) {
+    sel.innerHTML = '<option value="">— Seleziona tifoso —</option>';
+    _tifosi_com.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t.id;
+      o.textContent = `${t.cognome} ${t.nome}`;
+      sel.appendChild(o);
+    });
+  }
+
+  renderTabellaRiepilogo();
+}
+
+function renderTabellaRiepilogo(filter = '') {
+  const tbody = document.getElementById('tbody-comunicazioni');
+  if (!tbody) return;
+  const canale = document.getElementById('com-filter-canale')?.value || '';
+  const q = filter.toLowerCase();
+
+  const rows = _tifosi_com.filter(t => {
+    if (q && !`${t.cognome} ${t.nome} ${t.email}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#9ca3af">Nessun tifoso trovato</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(t => {
+    let comTifoso = _com_all.filter(c => c.tifoso_id === t.id);
+    if (canale) comTifoso = comTifoso.filter(c => c.canale === canale);
+    const n = comTifoso.length;
+    const ultima = comTifoso[0] ? new Date(comTifoso[0].data_invio).toLocaleDateString('it-IT') : '—';
+    const inviate = comTifoso.filter(c => c.inviata).length;
+    return `<tr>
+      <td><strong>${t.cognome} ${t.nome}</strong></td>
+      <td style="font-size:.85rem;color:#4b5563">${t.email || '—'}</td>
+      <td style="font-size:.85rem;color:#4b5563">${t.telefono || '—'}</td>
+      <td style="text-align:center">
+        ${n ? `<span style="background:#dbeafe;color:#1d4ed8;padding:.2rem .6rem;border-radius:9999px;font-size:.8rem;font-weight:700">${inviate}/${n}</span>` : '<span style="color:#d1d5db">—</span>'}
+      </td>
+      <td style="text-align:center;font-size:.85rem;color:#6b7280">${ultima}</td>
+      <td style="text-align:right">
+        <button class="btn btn-ghost btn-sm" onclick="apriDettaglioCom('${t.id}')">Dettaglio</button>
+        <button class="btn btn-primary btn-sm" onclick="openModalNuovaCom('${t.id}')">+ Com.</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filtraComunicazioni() {
+  const q = document.getElementById('com-search')?.value || '';
+  renderTabellaRiepilogo(q);
+}
+
+function apriDettaglioCom(tifosoId) {
+  comTifosoCorrente = tifosoId;
+  const t = _tifosi_com.find(x => x.id === tifosoId);
+  if (!t) return;
+
+  document.getElementById('com-dettaglio-nome').textContent = `${t.cognome} ${t.nome}`;
+  document.getElementById('com-dettaglio-info').textContent = `${t.email || ''}  ${t.telefono ? '· ' + t.telefono : ''}`;
+
+  const comTifoso = _com_all.filter(c => c.tifoso_id === tifosoId).sort((a,b) => new Date(b.data_invio) - new Date(a.data_invio));
+  const tbody = document.getElementById('tbody-com-dettaglio');
+  const canaleBadge = { whatsapp:'📱', email:'📧', telefono:'📞' };
+
+  if (!comTifoso.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:1rem">Nessuna comunicazione registrata</td></tr>';
+  } else {
+    tbody.innerHTML = comTifoso.map(c => `
+      <tr id="com-row-${c.id}">
+        <td style="font-size:.82rem;white-space:nowrap">${new Date(c.data_invio).toLocaleDateString('it-IT')}</td>
+        <td><strong>${c.titolo}</strong></td>
+        <td style="text-align:center">${canaleBadge[c.canale] || c.canale}</td>
+        <td style="text-align:center">
+          <label style="cursor:pointer;display:inline-flex;align-items:center;gap:.3rem">
+            <input type="checkbox" ${c.inviata ? 'checked' : ''} onchange="toggleInviata('${c.id}', this.checked)" style="width:1rem;height:1rem;cursor:pointer">
+            <span style="font-size:.8rem;color:${c.inviata ? '#16a34a' : '#9ca3af'}">${c.inviata ? 'Inviata' : 'In attesa'}</span>
+          </label>
+        </td>
+        <td style="font-size:.82rem;color:#6b7280">${c.note || '—'}</td>
+        <td><button class="btn btn-ghost btn-sm" style="color:#ef4444" onclick="eliminaComunicazione('${c.id}')">🗑</button></td>
+      </tr>
+    `).join('');
+  }
+
+  document.getElementById('com-dettaglio-card').style.display = 'block';
+  document.getElementById('com-dettaglio-card').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function chiudiDettaglio() {
+  document.getElementById('com-dettaglio-card').style.display = 'none';
+  comTifosoCorrente = null;
+}
+
+function openModalNuovaCom(tifosoId = null) {
+  document.getElementById('com-modal-titolo').value = '';
+  document.getElementById('com-modal-note').value = '';
+  document.getElementById('com-modal-canale').value = 'whatsapp';
+  document.getElementById('com-modal-inviata').checked = true;
+  if (tifosoId) {
+    document.getElementById('com-modal-tifoso').value = tifosoId;
+  }
+  document.getElementById('modal-nuova-com').style.display = 'flex';
+}
+
+function closeModalNuovaCom() {
+  document.getElementById('modal-nuova-com').style.display = 'none';
+}
+
+async function salvaComunicazione() {
+  const tifosoId = document.getElementById('com-modal-tifoso').value;
+  const titolo = document.getElementById('com-modal-titolo').value.trim();
+  const canale = document.getElementById('com-modal-canale').value;
+  const inviata = document.getElementById('com-modal-inviata').checked;
+  const note = document.getElementById('com-modal-note').value.trim();
+
+  if (!tifosoId) { alert('Seleziona un tifoso'); return; }
+  if (!titolo) { alert('Inserisci il titolo'); return; }
+
+  const { data, error } = await supabase.from('comunicazioni_tifosi').insert({
+    tifoso_id: tifosoId, titolo, canale, inviata, note: note || null
+  }).select().single();
+
+  if (error) { alert('Errore: ' + error.message); return; }
+
+  // Aggiorna cache locale
+  _com_all.unshift(data);
+  closeModalNuovaCom();
+  renderTabellaRiepilogo(document.getElementById('com-search')?.value || '');
+  if (comTifosoCorrente === tifosoId) apriDettaglioCom(tifosoId);
+  toast('✅ Comunicazione salvata');
+}
+
+async function toggleInviata(comId, val) {
+  const { error } = await supabase.from('comunicazioni_tifosi').update({ inviata: val }).eq('id', comId);
+  if (error) { alert('Errore: ' + error.message); return; }
+  const idx = _com_all.findIndex(c => c.id === comId);
+  if (idx !== -1) _com_all[idx].inviata = val;
+  // Aggiorna label inline senza reload completo
+  const row = document.getElementById('com-row-' + comId);
+  if (row) {
+    const span = row.querySelector('span');
+    if (span) {
+      span.textContent = val ? 'Inviata' : 'In attesa';
+      span.style.color = val ? '#16a34a' : '#9ca3af';
+    }
+  }
+}
+
+async function eliminaComunicazione(comId) {
+  if (!confirm('Eliminare questa comunicazione?')) return;
+  const { error } = await supabase.from('comunicazioni_tifosi').delete().eq('id', comId);
+  if (error) { alert('Errore: ' + error.message); return; }
+  _com_all = _com_all.filter(c => c.id !== comId);
+  renderTabellaRiepilogo(document.getElementById('com-search')?.value || '');
+  if (comTifosoCorrente) apriDettaglioCom(comTifosoCorrente);
+  toast('🗑 Comunicazione eliminata');
+}
+// ─── FINE COMUNICAZIONI ───────────────────────────────────────────────
+
 async function loadGrattaVinci() {
   // Carica stato
   const { data: impo } = await sbAdmin.from('impostazioni').select('valore').eq('chiave','gratta_vinci_attivo').single()
@@ -3909,6 +4213,7 @@ function showSection(name) {
   if (name === 'report')        loadReport()
   if (name === 'roster')          { loadRoster(); switchRosterTab('roster', document.getElementById('rst-tab-roster')) }
   if (name === 'gratta-vinci')   loadGrattaVinci()
+  if (name === 'comunicazioni')  loadComunicazioni()
   if (name === 'maglie')             { loadMaglieSciarpe(); switchMaglieTab('maglie', document.getElementById('ms-tab-maglie')) }
   if (name === 'report-stagionale')  { loadMsReport() }
   if (name === 'membership')    loadMembership('in_attesa')
@@ -6638,6 +6943,15 @@ document.addEventListener('DOMContentLoaded', function() {
   window.salvaGvPremio = salvaGvPremio;
   window.eliminaGvPremio = eliminaGvPremio;
   window.loadGrattaVinci = loadGrattaVinci;
+  window.loadComunicazioni = loadComunicazioni;
+  window.filtraComunicazioni = filtraComunicazioni;
+  window.apriDettaglioCom = apriDettaglioCom;
+  window.chiudiDettaglio = chiudiDettaglio;
+  window.openModalNuovaCom = openModalNuovaCom;
+  window.closeModalNuovaCom = closeModalNuovaCom;
+  window.salvaComunicazione = salvaComunicazione;
+  window.toggleInviata = toggleInviata;
+  window.eliminaComunicazione = eliminaComunicazione;
   window.anteprimaFotoAtleta = anteprimaFotoAtleta;
   window.loadRoster = loadRoster;
   window.loadTifosiVotanti = loadTifosiVotanti;
