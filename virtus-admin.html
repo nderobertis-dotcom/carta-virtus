@@ -1042,6 +1042,22 @@ select.form-input:focus{border-color:var(--accent)}
 
       <!-- Pannello risultati 4 quarti -->
       <div id="ge-panel" style="display:none">
+
+        <!-- INIZIO GARA -->
+        <div class="card" style="margin-bottom:16px;border:2px solid #22c55e;background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+            <div>
+              <div class="card-title" style="color:#15803d;margin-bottom:4px">🟢 Inizio Gara</div>
+              <div style="font-size:.82rem;color:#166534">Invia una notifica push ai tifosi per segnalare che la partita è iniziata</div>
+              <span id="ge-done-inizio" style="display:none;font-size:11px;color:#15803d;font-weight:600;margin-top:4px;display:none">✅ Notifica inviata</span>
+            </div>
+            <button class="btn btn-sm" id="ge-btn-inizio" onclick="inviaNotificaEsterna('inizio')"
+              style="background:#22c55e;color:#fff;font-weight:700;padding:10px 20px;font-size:.9rem;border:none;border-radius:.6rem;cursor:pointer;white-space:nowrap">
+              🏀 Inizio Gara — Invia notifica
+            </button>
+          </div>
+        </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
 
           <!-- 1° Quarto -->
@@ -4056,7 +4072,7 @@ let _gareEsterne = []
 async function loadGareEsterne() {
   // Gare fuori casa: luogo non contiene PalaPoli
   const { data: gare } = await sbAdmin.from('gare')
-    .select('id,titolo,avversario,data_ora,parziale_1q,parziale_2q,parziale_3q,risultato_finale,notifica_1q_inviata,notifica_2q_inviata,notifica_parziale_inviata,notifica_finale_inviata,sponsor_notifica,sponsor_notifica_logo')
+    .select('id,titolo,avversario,data_ora,luogo,parziale_1q,parziale_2q,parziale_3q,risultato_finale,notifica_inizio_inviata,notifica_1q_inviata,notifica_2q_inviata,notifica_parziale_inviata,notifica_finale_inviata,sponsor_notifica,sponsor_notifica_logo')
     .not('luogo','ilike','%palap%')
     .order('data_ora')
   _gareEsterne = gare || []
@@ -4113,6 +4129,14 @@ async function caricaDatiGaraEsterna() {
     const el = document.getElementById(`ge-team-casa-${t}`)
     if (el) el.textContent = opp
   })
+
+  // Stato pulsante Inizio Gara
+  const inizioInviato = g.notifica_inizio_inviata || false
+  const doneInizio = document.getElementById('ge-done-inizio')
+  const btnInizio  = document.getElementById('ge-btn-inizio')
+  if (doneInizio) { doneInizio.style.display = inizioInviato ? 'inline' : 'none'; doneInizio.textContent = '✅ Notifica inviata' }
+  if (btnInizio)  { btnInizio.disabled = inizioInviato; btnInizio.style.background = inizioInviato ? '#86efac' : '#22c55e'; btnInizio.textContent = inizioInviato ? '✅ Già inviato' : '🏀 Inizio Gara — Invia notifica' }
+
   const campoMap = { '1q':'parziale_1q','2q':'parziale_2q','3q':'parziale_3q','finale':'risultato_finale' }
   const invMap   = { '1q':'notifica_1q_inviata','2q':'notifica_2q_inviata','3q':'notifica_parziale_inviata','finale':'notifica_finale_inviata' }
   ;['1q','2q','3q','finale'].forEach(t => {
@@ -4175,15 +4199,47 @@ async function inviaNotificaEsterna(tipo) {
   if (!garaId) { toast('Seleziona una gara','error'); return }
 
   const g = _gareEsterne.find(x=>x.id===garaId)
-  const opp = g?.avversario||'Avversario'
+  const opp = g?.avversario || 'Avversario'
+  const sponsor = document.getElementById('ge-sponsor-nome')?.value.trim() || ''
+  const sponsorTxt = sponsor ? ` · ${sponsor}` : ''
 
+  // ── INIZIO GARA ────────────────────────────────────────────────────
+  if (tipo === 'inizio') {
+    const titolo = `🟢 Inizio Gara — vs ${opp}`
+    const luogo  = g?.luogo ? ` · ${g.luogo}` : ''
+    const body   = `La Virtus Molfetta è in campo${luogo}. Segui i parziali in tempo reale!${sponsorTxt}`
+
+    if (!confirm(`Stai per inviare una notifica INIZIO GARA.\n\nTitolo: ${titolo}\nMessaggio: ${body}\n\nConfermi?`)) return
+
+    await sbAdmin.from('gare').update({ notifica_inizio_inviata: true }).eq('id', garaId)
+    try {
+      const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/notify-trasferta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ garaId, tipo: 'inizio', titolo, body })
+      })
+      if (resp.ok) {
+        toast('✅ Notifica Inizio Gara inviata', 'success')
+        const doneEl = document.getElementById('ge-done-inizio')
+        const btnEl  = document.getElementById('ge-btn-inizio')
+        if (doneEl) { doneEl.style.display = 'inline'; doneEl.textContent = '✅ Notifica inviata' }
+        if (btnEl)  { btnEl.textContent = '✅ Già inviato'; btnEl.disabled = true; btnEl.style.background = '#86efac' }
+        if (g) g.notifica_inizio_inviata = true
+      } else {
+        toast('Errore nell\'invio della notifica', 'error')
+      }
+    } catch(e) {
+      toast('Errore connessione servizio notifiche.', 'error')
+    }
+    return
+  }
+
+  // ── QUARTI / FINALE ────────────────────────────────────────────────
   const ptsCasa   = document.getElementById(`ge-pts-casa-${tipo}`)?.value?.trim()
   const ptsVirtus = document.getElementById(`ge-pts-virtus-${tipo}`)?.value?.trim()
   if (!ptsCasa && !ptsVirtus) { toast('Inserisci i punteggi prima di inviare','error'); return }
   const risultato = `${opp} ${ptsCasa||0} – Virtus Molfetta ${ptsVirtus||0}`
 
-  const sponsor = document.getElementById('ge-sponsor-nome').value.trim()
-  const sponsorTxt = sponsor ? ` · ${sponsor}` : ''
   const labels = { '1q':'Fine 1° Quarto', '2q':'Fine 2° Quarto', '3q':'Fine 3° Quarto', 'finale':'Risultato Finale' }
   const emoji  = tipo==='finale' ? '🏆' : '🏀'
   const titolo = `${emoji} ${labels[tipo]} — vs ${opp}`
@@ -4193,7 +4249,6 @@ async function inviaNotificaEsterna(tipo) {
 
   const campoRis = { '1q':'parziale_1q', '2q':'parziale_2q', '3q':'parziale_3q', 'finale':'risultato_finale' }[tipo]
   const campoInv = { '1q':'notifica_1q_inviata', '2q':'notifica_2q_inviata', '3q':'notifica_parziale_inviata', 'finale':'notifica_finale_inviata' }[tipo]
-  const checkEl  = document.getElementById(`ge-${tipo}-inviata`)
 
   await sbAdmin.from('gare').update({ [campoRis]:risultato, [campoInv]:true }).eq('id',garaId)
 
