@@ -50,12 +50,6 @@ select:focus,input[type=text]:focus{border-color:#0D2147}
 .btn-invia.finale{background:#F57C00}
 .btn-invia.finale:hover{background:#E65100}
 .btn-invia:disabled{background:#bbb;cursor:not-allowed}
-.score-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
-.score-team{font-size:10px;font-weight:600;color:#546E7A;white-space:nowrap;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis}
-.score-team.virtus{color:#0D2147}
-.score-num{width:52px;flex-shrink:0;border:2px solid #ddd;border-radius:6px;padding:6px 6px;font-size:16px;font-weight:700;text-align:center;outline:none;color:#222}
-.score-num:focus{border-color:#0D2147}
-.score-sep{font-size:16px;font-weight:700;color:#bbb;flex-shrink:0}
 
 .sponsor-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 @media(max-width:480px){.sponsor-row{grid-template-columns:1fr}}
@@ -109,50 +103,32 @@ select:focus,input[type=text]:focus{border-color:#0D2147}
     </select>
   </div>
 
+  <!-- Inizio Gara -->
+  <div id="inizio-panel" style="display:none;margin-bottom:12px">
+    <button class="btn-invia" id="btn-inizio" onclick="inviaInizio()" style="background:#1B5E20;font-size:15px;padding:13px">🟢 Notifica Inizio Gara</button>
+    <span id="done-inizio" style="display:none;color:#1B5E20;font-weight:700;margin-left:10px">✅ Già inviato</span>
+  </div>
+
   <!-- Quarti -->
   <div class="grid2" id="quarti-panel" style="display:none">
     <div class="q-card">
       <div class="q-title">🏀 Fine 1° Quarto <span class="done" id="done-1q" style="display:none">✅ Inviato</span></div>
-      <div class="score-row">
-        <span class="score-team" id="team-casa-1q">Casa</span>
-        <input class="score-num" id="pts-casa-1q" type="number" min="0" max="999" placeholder="00"/>
-        <span class="score-sep">–</span>
-        <input class="score-num" id="pts-virtus-1q" type="number" min="0" max="999" placeholder="00"/>
-        <span class="score-team virtus">Virtus Molfetta</span>
-      </div>
+      <input class="q-input" id="r-1q" placeholder="es. Virtus 18 – Avv 22"/>
       <button class="btn-invia" id="btn-1q" onclick="invia('1q')">📲 Invia parziale 1°Q</button>
     </div>
     <div class="q-card">
       <div class="q-title">🏀 Fine 2° Quarto <span class="done" id="done-2q" style="display:none">✅ Inviato</span></div>
-      <div class="score-row">
-        <span class="score-team" id="team-casa-2q">Casa</span>
-        <input class="score-num" id="pts-casa-2q" type="number" min="0" max="999" placeholder="00"/>
-        <span class="score-sep">–</span>
-        <input class="score-num" id="pts-virtus-2q" type="number" min="0" max="999" placeholder="00"/>
-        <span class="score-team virtus">Virtus Molfetta</span>
-      </div>
+      <input class="q-input" id="r-2q" placeholder="es. Virtus 38 – Avv 41"/>
       <button class="btn-invia" id="btn-2q" onclick="invia('2q')">📲 Invia parziale 2°Q</button>
     </div>
     <div class="q-card">
       <div class="q-title">🏀 Fine 3° Quarto <span class="done" id="done-3q" style="display:none">✅ Inviato</span></div>
-      <div class="score-row">
-        <span class="score-team" id="team-casa-3q">Casa</span>
-        <input class="score-num" id="pts-casa-3q" type="number" min="0" max="999" placeholder="00"/>
-        <span class="score-sep">–</span>
-        <input class="score-num" id="pts-virtus-3q" type="number" min="0" max="999" placeholder="00"/>
-        <span class="score-team virtus">Virtus Molfetta</span>
-      </div>
+      <input class="q-input" id="r-3q" placeholder="es. Virtus 58 – Avv 62"/>
       <button class="btn-invia" id="btn-3q" onclick="invia('3q')">📲 Invia parziale 3°Q</button>
     </div>
     <div class="q-card finale">
       <div class="q-title">🏆 Risultato Finale <span class="done" id="done-finale" style="display:none">✅ Inviato</span></div>
-      <div class="score-row">
-        <span class="score-team" id="team-casa-finale">Casa</span>
-        <input class="score-num" id="pts-casa-finale" type="number" min="0" max="999" placeholder="00"/>
-        <span class="score-sep">–</span>
-        <input class="score-num" id="pts-virtus-finale" type="number" min="0" max="999" placeholder="00"/>
-        <span class="score-team virtus">Virtus Molfetta</span>
-      </div>
+      <input class="q-input" id="r-finale" placeholder="es. Virtus 78 – Avv 82"/>
       <button class="btn-invia finale" id="btn-finale" onclick="invia('finale')">📲 Invia risultato finale</button>
     </div>
   </div>
@@ -214,7 +190,7 @@ async function init() {
 }
 
 async function caricaGareEsterne() {
-  const r = await fetch(`${SB_URL}/rest/v1/gare?select=id,titolo,avversario,data_ora,parziale_1q,parziale_2q,parziale_3q,risultato_finale,notifica_1q_inviata,notifica_2q_inviata,notifica_parziale_inviata,notifica_finale_inviata,sponsor_notifica,sponsor_notifica_logo&luogo=not.ilike.*palap*&order=data_ora`, {
+  const r = await fetch(`${SB_URL}/rest/v1/gare?select=id,titolo,avversario,data_ora,luogo,parziale_1q,parziale_2q,parziale_3q,risultato_finale,notifica_inizio_inviata,notifica_1q_inviata,notifica_2q_inviata,notifica_parziale_inviata,notifica_finale_inviata,sponsor_notifica,sponsor_notifica_logo&luogo=not.ilike.*palap*&order=data_ora`, {
     headers: { 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON }
   })
   _gare = await r.json()
@@ -246,36 +222,32 @@ function caricaGara() {
 
   const panel = document.getElementById('quarti-panel')
   const spPanel = document.getElementById('sponsor-panel')
-  if (!g) { panel.style.display='none'; spPanel.style.display='none'; return }
+  const inizioPanel = document.getElementById('inizio-panel')
+  if (!g) { panel.style.display='none'; spPanel.style.display='none'; inizioPanel.style.display='none'; return }
   panel.style.display = 'grid'
   spPanel.style.display = 'block'
+  inizioPanel.style.display = 'block'
 
-  const dataGara = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})
-  const opp = g.avversario||g.titolo||'Avversario'
-  document.getElementById('gara-label').textContent = `${dataGara} vs ${opp}`
+  document.getElementById('gara-label').textContent = `${new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})} vs ${g.avversario||g.titolo}`
 
-  // Imposta nome squadra casa in tutti i quarti
-  ;['1q','2q','3q','finale'].forEach(t => {
-    const el = document.getElementById(`team-casa-${t}`)
-    if (el) el.textContent = opp
-  })
+  // Ripristina stato pulsante inizio
+  const inizioInviato = g.notifica_inizio_inviata || false
+  const btnInizio = document.getElementById('btn-inizio')
+  const doneInizio = document.getElementById('done-inizio')
+  if (inizioInviato) {
+    btnInizio.disabled = true
+    btnInizio.textContent = '✅ Già inviato'
+    doneInizio.style.display = 'none'
+  } else {
+    btnInizio.disabled = false
+    btnInizio.textContent = '🟢 Notifica Inizio Gara'
+    doneInizio.style.display = 'none'
+  }
 
   const map = { '1q':'parziale_1q','2q':'parziale_2q','3q':'parziale_3q','finale':'risultato_finale' }
   const invMap = { '1q':'notifica_1q_inviata','2q':'notifica_2q_inviata','3q':'notifica_parziale_inviata','finale':'notifica_finale_inviata' }
   for (const [tipo, campo] of Object.entries(map)) {
-    // Ripristina punteggi salvati se presenti
-    const val = g[campo]||''
-    if (val) {
-      const parts = val.split('–').map(s => s.trim())
-      if (parts.length === 2) {
-        const ptsCasa   = parts[0].replace(/[^0-9]/g,'')
-        const ptsVirtus = parts[1].replace(/[^0-9]/g,'')
-        const elCasa   = document.getElementById(`pts-casa-${tipo}`)
-        const elVirtus = document.getElementById(`pts-virtus-${tipo}`)
-        if (elCasa)   elCasa.value   = ptsCasa
-        if (elVirtus) elVirtus.value = ptsVirtus
-      }
-    }
+    document.getElementById(`r-${tipo}`).value = g[campo]||''
     const inviato = g[invMap[tipo]]||false
     const doneEl = document.getElementById(`done-${tipo}`)
     const btnEl  = document.getElementById(`btn-${tipo}`)
@@ -289,12 +261,8 @@ function caricaGara() {
 
 async function invia(tipo) {
   if (!_garaCorrente) { showToast('Seleziona una gara','err'); return }
-  const ptsCasa   = document.getElementById(`pts-casa-${tipo}`)?.value?.trim()
-  const ptsVirtus = document.getElementById(`pts-virtus-${tipo}`)?.value?.trim()
-  if (!ptsCasa && !ptsVirtus) { showToast('Inserisci i punteggi','err'); return }
-  const opp2 = _garaCorrente?.avversario||'Avversario'
-  const risultato = `${opp2} ${ptsCasa||0} – Virtus Molfetta ${ptsVirtus||0}`
-
+  const risultato = document.getElementById(`r-${tipo}`).value.trim()
+  if (!risultato) { showToast('Inserisci il risultato','err'); return }
 
   const opp    = _garaCorrente.avversario||'Avversario'
   const labels = { '1q':'Fine 1° Quarto','2q':'Fine 2° Quarto','3q':'Fine 3° Quarto','finale':'Risultato Finale' }
@@ -340,6 +308,51 @@ async function invia(tipo) {
   } catch(e) {
     showToast('Risultato salvato. Errore connessione.','err')
     btn.disabled = false
+  }
+}
+
+async function inviaInizio() {
+  if (!_garaCorrente) { showToast('Seleziona una gara','err'); return }
+  const opp   = _garaCorrente.avversario || 'Avversario'
+  const luogo = _garaCorrente.luogo ? ` · ${_garaCorrente.luogo}` : ''
+  const sponsor = document.getElementById('sp-nome').value.trim()
+  const sponsorTxt = sponsor ? ` · ${sponsor}` : ''
+  const titolo = `🟢 Inizio Gara — vs ${opp}`
+  const body   = `La Virtus Molfetta è in campo${luogo}. Segui i parziali in tempo reale!${sponsorTxt}`
+
+  if (!confirm(`Inviare notifica di inizio gara?\n\n${titolo}\n${body}`)) return
+
+  const btn = document.getElementById('btn-inizio')
+  btn.disabled = true
+  btn.textContent = 'Invio in corso...'
+
+  // Salva nel DB
+  await fetch(`${SB_URL}/rest/v1/gare?id=eq.${_garaCorrente.id}`, {
+    method:'PATCH',
+    headers:{ 'apikey':SB_SVC,'Authorization':'Bearer '+SB_SVC,'Content-Type':'application/json','Prefer':'return=minimal' },
+    body: JSON.stringify({ notifica_inizio_inviata: true })
+  })
+
+  // Invia push tramite Worker
+  try {
+    const resp = await fetch(WORKER, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ garaId:_garaCorrente.id, tipo:'inizio', titolo, body })
+    })
+    if (resp.ok) {
+      showToast('✅ Notifica inizio inviata!','ok')
+      btn.textContent = '✅ Già inviato'
+      _garaCorrente.notifica_inizio_inviata = true
+    } else {
+      showToast('DB aggiornato, errore push','err')
+      btn.disabled = false
+      btn.textContent = '🟢 Notifica Inizio Gara'
+    }
+  } catch(e) {
+    showToast('DB aggiornato. Errore connessione.','err')
+    btn.disabled = false
+    btn.textContent = '🟢 Notifica Inizio Gara'
   }
 }
 
