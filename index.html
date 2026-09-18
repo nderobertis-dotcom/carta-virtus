@@ -292,6 +292,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li style="color:var(--muted);font-size:13px">&#9888; Nessun accumulo punti presso i partner</li>
             <li style="color:var(--muted);font-size:13px">&#9888; Nessun bonus punti alle gare</li>
             <li style="color:var(--muted);font-size:13px">&#9888; -5 pt per ogni gara casalinga non frequentata</li>
+            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — notifiche push risultati in trasferta incluse</li>
             <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#127942; <strong>Voto MVP</strong> — 1 voto gratuito a gara (senza credito punti)</li>
           </ul>
           <button class="btn-piano btn-piano-blu" onclick="apriRegistrazione('base',10,false)">Scegli Base &#8594;</button>
@@ -315,6 +316,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li>Accumulo punti presso i partner</li>
             <li>&#127936; +3 punti ad ogni ingresso alle gare</li>
             <li>&#127967; Accesso alle gare casalinghe con ingresso riservato</li>
+            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — notifiche push risultati in trasferta incluse</li>
             <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#127942; <strong>Voto MVP</strong> — 1 voto gratuito (+1 pt credito) oppure usa i tuoi punti per aumentare il peso del voto</li>
           </ul>
           <button class="btn-piano btn-piano-blu" onclick="apriRegistrazione('bronze',30,false)">Scegli Bronze &#8594;</button>
@@ -339,6 +341,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li>Priorita sui premi in catalogo</li>
             <li>&#127936; +5 punti ad ogni ingresso alle gare</li>
             <li class="maglia">&#127967; Accesso alle gare casalinghe con posto riservato per tutta la stagione</li>
+            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — notifiche push risultati in trasferta incluse</li>
             <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#127942; <strong>Voto MVP</strong> — 1 voto gratuito (+1 pt credito) oppure usa i tuoi punti per aumentare il peso del voto</li>
           </ul>
           <button class="btn-piano btn-piano-arancio" onclick="apriRegistrazione('silver',50,true)">Scegli Silver &#8594;</button>
@@ -362,12 +365,52 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li>100 punti di benvenuto</li>
             <li>&#127936; +10 punti ad ogni ingresso alle gare</li>
             <li class="maglia">&#127967; Accesso alle gare casalinghe con posto riservato per tutta la stagione</li>
+            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — notifiche push risultati in trasferta incluse</li>
             <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#127942; <strong>Voto MVP</strong> — 1 voto gratuito (+1 pt credito) oppure usa i tuoi punti per aumentare il peso del voto</li>
           </ul>
           <button class="btn-piano btn-piano-premium" onclick="apriRegistrazione('gold',100,true)">Scegli Gold &#8594;</button>
         </div>
       </div>
     </div>
+
+  <!-- AWAY per non abbonati -->
+  <div style="margin-top:32px;max-width:900px;margin-left:auto;margin-right:auto">
+    <div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:20px;padding:32px 36px;color:#fff;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:1.6rem">📡</span>
+          <div>
+            <div style="font-size:1.2rem;font-weight:800;letter-spacing:-.01em">Servizio <span style="color:#f59e0b">Away</span></div>
+            <div style="font-size:.78rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;font-weight:600">Anche senza abbonamento Fan Card</div>
+          </div>
+        </div>
+        <p style="font-size:.92rem;color:#cbd5e1;margin:0 0 14px;line-height:1.6">
+          Segui la Virtus anche in trasferta dal tuo smartphone. Ricevi notifiche push in tempo reale su ogni parziale di gara — dopo il 1°, 2°, 3° quarto e al fischio finale — con il risultato aggiornato direttamente sullo schermo del telefono, senza aprire nessuna app.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px">
+          <span style="background:rgba(245,158,11,.15);color:#fbbf24;padding:5px 12px;border-radius:9999px;font-size:.8rem;font-weight:600">📲 Notifica dopo ogni quarto</span>
+          <span style="background:rgba(245,158,11,.15);color:#fbbf24;padding:5px 12px;border-radius:9999px;font-size:.8rem;font-weight:600">🏀 Risultato finale live</span>
+          <span style="background:rgba(245,158,11,.15);color:#fbbf24;padding:5px 12px;border-radius:9999px;font-size:.8rem;font-weight:600">🔔 Notifica inizio gara</span>
+          <span style="background:rgba(99,102,241,.2);color:#a5b4fc;padding:5px 12px;border-radius:9999px;font-size:.8rem;font-weight:600">✅ Incluso in tutti gli abbonamenti</span>
+        </div>
+        <details style="color:#94a3b8;font-size:.85rem">
+          <summary style="cursor:pointer;color:#cbd5e1;font-weight:600;margin-bottom:6px">Come funziona ›</summary>
+          <ol style="margin:8px 0 0 18px;padding:0;line-height:1.9">
+            <li>Registrati su virtusfanmolfetta.com (anche senza acquistare un abbonamento)</li>
+            <li>Accedi alla tua area personale e attiva le <strong style="color:#fbbf24">Notifiche Away</strong></li>
+            <li>Il browser chiede il permesso — accetta e aggiungi il sito alla home del telefono</li>
+            <li>Quando la Virtus gioca fuori casa ricevi una notifica all'inizio della gara e poi un aggiornamento al termine di ogni quarto</li>
+          </ol>
+        </details>
+      </div>
+      <div style="text-align:center;min-width:140px">
+        <div style="font-size:2rem;font-weight:900;color:#f59e0b;line-height:1">€ 5</div>
+        <div style="font-size:.78rem;color:#94a3b8;margin-bottom:16px">/stagione<br><span style="color:#6ee7b7;font-size:.75rem">gratis con abbonamento</span></div>
+        <button class="btn-piano" onclick="apriRegistrazione('away',5,false)" style="background:#f59e0b;color:#0f172a;font-weight:800;border:none;padding:12px 22px;border-radius:10px;cursor:pointer;font-size:.9rem;width:100%">Attiva Away →</button>
+      </div>
+    </div>
+  </div>
+
   <!-- INFO PIANO BASE -->
   <div style="margin-top:40px;background:linear-gradient(135deg,#f0f4ff,#e8f0ff);border:2px solid #c8d8f0;border-radius:16px;padding:32px;max-width:900px;margin-left:auto;margin-right:auto">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start">
@@ -947,34 +990,6 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:13px">Caricamento premi...</div>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- MODAL PAGAMENTO OK -->
-<div class="modal-overlay" id="modal-pagamento-ok">
-  <div class="modal" style="max-width:420px;text-align:center">
-    <div style="font-size:56px;margin-bottom:12px">🎉</div>
-    <div style="font-size:20px;font-weight:700;color:#0D2147;margin-bottom:8px">Registrazione completata!</div>
-    <div style="font-size:14px;color:#546E7A;margin-bottom:16px;line-height:1.6">
-      Il tuo pagamento è andato a buon fine e la tua <strong>Virtus Fan Card</strong> è attiva.
-    </div>
-    <div style="background:#f0f4ff;border-radius:10px;padding:14px;margin-bottom:20px;text-align:left">
-      <div style="font-size:13px;font-weight:600;color:#0D2147;margin-bottom:8px">Cosa fare adesso:</div>
-      <div style="font-size:13px;color:#333;line-height:1.8">
-        1️⃣ Accedi alla tua <strong>area riservata</strong> con l'email e la password che hai scelto<br>
-        2️⃣ Troverai il tuo <strong>abbonamento attivo</strong>, i tuoi punti e la tua card digitale<br>
-        3️⃣ Mostra il <strong>QR code</strong> all'ingresso ad ogni gara casalinga
-      </div>
-    </div>
-    <div style="font-size:12px;color:#888;margin-bottom:20px">
-      Non hai ricevuto l'email di conferma? Controlla la cartella spam o contattaci su WhatsApp.
-    </div>
-    <button class="btn-primary" style="width:100%;padding:13px;font-size:15px" onclick="document.getElementById('modal-pagamento-ok').classList.remove('open');document.getElementById('modal-login').classList.add('open')">
-      🔐 Accedi alla tua area riservata
-    </button>
-    <button class="btn-ghost" style="width:100%;margin-top:8px;padding:10px;font-size:13px" onclick="document.getElementById('modal-pagamento-ok').classList.remove('open')">
-      Chiudi
-    </button>
   </div>
 </div>
 
@@ -2614,14 +2629,16 @@ function scrollToPiani() {
 
 function apriRegistrazione(nome, prezzo, richiedeMaglia) {
   pianoSelezionato = { nome, prezzo, richiedeMaglia }
-  document.getElementById('reg-piano-nome').textContent = nome
+  const isAway = nome.toLowerCase() === 'away'
+  document.getElementById('reg-piano-nome').textContent = isAway ? '📡 Servizio Away' : nome
   document.getElementById('reg-piano-prezzo').textContent = 'EUR ' + prezzo
   document.getElementById('maglia-box').style.display = richiedeMaglia ? 'block' : 'none'
   document.getElementById('maglia-skip-msg').style.display = richiedeMaglia ? 'none' : 'block'
   goStep(1)
+  // Away: nascondi step posto (step 3)
   document.getElementById('step-tab-1').style.display = ''
   document.getElementById('step-tab-2').style.display = ''
-  document.getElementById('step-tab-3').style.display = ''
+  document.getElementById('step-tab-3').style.display = isAway ? 'none' : ''
   document.getElementById('modal-reg').classList.add('open')
 }
 function toggleProfiloTagliaAnni(val) {
@@ -2888,26 +2905,13 @@ window.salvaNuovaPassword = salvaNuovaPassword
 async function gestisciResetRedirect() {
   const hash = window.location.hash
   const params = new URLSearchParams(window.location.search)
-
-  //  Pagamento completato 
-  if (params.get('payment') === 'success') {
-    const method = params.get('method') || 'stripe'
-    window.history.replaceState({}, '', window.location.pathname)
-    document.getElementById('modal-pagamento-ok').classList.add('open')
-    return
-  }
-
-  //  Pagamento annullato 
-  if (params.get('payment') === 'cancel') {
-    window.history.replaceState({}, '', window.location.pathname)
-    if (typeof showToast === 'function') showToast('Pagamento annullato. Puoi riprovare quando vuoi.', true)
-    return
-  }
-
   if (params.get('reset') === '1' || hash.includes('type=recovery')) {
+    // Supabase gestisce automaticamente la sessione dal token nell'hash
     const { data: { session } } = await sb.auth.getSession()
     if (session) {
+      // Mostra modal nuova password
       document.getElementById('modal-nuova-pw').classList.add('open')
+      // Pulisci l'URL
       window.history.replaceState({}, '', window.location.pathname)
     }
   }
@@ -3112,11 +3116,13 @@ Rispondi SOLO su Virtus Fan Card. Per altri argomenti declina gentilmente con si
 Sii cordiale, entusiasta e sportivo. Massimo 3-4 frasi per risposta.
 
 PIANI DISPONIBILI:
-- Base: 10 euro/anno, 10 punti benvenuto, voto MVP gratuito (senza credito punti)
-- Bronze: 30 euro/anno, 30 punti, voto MVP gratis con +1 punto credito oppure a pagamento punti
-- Silver: 50 euro/anno, 50 punti, posto numerato a scelta, maglia personalizzata, voto MVP con punti
-- Gold: 100 euro/anno, 100 punti, posto a scelta, maglia, hospitality, voto MVP con punti
+- Base: 10 euro/anno, 10 punti benvenuto, voto MVP gratuito (senza credito punti), Servizio Away incluso
+- Bronze: 30 euro/anno, 30 punti, voto MVP gratis con +1 punto credito oppure a pagamento punti, Servizio Away incluso
+- Silver: 50 euro/anno, 50 punti, posto numerato a scelta, maglia personalizzata, voto MVP con punti, Servizio Away incluso
+- Gold: 100 euro/anno, 100 punti, posto a scelta, maglia, hospitality, voto MVP con punti, Servizio Away incluso
 - VIP: riservato agli sponsor, posto assegnato dall'amministratore, 1 voto MVP gratuito
+
+SERVIZIO AWAY: notifiche push sui risultati delle gare in trasferta. Disponibile per tutti gli abbonati (Base, Bronze, Silver, Gold) senza costi aggiuntivi. Per chi non e abbonato e disponibile a 5 euro per tutta la stagione registrandosi sul sito. Il tifoso riceve una notifica all'inizio della gara e poi al termine di ogni quarto (1°, 2°, 3° quarto e risultato finale). Per attivarlo: accedere all'area personale > Notifiche Away > attiva > accettare il permesso push dal browser > aggiungere il sito alla home del telefono per ricevere le notifiche anche con il telefono bloccato.
 
 PUNTI: si accumulano entrando al PalaPoli (ingresso scansionato), acquistando dai partner convenzionati, con voto MVP gratuito (Bronze/Silver/Gold ricevono +1 pt). Si usano per premi catalogo e per potenziare il voto MVP.
 
