@@ -2225,7 +2225,8 @@ async function salvaNotificheTrasferta(valore) {
     await sb.from('tifosi').update({ notifiche_trasferta: true }).eq('auth_user_id', uid)
     // Prova a ottenere la push subscription
     try {
-      const reg = _swRegistration || await navigator.serviceWorker.ready
+      // Aspetta che il SW sia effettivamente attivo (non solo registrato)
+      const reg = await navigator.serviceWorker.ready
       console.log('[DEBUG] SW ready, stato=', reg.active?.state)
       let sub = await reg.pushManager.getSubscription()
       if (!sub) {
@@ -2248,7 +2249,7 @@ async function salvaNotificheTrasferta(valore) {
     }
   } else {
     try {
-      const reg = _swRegistration || await navigator.serviceWorker.ready
+      const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.getSubscription()
       if (sub) await sub.unsubscribe()
     } catch(e) { /* ignora */ }
