@@ -425,6 +425,7 @@ select.form-input:focus{border-color:var(--accent)}
             <button class="btn btn-ghost btn-sm" onclick="switchTifosiTab('ricariche')">⚡ Ricariche</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-ricarica-diretta')">+ Ricarica diretta</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-emetti-fancard');caricaAnnoSogliaFc()">🎫 Emetti Fan Card</button>
+            <button class="btn btn-primary btn-sm" style="background:#1565c0" onclick="openModal('modal-disability-card')">♿ Disability Card</button>
           </div>
         </div>
         <!-- TAB RICARICHE -->
@@ -1855,6 +1856,49 @@ select.form-input:focus{border-color:var(--accent)}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-emetti-fancard')">Annulla</button>
       <button class="btn btn-primary" id="fc-submit-btn" onclick="emettiFantCard()">🎫 Emetti e invia link</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Disability Card -->
+<div class="modal-overlay" id="modal-disability-card">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">♿ Crea Disability Card</div>
+      <button class="modal-close" onclick="closeModal('modal-disability-card')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div>
+          <label class="form-label">Nome *</label>
+          <input class="form-input" id="dc-nome" placeholder="Mario"/>
+        </div>
+        <div>
+          <label class="form-label">Cognome *</label>
+          <input class="form-input" id="dc-cognome" placeholder="Rossi"/>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="form-label">Email *</label>
+        <input class="form-input" type="email" id="dc-email" placeholder="mario.rossi@email.it"/>
+      </div>
+      <div style="margin-bottom:16px;background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">
+        <label class="form-label" style="margin-bottom:10px">Tipo Disability Card</label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:8px">
+          <input type="radio" name="dc-tipo" value="no_accomp" checked style="width:15px;height:15px;accent-color:#1565c0"/>
+          <span style="font-size:13px;font-weight:600;color:var(--text)">🚫 Senza accompagnatore — INGRESSO PER 1</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="radio" name="dc-tipo" value="con_accomp" style="width:15px;height:15px;accent-color:#1565c0"/>
+          <span style="font-size:13px;font-weight:600;color:var(--text)">✅ Con accompagnatore — INGRESSO PER 2</span>
+        </label>
+      </div>
+      <div id="dc-error" style="display:none;font-size:12px;color:#c62828;background:#ffebee;padding:10px;border-radius:6px;margin-bottom:10px"></div>
+      <div id="dc-success" style="display:none;font-size:13px;color:#1b5e20;background:#e8f5e9;padding:14px;border-radius:8px;font-weight:600;text-align:center"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-disability-card')">Annulla</button>
+      <button class="btn btn-primary" style="background:#1565c0" id="dc-btn" onclick="creaDisabilityCard()">♿ Crea Disability Card</button>
     </div>
   </div>
 </div>
@@ -6998,6 +7042,85 @@ async function salvaFopProdotto() {
   closeModal('modal-fop-prodotto')
   showToast('Prodotto salvato ✓')
   await loadFopProdotti()
+}
+
+// ── DISABILITY CARD ──
+async function creaDisabilityCard() {
+  const nome     = document.getElementById('dc-nome').value.trim()
+  const cognome  = document.getElementById('dc-cognome').value.trim()
+  const email    = document.getElementById('dc-email').value.trim().toLowerCase()
+  const conAccomp = document.querySelector('input[name="dc-tipo"]:checked')?.value === 'con_accomp'
+  const errEl    = document.getElementById('dc-error')
+  const succEl   = document.getElementById('dc-success')
+  const btn      = document.getElementById('dc-btn')
+
+  errEl.style.display = 'none'
+  succEl.style.display = 'none'
+
+  if (!nome || !cognome || !email) {
+    errEl.textContent = '⚠️ Compila nome, cognome ed email'
+    errEl.style.display = 'block'
+    return
+  }
+
+  btn.disabled = true
+  btn.textContent = 'Creazione in corso...'
+
+  try {
+    // 1. Crea utente auth via Worker
+    const tempPass = 'Virtus2027!'
+    const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'register', email, password: tempPass, user_metadata: { nome, cognome, ruolo: 'tifoso' } })
+    })
+    const json = await resp.json()
+    let authUserId = json.user?.id || json.id
+    if (!authUserId) {
+      // Utente già esistente — cerca per email
+      const { data: existing } = await sbAdmin.from('tifosi').select('id, auth_user_id').eq('email', email).maybeSingle()
+      if (existing) authUserId = existing.auth_user_id
+      else throw new Error(json.error || json.message || 'Errore creazione utente')
+    }
+
+    // 2. Upsert tifoso con QR code DC-
+    const qrCode = 'DC-' + Math.random().toString(36).substring(2,10).toUpperCase() + Math.random().toString(36).substring(2,6).toUpperCase()
+    const { data: tifosoRow, error: tErr } = await sbAdmin.from('tifosi').upsert({
+      auth_user_id: authUserId, nome, cognome, email,
+      stato: 'attivo', tipo: 'tifoso', qr_code: qrCode, punti_saldo: 0
+    }, { onConflict: 'auth_user_id', ignoreDuplicates: false }).select('id').single()
+    if (tErr) throw new Error('Errore tifoso: ' + tErr.message)
+
+    // 3. Trova piano Disability
+    const { data: piano, error: pErr } = await sbAdmin.from('membership_piani').select('id').ilike('nome', 'disability').single()
+    if (pErr || !piano) throw new Error('Piano Disability non trovato. Eseguire lo script SQL.')
+
+    // 4. Crea membership 10 anni
+    const scadenza = new Date()
+    scadenza.setFullYear(scadenza.getFullYear() + 10)
+    const { error: mErr } = await sbAdmin.from('membership').insert({
+      tifoso_id: tifosoRow.id,
+      piano_id: piano.id,
+      stato: 'attiva',
+      valida_fino: scadenza.toISOString().split('T')[0],
+      accompagnatore_disabile: conAccomp
+    })
+    if (mErr) throw new Error('Errore membership: ' + mErr.message)
+
+    succEl.innerHTML = `✅ Disability Card creata!<br><strong>${nome} ${cognome}</strong> — ${conAccomp ? '✅ Con accompagnatore' : '🚫 Senza accompagnatore'}<br><small style="color:#2e7d32">Password temporanea: <strong>${tempPass}</strong> · QR: ${qrCode}</small>`
+    succEl.style.display = 'block'
+    document.getElementById('dc-nome').value = ''
+    document.getElementById('dc-cognome').value = ''
+    document.getElementById('dc-email').value = ''
+    document.querySelector('input[name="dc-tipo"][value="no_accomp"]').checked = true
+    await loadTifosi()
+  } catch(e) {
+    errEl.textContent = '❌ ' + e.message
+    errEl.style.display = 'block'
+  } finally {
+    btn.disabled = false
+    btn.textContent = '♿ Crea Disability Card'
+  }
 }
 
 </script>
