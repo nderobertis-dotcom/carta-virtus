@@ -237,6 +237,10 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
         <div class="counter-value" style="color:#6a1b9a" id="cnt-premium">0</div>
         <div class="counter-label">Premium</div>
       </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:#1565c0" id="cnt-disability">0</div>
+        <div class="counter-label">♿ Disability</div>
+      </div>
     </div>
 
     <!-- Scanner -->
@@ -278,6 +282,47 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
       <div class="result-sub" id="result-sub">—</div>
       <div class="result-detail" id="result-detail" style="display:none"></div>
       <button class="btn-nuovo" onclick="nuovaScansione()">↩ Nuova scansione</button>
+    </div>
+
+    <!-- Disability Card — Creazione -->
+    <div class="scanner-card" id="dc-section">
+      <div class="scanner-header">
+        <div class="scanner-icon" style="background:#1565c0">♿</div>
+        <div>
+          <div class="scanner-title">Crea Disability Card</div>
+          <div class="scanner-sub">Abbonamento gratuito per portatori di handicap</div>
+        </div>
+      </div>
+      <div class="scanner-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Nome *</label>
+            <input class="form-input" id="dc-nome" placeholder="Mario"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Cognome *</label>
+            <input class="form-input" id="dc-cognome" placeholder="Rossi"/>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Email *</label>
+          <input class="form-input" type="email" id="dc-email" placeholder="mario.rossi@email.it"/>
+        </div>
+        <div style="margin-bottom:16px;background:var(--bg);border-radius:10px;padding:14px">
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Tipo Disability Card</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:8px">
+            <input type="radio" name="dc-tipo" value="no_accomp" checked style="width:16px;height:16px;accent-color:#1565c0"/>
+            <span style="font-size:14px;font-weight:600;color:var(--text)">🚫 Senza accompagnatore — INGRESSO PER 1</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="radio" name="dc-tipo" value="con_accomp" style="width:16px;height:16px;accent-color:#1565c0"/>
+            <span style="font-size:14px;font-weight:600;color:var(--text)">✅ Con accompagnatore — INGRESSO PER 2</span>
+          </label>
+        </div>
+        <div id="dc-error" style="display:none;font-size:12px;color:var(--rosso);background:#ffebee;padding:10px;border-radius:6px;margin-bottom:10px"></div>
+        <div id="dc-success" style="display:none;font-size:13px;color:#1b5e20;background:#e8f5e9;padding:14px;border-radius:8px;margin-bottom:10px;font-weight:600;text-align:center"></div>
+        <button class="btn-cam" onclick="creaDisabilityCard()" id="dc-btn">♿ Crea Disability Card</button>
+      </div>
     </div>
 
     <!-- Log ultimi ingressi -->
@@ -545,7 +590,7 @@ async function verificaIngresso(qr) {
 
   // Verifica membership attiva
   const { data: memb } = await sbA.from('membership')
-    .select('stato, piano:piano_id(nome, colore)')
+    .select('stato, accompagnatore_disabile, piano:piano_id(nome, colore)')
     .eq('tifoso_id', tifoso.id)
     .eq('stato', 'attiva')
     .order('creato_il', { ascending: false })
@@ -572,6 +617,33 @@ async function verificaIngresso(qr) {
     mostraRisultato('warn', '⚠️', 'Già entrato',
       tifoso.nome + ' ' + tifoso.cognome + ' ha già effettuato l\'ingresso alle ' + ora_ingresso + '.',
       pianoNome)
+    return
+  }
+
+  // ── LOGICA SPECIALE DISABILITY CARD ──
+  if (pianoNome?.toLowerCase() === 'disability') {
+    const { data: ingresso, error: iErr } = await sbA.from('ingressi_gare').insert({
+      gara_id:         garaCorrente.id,
+      tifoso_id:       tifoso.id,
+      piano_nome:      'Disability',
+      operatore_email: currentOperatoreEmail || null
+    }).select().single()
+
+    if (iErr) {
+      if (iErr.code === '23505') {
+        mostraRisultato('warn', '⚠️', 'Accesso duplicato', 'Ingresso già registrato per questo tifoso.')
+      } else {
+        mostraRisultato('err', '❌', 'Errore di sistema', iErr.message)
+      }
+      return
+    }
+
+    const hasAccomp = memb.accompagnatore_disabile === true
+    mostraRisultato('disability', '♿', 'Accesso consentito — DISABILITY CARD',
+      tifoso.nome + ' ' + tifoso.cognome,
+      'Disability', 0, false, null, hasAccomp)
+    await loadLog()
+    avviaRealtime()
     return
   }
 
@@ -633,9 +705,11 @@ async function verificaIngresso(qr) {
 }
 
 // ── MOSTRA RISULTATO ──
-function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore, annoMinore) {
+function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore, annoMinore, hasAccompDisabile) {
   const card = document.getElementById('result-card')
-  card.className = 'result-card show result-' + (tipo === 'ok' ? 'ok' : tipo === 'warn' ? 'warn' : 'err')
+  const isDisability = tipo === 'disability'
+  const cardType = isDisability ? 'ok' : (tipo === 'ok' ? 'ok' : tipo === 'warn' ? 'warn' : 'err')
+  card.className = 'result-card show result-' + cardType
   document.getElementById('result-icon').textContent = icon
   document.getElementById('result-title').textContent = title
   document.getElementById('result-sub').textContent = sub
@@ -650,12 +724,33 @@ function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore
     det.style.display = 'none'
   }
 
+  // Banner Disability Card
+  let dcBanner = document.getElementById('result-disability')
+  if (!dcBanner) {
+    dcBanner = document.createElement('div')
+    dcBanner.id = 'result-disability'
+    det.parentNode.insertBefore(dcBanner, det.nextSibling)
+  }
+  if (isDisability) {
+    dcBanner.style.display = 'block'
+    const bg     = hasAccompDisabile ? 'rgba(21,101,192,.35)' : 'rgba(230,81,0,.35)'
+    const border = hasAccompDisabile ? 'rgba(21,101,192,.7)'  : 'rgba(230,81,0,.7)'
+    const txt    = hasAccompDisabile ? '#90caf9' : '#ffcc80'
+    const msg    = hasAccompDisabile
+      ? '✅ CON ACCOMPAGNATORE — INGRESSO PER 2 PERSONE'
+      : '🚫 SENZA ACCOMPAGNATORE — INGRESSO PER 1 PERSONA'
+    dcBanner.style.cssText = 'display:block;margin-top:14px;background:' + bg + ';border:2px solid ' + border + ';border-radius:10px;padding:14px 16px;text-align:center;font-size:17px;font-weight:800;color:' + txt + ';letter-spacing:.03em'
+    dcBanner.textContent = msg
+  } else {
+    dcBanner.style.display = 'none'
+  }
+
   // Banner accompagnatore minore
   let accBanner = document.getElementById('result-accompagnatore')
   if (!accBanner) {
     accBanner = document.createElement('div')
     accBanner.id = 'result-accompagnatore'
-    det.parentNode.insertBefore(accBanner, det.nextSibling)
+    dcBanner.parentNode.insertBefore(accBanner, dcBanner.nextSibling)
   }
   if (conAccompagnatore) {
     accBanner.style.display = 'block'
@@ -718,6 +813,7 @@ function aggiornaContatori(data) {
   document.getElementById('cnt-base').textContent = data.filter(i => i.piano_nome === 'Base').length
   document.getElementById('cnt-pro').textContent = data.filter(i => i.piano_nome === 'Pro').length
   document.getElementById('cnt-premium').textContent = data.filter(i => i.piano_nome === 'Premium').length
+  document.getElementById('cnt-disability').textContent = data.filter(i => i.piano_nome?.toLowerCase() === 'disability').length
 }
 
 // ── REALTIME ──
@@ -743,6 +839,121 @@ function avviaRealtime() {
       setTimeout(() => { el.style.color = 'var(--blu)' }, 800)
     })
     .subscribe()
+}
+
+// ── CREA DISABILITY CARD ──
+async function creaDisabilityCard() {
+  const nome     = document.getElementById('dc-nome').value.trim()
+  const cognome  = document.getElementById('dc-cognome').value.trim()
+  const email    = document.getElementById('dc-email').value.trim()
+  const tipoRad  = document.querySelector('input[name="dc-tipo"]:checked')
+  const conAccomp = tipoRad?.value === 'con_accomp'
+  const errEl    = document.getElementById('dc-error')
+  const succEl   = document.getElementById('dc-success')
+  const btn      = document.getElementById('dc-btn')
+
+  errEl.style.display = 'none'
+  succEl.style.display = 'none'
+
+  if (!nome || !cognome || !email) {
+    errEl.textContent = 'Compila tutti i campi obbligatori'
+    errEl.style.display = 'block'; return
+  }
+  if (!email.includes('@')) {
+    errEl.textContent = 'Email non valida'
+    errEl.style.display = 'block'; return
+  }
+
+  btn.disabled = true
+  btn.textContent = 'Creazione in corso…'
+
+  try {
+    // 1. Crea utente auth con password temporanea
+    const tempPass = 'Virtus2027!'
+    const resp = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'register',
+        email,
+        password: tempPass,
+        user_metadata: { nome, cognome, ruolo: 'tifoso' }
+      })
+    })
+    const json = await resp.json()
+    if (!resp.ok && !(json.code === 'email_exists' || (json.msg||'').includes('already'))) {
+      throw new Error(json.message || json.error || 'Errore creazione utente')
+    }
+
+    // 2. Recupera auth_user_id
+    let authUserId = json.user?.id
+    if (!authUserId) {
+      // Utente già esistente: cerca per email
+      const { data: existingUsers } = await sbA.auth.admin.listUsers()
+      const found = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase())
+      if (!found) throw new Error('Impossibile trovare l\'utente nel sistema')
+      authUserId = found.id
+    }
+
+    // 3. Upsert tifoso
+    const qrCode = 'DC-' + Math.random().toString(36).substring(2, 10).toUpperCase() +
+                   Math.random().toString(36).substring(2, 6).toUpperCase()
+
+    const { data: tifosoRow, error: tErr } = await sbA.from('tifosi').upsert({
+      auth_user_id: authUserId,
+      nome,
+      cognome,
+      email,
+      stato: 'attivo',
+      tipo: 'tifoso',
+      qr_code: qrCode,
+      punti_saldo: 0
+    }, { onConflict: 'auth_user_id', ignoreDuplicates: false })
+    .select('id').single()
+
+    if (tErr) throw new Error('Errore salvataggio tifoso: ' + tErr.message)
+
+    // 4. Trova il piano_id 'Disability'
+    const { data: piano, error: pErr } = await sbA.from('membership_piani')
+      .select('id')
+      .ilike('nome', 'disability')
+      .single()
+    if (pErr || !piano) throw new Error('Piano Disability non trovato nel DB. Eseguire lo script SQL.')
+
+    // 5. Crea membership
+    const scadenza = new Date()
+    scadenza.setFullYear(scadenza.getFullYear() + 10) // 10 anni
+    const { error: mErr } = await sbA.from('membership').insert({
+      tifoso_id:              tifosoRow.id,
+      piano_id:               piano.id,
+      stato:                  'attiva',
+      valida_fino:            scadenza.toISOString().split('T')[0],
+      accompagnatore_disabile: conAccomp
+    })
+    if (mErr) throw new Error('Errore creazione membership: ' + mErr.message)
+
+    const tipoTxt = conAccomp ? 'CON accompagnatore (INGRESSO PER 2)' : 'SENZA accompagnatore (INGRESSO PER 1)'
+    succEl.innerHTML = '♿ Disability Card creata con successo!<br>' +
+      '<strong>' + nome + ' ' + cognome + '</strong><br>' +
+      tipoTxt + '<br>' +
+      '<small style="font-size:11px;opacity:.7">QR: ' + qrCode + ' · Password: ' + tempPass + '</small>'
+    succEl.style.display = 'block'
+
+    // Reset form
+    document.getElementById('dc-nome').value = ''
+    document.getElementById('dc-cognome').value = ''
+    document.getElementById('dc-email').value = ''
+    document.querySelector('input[name="dc-tipo"][value="no_accomp"]').checked = true
+
+    toast('Disability Card creata!', 'success')
+
+  } catch(err) {
+    errEl.textContent = err.message
+    errEl.style.display = 'block'
+  } finally {
+    btn.disabled = false
+    btn.textContent = '♿ Crea Disability Card'
+  }
 }
 
 // ── REGISTRAZIONE OPERATORE ──
