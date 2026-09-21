@@ -340,17 +340,20 @@ async function inviaInizio() {
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ garaId:_garaCorrente.id, tipo:'inizio', titolo, body })
     })
+    const respData = await resp.json()
+    console.log('[DEBUG] Worker response:', JSON.stringify(respData))
     if (resp.ok) {
-      showToast('✅ Notifica inizio inviata!','ok')
+      showToast('✅ Notifica inizio inviata! Inviati: ' + (respData.inviati ?? '?'),'ok')
       btn.textContent = '✅ Già inviato'
       _garaCorrente.notifica_inizio_inviata = true
     } else {
-      showToast('DB aggiornato, errore push','err')
+      showToast('Errore push: ' + (respData.error || resp.status),'err')
       btn.disabled = false
       btn.textContent = '🟢 Notifica Inizio Gara'
     }
   } catch(e) {
-    showToast('DB aggiornato. Errore connessione.','err')
+    console.error('[DEBUG] Fetch error:', e)
+    showToast('Errore connessione: ' + e.message,'err')
     btn.disabled = false
     btn.textContent = '🟢 Notifica Inizio Gara'
   }
