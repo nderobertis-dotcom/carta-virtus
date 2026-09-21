@@ -2172,10 +2172,20 @@ async function caricaPreferenzaTrasferta(tifosoId) {
   if (lbl) lbl.textContent = attivo ? 'Attivate ✅' : 'Attiva'
 }
 
+const VAPID_PUBLIC_KEY = 'BGCAo2r2i5-w7g8qGgo-bz9T3avQCimaro0v3UnYFaKVrFIHXIlRF_oBWhD4jEgxoujgUlIsODwZXlK7jH8NBc8'
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = atob(base64)
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
+}
+
 async function salvaNotificheTrasferta(valore) {
   const lbl = document.getElementById('label-notifiche-trasferta')
   const uid = (await sb.auth.getUser()).data.user?.id
   if (!uid) return
+
   if (valore) {
     const ok = await chiediConsensoNotifiche()
     if (!ok) {
@@ -2183,8 +2193,35 @@ async function salvaNotificheTrasferta(valore) {
       if (typeof showToast === 'function') showToast('Abilita le notifiche nel browser per continuare', true)
       return
     }
+    try {
+      const reg = _swRegistration || await navigator.serviceWorker.ready
+      let sub = await reg.pushManager.getSubscription()
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        })
+      }
+      const subJson = JSON.stringify(sub)
+      const { data: tifoso } = await sb.from('tifosi').select('id').eq('auth_user_id', uid).single()
+      if (tifoso) {
+        await sb.from('tifosi').update({ notifiche_trasferta: true, push_subscription: subJson }).eq('id', tifoso.id)
+      }
+    } catch(e) {
+      console.error('Push subscribe error:', e)
+      document.getElementById('toggle-notifiche-trasferta').checked = false
+      if (typeof showToast === 'function') showToast('Errore attivazione notifiche', true)
+      return
+    }
+  } else {
+    try {
+      const reg = _swRegistration || await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (sub) await sub.unsubscribe()
+    } catch(e) { /* ignora */ }
+    await sb.from('tifosi').update({ notifiche_trasferta: false, push_subscription: null }).eq('auth_user_id', uid)
   }
-  await sb.from('tifosi').update({ notifiche_trasferta: valore }).eq('auth_user_id', uid)
+
   if (lbl) lbl.textContent = valore ? 'Attivate ✅' : 'Attiva'
   if (typeof showToast === 'function') showToast(valore ? '✅ Notifiche trasferta attivate!' : 'Notifiche disattivate', !valore)
 }
