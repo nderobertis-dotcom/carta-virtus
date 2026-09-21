@@ -2187,7 +2187,9 @@ window.rifiutaNotifiche = rifiutaNotifiche
 
 //  NOTIFICHE TRASFERTA 
 async function caricaPreferenzaTrasferta(tifosoId) {
+  console.log('[DEBUG] caricaPreferenzaTrasferta, tifosoId=', tifosoId, 'Notification in window=', 'Notification' in window)
   const card = document.getElementById('card-notifiche-trasferta')
+  console.log('[DEBUG] card element=', card)
   if (!('Notification' in window)) { if (card) card.style.display = 'none'; return }
   if (card) card.style.display = 'block'
   const { data } = await sb.from('tifosi').select('notifiche_trasferta').eq('id', tifosoId).single()
@@ -3013,10 +3015,12 @@ async function doLogout() {
 }
 
 async function caricaAreaTifoso(user) {
+  console.log('[DEBUG] caricaAreaTifoso start, user.id=', user.id)
   document.getElementById('landing').style.display = 'none'
   document.getElementById('area-tifoso').style.display = 'block'
 
-  const { data: tifoso } = await sb.from('tifosi').select('*').eq('auth_user_id', user.id).single()
+  const { data: tifoso, error: tErr } = await sb.from('tifosi').select('*').eq('auth_user_id', user.id).maybeSingle()
+  console.log('[DEBUG] tifoso=', tifoso, 'error=', tErr)
   if (!tifoso) { toast('Profilo non trovato', 'error'); doLogout(); return }
 
   document.getElementById('t-nome-display').textContent = tifoso.nome + ' ' + tifoso.cognome
@@ -3041,6 +3045,7 @@ async function caricaAreaTifoso(user) {
     .select('*, piano:piano_id(nome)').eq('tifoso_id', tifoso.id)
     .order('creato_il', { ascending: false }).limit(1).maybeSingle()
 
+  console.log('[DEBUG] memb=', memb)
   let pianoNome = 'Base'
   if (memb) {
     pianoNome = memb.piano ? memb.piano.nome : 'Base'
@@ -3124,6 +3129,7 @@ async function caricaAreaTifoso(user) {
 
   // Carica sezione MVP voto
   await caricaMvpVoto(tifoso.id, pianoNome, tifoso.punti_saldo)
+  console.log('[DEBUG] chiamo caricaPreferenzaTrasferta, tifosoId=', tifoso.id)
   await caricaPreferenzaTrasferta(tifoso.id)
 
 
