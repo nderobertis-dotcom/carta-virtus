@@ -2221,25 +2221,30 @@ async function salvaNotificheTrasferta(valore) {
       if (typeof showToast === 'function') showToast('Abilita le notifiche nel browser per continuare', true)
       return
     }
+    // Salva subito la preferenza nel DB (anche senza subscription push)
+    await sb.from('tifosi').update({ notifiche_trasferta: true }).eq('auth_user_id', uid)
+    // Prova a ottenere la push subscription
     try {
       const reg = _swRegistration || await navigator.serviceWorker.ready
+      console.log('[DEBUG] SW ready, stato=', reg.active?.state)
       let sub = await reg.pushManager.getSubscription()
       if (!sub) {
+        console.log('[DEBUG] Nessuna sub esistente, creo nuova...')
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
         })
+        console.log('[DEBUG] Sub creata:', sub.endpoint)
+      } else {
+        console.log('[DEBUG] Sub esistente:', sub.endpoint)
       }
       const subJson = JSON.stringify(sub)
-      const { data: tifoso } = await sb.from('tifosi').select('id').eq('auth_user_id', uid).single()
-      if (tifoso) {
-        await sb.from('tifosi').update({ notifiche_trasferta: true, push_subscription: subJson }).eq('id', tifoso.id)
-      }
+      await sb.from('tifosi').update({ push_subscription: subJson }).eq('auth_user_id', uid)
+      console.log('[DEBUG] push_subscription salvata nel DB')
     } catch(e) {
-      console.error('Push subscribe error:', e)
-      document.getElementById('toggle-notifiche-trasferta').checked = false
-      if (typeof showToast === 'function') showToast('Errore attivazione notifiche', true)
-      return
+      console.error('[DEBUG] Push subscribe error:', e)
+      // Non blocchiamo: la preferenza è già salvata, la push subscription manca
+      if (typeof showToast === 'function') showToast('⚠️ Preferenza salvata ma push non attivata: ' + e.message, true)
     }
   } else {
     try {
