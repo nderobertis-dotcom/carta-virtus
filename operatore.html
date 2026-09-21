@@ -357,6 +357,7 @@ let cameraStream = null
 let scanInterval = null
 let countdownInterval = null
 let currentOperatoreEmail = null
+let currentRuolo = null
 
 // ── LOGIN ──
 async function doLogin() {
@@ -381,9 +382,11 @@ async function doLogin() {
     if (!['operatore', 'admin'].includes(ruolo)) throw new Error('Accesso riservato agli operatori gare')
 
     currentOperatoreEmail = json.user.email
+    currentRuolo = json.user?.user_metadata?.ruolo
     document.getElementById('op-chip').textContent = json.user.email.split('@')[0]
     document.getElementById('login-screen').style.display = 'none'
     document.getElementById('app').style.display = 'flex'
+    document.getElementById('dc-section').style.display = currentRuolo === 'admin' ? '' : 'none'
     await initApp()
 
   } catch(err) {
@@ -1030,9 +1033,11 @@ window.addEventListener('load', async () => {
     const ruolo = session.user?.user_metadata?.ruolo
     if (['operatore', 'admin'].includes(ruolo)) {
       currentOperatoreEmail = session.user.email
+      currentRuolo = session.user?.user_metadata?.ruolo
       document.getElementById('op-chip').textContent = session.user.email.split('@')[0]
       document.getElementById('login-screen').style.display = 'none'
       document.getElementById('app').style.display = 'flex'
+      document.getElementById('dc-section').style.display = currentRuolo === 'admin' ? '' : 'none'
       await initApp()
     }
   }
