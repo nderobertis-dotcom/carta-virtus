@@ -633,12 +633,14 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 
 
 
-  <div style="flex:1">
-    <div style="font-size:13px;font-weight:700">Ricevi le notifiche MVP</div>
-    <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">Saprai subito quando le votazioni sono aperte</div>
+  <div id="banner-notifiche-mvp" style="flex:1;display:contents">
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700">Ricevi le notifiche MVP</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">Saprai subito quando le votazioni sono aperte</div>
+    </div>
+    <button onclick="accettaNotifiche()" style="background:#F57C00;color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Attiva</button>
+    <button onclick="rifiutaNotifiche()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer;padding:4px">×</button>
   </div>
-  <button onclick="accettaNotifiche()" style="background:#F57C00;color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Attiva</button>
-  <button onclick="rifiutaNotifiche()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer;padding:4px">×</button>
 </div>
 
 <!-- GRATTA & VINCI VIRTUS -->
@@ -2158,6 +2160,30 @@ function renderSponsorBanner(sponsor) {
 
 window.inizializzaNotifiche = inizializzaNotifiche
 window.chiediConsensoNotifiche = chiediConsensoNotifiche
+
+async function accettaNotifiche() {
+  const banner = document.getElementById('banner-notifiche-mvp')
+  const ok = await chiediConsensoNotifiche()
+  if (!ok) {
+    if (typeof showToast === 'function') showToast('Abilita le notifiche nel browser per continuare', true)
+    return
+  }
+  // Salva preferenza notifiche MVP nel profilo tifoso
+  try {
+    const uid = (await sb.auth.getUser()).data.user?.id
+    if (uid) await sb.from('tifosi').update({ notifiche_mvp: true }).eq('auth_user_id', uid)
+  } catch(e) { console.warn('notifiche_mvp:', e) }
+  if (banner) banner.style.display = 'none'
+  if (typeof showToast === 'function') showToast('✅ Notifiche MVP attivate!')
+}
+
+function rifiutaNotifiche() {
+  const banner = document.getElementById('banner-notifiche-mvp')
+  if (banner) banner.style.display = 'none'
+}
+
+window.accettaNotifiche = accettaNotifiche
+window.rifiutaNotifiche = rifiutaNotifiche
 
 //  NOTIFICHE TRASFERTA 
 async function caricaPreferenzaTrasferta(tifosoId) {
