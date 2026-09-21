@@ -3039,15 +3039,16 @@ async function caricaAreaTifoso(user) {
 
   const { data: memb } = await sb.from('membership')
     .select('*, piano:piano_id(nome)').eq('tifoso_id', tifoso.id)
-    .order('creato_il', { ascending: false }).limit(1).single()
+    .order('creato_il', { ascending: false }).limit(1).maybeSingle()
 
+  let pianoNome = 'Base'
   if (memb) {
-    const nome = memb.piano ? memb.piano.nome : '—'
-    document.getElementById('t-piano-display').textContent = 'Piano ' + nome
-    document.getElementById('t-membership-stato').textContent = 'Piano ' + nome
+    pianoNome = memb.piano ? memb.piano.nome : 'Base'
+    document.getElementById('t-piano-display').textContent = 'Piano ' + pianoNome
+    document.getElementById('t-membership-stato').textContent = 'Piano ' + pianoNome
     document.getElementById('t-scadenza').textContent = memb.valida_fino ? new Date(memb.valida_fino).toLocaleDateString('it-IT') : '—'
     const chipIcon = {'base':'⚪', 'bronze':'🥉', 'silver':'🥈', 'gold':'🥇', 'Base':'⚪', 'Bronze':'🥉', 'Silver':'🥈', 'Gold':'🥇'}
-  document.getElementById('t-membership-chip').innerHTML = '<div class="membership-chip ' + nome.toLowerCase() + '">' + (chipIcon[nome]||'⭐') + ' ' + nome + '</div>'
+    document.getElementById('t-membership-chip').innerHTML = '<div class="membership-chip ' + pianoNome.toLowerCase() + '">' + (chipIcon[pianoNome]||'⭐') + ' ' + pianoNome + '</div>'
   }
 
   const { data: txs } = await sb.from('transazioni')
@@ -3131,7 +3132,7 @@ async function caricaAreaTifoso(user) {
     .select('maglia_taglia, maglia_cognome, maglia_numero')
     .eq('tifoso_id', tifoso.id)
     .eq('stato', 'attiva')
-    .single()
+    .maybeSingle()
   popolaProfiloTifoso(tifoso, pianoNome, membProfilo)
 
   const badgeAcc = document.getElementById('t-accompagnatore-badge')
