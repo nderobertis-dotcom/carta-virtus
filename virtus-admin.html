@@ -1010,7 +1010,7 @@ select.form-input:focus{border-color:var(--accent)}
     <!-- GARE ESTERNE -->
     <div class="section" id="section-gare-esterne">
       <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div class="section-title">📍 Gare Esterne — Notifiche risultati</div>
+        <div class="section-title">📍 Gare Esterne — Email risultati</div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-ghost btn-sm" onclick="loadGareEsterne()">↻ Aggiorna</button>
           <button class="btn btn-primary btn-sm" onclick="apriNuovaGara('esterna')">+ Nuova gara esterna</button>
@@ -1073,7 +1073,7 @@ select.form-input:focus{border-color:var(--accent)}
               <input type="number" class="form-input" id="ge-pts-virtus-1q" min="0" max="999" placeholder="00" style="width:52px;text-align:center;font-size:16px;font-weight:700;padding:6px 4px;flex-shrink:0"/>
               <span style="font-size:11px;font-weight:600;color:#0D2147;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Virtus</span>
             </div>
-            <button class="btn btn-primary btn-sm" style="width:100%" id="ge-btn-1q" onclick="inviaNotificaEsterna('1q')">📲 Invia parziale 1°Q</button>
+            <button class="btn btn-primary btn-sm" style="width:100%" id="ge-btn-1q" onclick="inviaNotificaEsterna('1q')">📧 Invia email parziale 1°Q</button>
           </div>
 
           <!-- 2° Quarto -->
@@ -1088,7 +1088,7 @@ select.form-input:focus{border-color:var(--accent)}
               <input type="number" class="form-input" id="ge-pts-virtus-2q" min="0" max="999" placeholder="00" style="width:52px;text-align:center;font-size:16px;font-weight:700;padding:6px 4px;flex-shrink:0"/>
               <span style="font-size:11px;font-weight:600;color:#0D2147;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Virtus</span>
             </div>
-            <button class="btn btn-primary btn-sm" style="width:100%" id="ge-btn-2q" onclick="inviaNotificaEsterna('2q')">📲 Invia parziale 2°Q</button>
+            <button class="btn btn-primary btn-sm" style="width:100%" id="ge-btn-2q" onclick="inviaNotificaEsterna('2q')">📧 Invia email parziale 2°Q</button>
           </div>
 
           <!-- 3° Quarto -->
@@ -1103,7 +1103,7 @@ select.form-input:focus{border-color:var(--accent)}
               <input type="number" class="form-input" id="ge-pts-virtus-3q" min="0" max="999" placeholder="00" style="width:52px;text-align:center;font-size:16px;font-weight:700;padding:6px 4px;flex-shrink:0"/>
               <span style="font-size:11px;font-weight:600;color:#0D2147;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Virtus</span>
             </div>
-            <button class="btn btn-primary btn-sm" style="width:100%" id="ge-btn-3q" onclick="inviaNotificaEsterna('3q')">📲 Invia parziale 3°Q</button>
+            <button class="btn btn-primary btn-sm" style="width:100%" id="ge-btn-3q" onclick="inviaNotificaEsterna('3q')">📧 Invia email parziale 3°Q</button>
           </div>
 
           <!-- Finale -->
@@ -1118,7 +1118,7 @@ select.form-input:focus{border-color:var(--accent)}
               <input type="number" class="form-input" id="ge-pts-virtus-finale" min="0" max="999" placeholder="00" style="width:52px;text-align:center;font-size:16px;font-weight:700;padding:6px 4px;flex-shrink:0"/>
               <span style="font-size:11px;font-weight:600;color:#0D2147;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Virtus</span>
             </div>
-            <button class="btn btn-primary btn-sm" style="width:100%;background:var(--accent)" id="ge-btn-finale" onclick="inviaNotificaEsterna('finale')">📲 Invia risultato finale</button>
+            <button class="btn btn-primary btn-sm" style="width:100%;background:var(--accent)" id="ge-btn-finale" onclick="inviaNotificaEsterna('finale')">📧 Invia email risultato finale</button>
           </div>
         </div>
 
