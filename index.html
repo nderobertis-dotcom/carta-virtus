@@ -292,7 +292,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li style="color:var(--muted);font-size:13px">&#9888; Nessun accumulo punti presso i partner</li>
             <li style="color:var(--muted);font-size:13px">&#9888; Nessun bonus punti alle gare</li>
             <li style="color:var(--muted);font-size:13px">&#9888; -5 pt per ogni gara casalinga non frequentata</li>
-            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — notifiche push risultati in trasferta incluse</li>
+            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — aggiornamenti email risultati in trasferta inclusi</li>
             <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#127942; <strong>Voto MVP</strong> — 1 voto gratuito a gara (senza credito punti)</li>
           </ul>
           <button class="btn-piano btn-piano-blu" onclick="apriRegistrazione('base',10,false)">Scegli Base &#8594;</button>
@@ -316,7 +316,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li>Accumulo punti presso i partner</li>
             <li>&#127936; +3 punti ad ogni ingresso alle gare</li>
             <li>&#127967; Accesso alle gare casalinghe con ingresso riservato</li>
-            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — notifiche push risultati in trasferta incluse</li>
+            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — aggiornamenti email risultati in trasferta inclusi</li>
             <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#127942; <strong>Voto MVP</strong> — 1 voto gratuito (+1 pt credito) oppure usa i tuoi punti per aumentare il peso del voto</li>
           </ul>
           <button class="btn-piano btn-piano-blu" onclick="apriRegistrazione('bronze',30,false)">Scegli Bronze &#8594;</button>
@@ -341,7 +341,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li>Priorita sui premi in catalogo</li>
             <li>&#127936; +5 punti ad ogni ingresso alle gare</li>
             <li class="maglia">&#127967; Accesso alle gare casalinghe con posto riservato per tutta la stagione</li>
-            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — notifiche push risultati in trasferta incluse</li>
+            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — aggiornamenti email risultati in trasferta inclusi</li>
             <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#127942; <strong>Voto MVP</strong> — 1 voto gratuito (+1 pt credito) oppure usa i tuoi punti per aumentare il peso del voto</li>
           </ul>
           <button class="btn-piano btn-piano-arancio" onclick="apriRegistrazione('silver',50,true)">Scegli Silver &#8594;</button>
@@ -365,7 +365,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
             <li>100 punti di benvenuto</li>
             <li>&#127936; +10 punti ad ogni ingresso alle gare</li>
             <li class="maglia">&#127967; Accesso alle gare casalinghe con posto riservato per tutta la stagione</li>
-            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — notifiche push risultati in trasferta incluse</li>
+            <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#128241; <strong>Servizio Away</strong> — aggiornamenti email risultati in trasferta inclusi</li>
             <li style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd">&#127942; <strong>Voto MVP</strong> — 1 voto gratuito (+1 pt credito) oppure usa i tuoi punti per aumentare il peso del voto</li>
           </ul>
           <button class="btn-piano btn-piano-premium" onclick="apriRegistrazione('gold',100,true)">Scegli Gold &#8594;</button>
@@ -385,7 +385,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
           </div>
         </div>
         <p style="font-size:.92rem;color:#cbd5e1;margin:0 0 14px;line-height:1.6">
-          Segui la Virtus anche in trasferta dal tuo smartphone. Ricevi notifiche push in tempo reale su ogni parziale di gara — dopo il 1°, 2°, 3° quarto e al fischio finale — con il risultato aggiornato direttamente sullo schermo del telefono, senza aprire nessuna app.
+          Segui la Virtus anche in trasferta. Ricevi una email in tempo reale su ogni parziale di gara — dopo il 1°, 2°, 3° quarto e al fischio finale — con il risultato aggiornato direttamente nella tua casella di posta.
         </p>
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px">
           <span style="background:rgba(245,158,11,.15);color:#fbbf24;padding:5px 12px;border-radius:9999px;font-size:.8rem;font-weight:600">📲 Notifica dopo ogni quarto</span>
@@ -974,13 +974,10 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 
   <!-- NOTIFICHE TRASFERTA -->
   <div class="t-card" id="card-notifiche-trasferta" style="display:none">
-    <div class="t-card-title">📍 Notifiche risultati trasferta</div>
+    <div class="t-card-title">📧 Aggiornamenti trasferta via email</div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div style="font-size:13px;color:var(--muted)">Ricevi una notifica push all'inizio della gara e al termine di ogni quarto (1°, 2°, 3° e risultato finale).</div>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0">
-        <input type="checkbox" id="toggle-notifiche-trasferta" style="width:18px;height:18px" onchange="salvaNotificheTrasferta(this.checked)"/>
-        <span id="label-notifiche-trasferta" style="font-size:13px;font-weight:600">Attiva</span>
-      </label>
+      <div style="font-size:13px;color:var(--muted)">Ricevi una email all'inizio della gara e al termine di ogni quarto (1°, 2°, 3° e risultato finale) direttamente nella tua casella di posta.</div>
+      <div id="label-notifiche-trasferta" style="font-size:13px;font-weight:600;color:var(--green, #22c55e)">✅ Attivo</div>
     </div>
   </div>
   <div class="tifoso-content" style="padding-top:0">
@@ -2010,7 +2007,7 @@ async function caricaMvpVoto(tifosoId, pianoNome, puntiSaldo) {
     `Votazioni aperte — <strong>${data} vs ${opp}</strong>. Scegli il tuo MVP!`
   document.getElementById('mvp-voting-ui').style.display = 'block'
 
-  // Notifica push apertura votazioni (con eventuale sponsor)
+  // Apertura votazioni (con eventuale sponsor)
   const sponsor = await caricaSponsorGara(_mvpGaraId)
   const sponsorTxt = sponsor ? ` · Con ${sponsor.nome_sponsor}` : ''
   mostraNotificaLocale(
@@ -2111,55 +2108,6 @@ window.aggiornaPuntiMvp = aggiornaPuntiMvp
 window.inviaMvpVoto = inviaMvpVoto
 
 //  NOTIFICHE PUSH & SPONSOR MVP 
-let _swRegistration = null
-
-async function inizializzaNotifiche() {
-  if (!('serviceWorker' in navigator) || !('Notification' in window)) return
-  try {
-    _swRegistration = await navigator.serviceWorker.register('/sw.js')
-    console.log('SW registrato')
-  } catch(e) { console.warn('SW:', e) }
-}
-
-async function chiediConsensoNotifiche() {
-  if (!('Notification' in window)) return false
-  if (Notification.permission === 'granted') return true
-  if (Notification.permission === 'denied') return false
-  const result = await Notification.requestPermission()
-  return result === 'granted'
-}
-
-function mostraNotificaLocale(title, body, tag) {
-  if (Notification.permission !== 'granted') return
-  try {
-    if (_swRegistration) {
-      _swRegistration.showNotification(title, { body, icon: '/logo_192.png', tag: tag||'virtus', badge: '/logo_192.png' })
-    } else {
-      new Notification(title, { body, icon: '/logo_192.png' })
-    }
-  } catch(e) { console.warn('Notifica:', e) }
-}
-
-async function caricaSponsorGara(garaId) {
-  if (!garaId) return null
-  try {
-    const { data } = await sb.from('mvp_sponsor_gara').select('*').eq('gara_id', garaId).eq('attivo', true).maybeSingle()
-    return data || null
-  } catch(e) { return null }
-}
-
-function renderSponsorBanner(sponsor) {
-  if (!sponsor) return ''
-  return `<div style="margin-top:14px;padding:10px 14px;background:linear-gradient(90deg,#0D2147,#1A3A6B);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    ${sponsor.logo_url ? `<img src="${sponsor.logo_url}" style="height:28px;object-fit:contain;border-radius:3px" onerror="this.style.display='none'"/>` : ''}
-    <div style="font-size:11px;color:rgba(255,255,255,.55)">Con il supporto di</div>
-    <div style="font-size:13px;font-weight:700;color:#fff">${sponsor.nome_sponsor}</div>
-    ${sponsor.claim ? `<div style="font-size:11px;color:#F57C00;margin-left:auto;font-style:italic">${sponsor.claim}</div>` : ''}
-  </div>`
-}
-
-window.inizializzaNotifiche = inizializzaNotifiche
-window.chiediConsensoNotifiche = chiediConsensoNotifiche
 
 async function accettaNotifiche() {
   const banner = document.getElementById('banner-notifiche-mvp')
@@ -2200,67 +2148,6 @@ async function caricaPreferenzaTrasferta(tifosoId) {
   if (lbl) lbl.textContent = attivo ? 'Attivate ✅' : 'Attiva'
 }
 
-const VAPID_PUBLIC_KEY = 'BGCAo2r2i5-w7g8qGgo-bz9T3avQCimaro0v3UnYFaKVrFIHXIlRF_oBWhD4jEgxoujgUlIsODwZXlK7jH8NBc8'
-
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData = atob(base64)
-  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
-}
-
-async function salvaNotificheTrasferta(valore) {
-  const lbl = document.getElementById('label-notifiche-trasferta')
-  const uid = (await sb.auth.getUser()).data.user?.id
-  if (!uid) return
-
-  if (valore) {
-    const ok = await chiediConsensoNotifiche()
-    if (!ok) {
-      document.getElementById('toggle-notifiche-trasferta').checked = false
-      if (typeof showToast === 'function') showToast('Abilita le notifiche nel browser per continuare', true)
-      return
-    }
-    // Salva subito la preferenza nel DB (anche senza subscription push)
-    await sb.from('tifosi').update({ notifiche_trasferta: true }).eq('auth_user_id', uid)
-    // Prova a ottenere la push subscription
-    try {
-      // Aspetta che il SW sia effettivamente attivo (non solo registrato)
-      const reg = await navigator.serviceWorker.ready
-      console.log('[DEBUG] SW ready, stato=', reg.active?.state)
-      // Unsubscribe da qualsiasi sub precedente (potrebbe essere senza VAPID key)
-      try {
-        const oldSub = await reg.pushManager.getSubscription()
-        if (oldSub) { await oldSub.unsubscribe(); console.log('[DEBUG] old sub rimossa') }
-      } catch(ignore) { console.log('[DEBUG] getSubscription fallita, procedo comunque') }
-      console.log('[DEBUG] creo nuova subscription...')
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      })
-      console.log('[DEBUG] Sub creata:', sub.endpoint)
-      const subJson = JSON.stringify(sub)
-      await sb.from('tifosi').update({ push_subscription: subJson }).eq('auth_user_id', uid)
-      console.log('[DEBUG] push_subscription salvata nel DB')
-    } catch(e) {
-      console.error('[DEBUG] Push subscribe error:', e)
-      // Non blocchiamo: la preferenza è già salvata, la push subscription manca
-      if (typeof showToast === 'function') showToast('⚠️ Preferenza salvata ma push non attivata: ' + e.message, true)
-    }
-  } else {
-    try {
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.getSubscription()
-      if (sub) await sub.unsubscribe()
-    } catch(e) { /* ignora */ }
-    await sb.from('tifosi').update({ notifiche_trasferta: false, push_subscription: null }).eq('auth_user_id', uid)
-  }
-
-  if (lbl) lbl.textContent = valore ? 'Attivate ✅' : 'Attiva'
-  if (typeof showToast === 'function') showToast(valore ? '✅ Notifiche trasferta attivate!' : 'Notifiche disattivate', !valore)
-}
-
-window.salvaNotificheTrasferta = salvaNotificheTrasferta
 
 let tuttiPartner = []
 let categoriaAttiva = 'tutti'
@@ -2685,7 +2572,6 @@ window.addEventListener('load', async () => {
   loadPartnerPubblici()
   caricaPostiPubblici()
   caricaStatoGrattaVinci()
-  inizializzaNotifiche()
   gestisciResetRedirect()
   const { count } = await sb.from('partner').select('*', { count: 'exact', head: true }).eq('attivo', true)
   const el = document.getElementById('stat-partner-count')
