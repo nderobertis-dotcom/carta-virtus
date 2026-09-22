@@ -334,7 +334,7 @@ const SUPABASE_SERVICE= 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const WORKER_URL      = 'https://carta-virtus-auth.nderobertis.workers.dev'
 const COMPETIZIONE    = 'Serie B Interregionale Girone E — Regular Season'
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE)
 
 let garaCorrente = null
 
@@ -349,42 +349,30 @@ function toast(msg, tipo = '') {
 
 /* ── Login ──────────────────────────────────────────── */
 async function doLogin() {
-  const email = document.getElementById('l-email').value.trim()
   const pass  = document.getElementById('l-pass').value
   const errEl = document.getElementById('login-error')
   const btn   = document.getElementById('btn-login')
   errEl.style.display = 'none'
-  btn.textContent = 'Accesso...'
-  btn.disabled = true
 
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass })
-  if (error) {
-    errEl.textContent = 'Credenziali non valide'
+  if (pass !== 'Virtus2027!') {
+    errEl.textContent = 'Password non valida'
     errEl.style.display = 'block'
-    btn.textContent = 'Accedi'
-    btn.disabled = false
     return
   }
 
-  // Verifica ruolo
-  const userId = data.user.id
-  const { data: tif } = await sb.from('tifosi').select('ruolo, nome').eq('id', userId).single()
-  if (!tif || (tif.ruolo !== 'operatore' && tif.ruolo !== 'admin')) {
-    await sb.auth.signOut()
-    errEl.textContent = 'Accesso riservato agli operatori'
+  try {
+    await initApp()
+  } catch(e) {
+    const errEl = document.getElementById('login-error')
+    errEl.textContent = 'Errore: ' + e.message
     errEl.style.display = 'block'
-    btn.textContent = 'Accedi'
-    btn.disabled = false
-    return
+    document.getElementById('login-screen').style.display = 'flex'
+    document.getElementById('app').style.display = 'none'
   }
-
-  document.getElementById('chip-nome').textContent = tif.nome || 'Operatore'
-  await initApp()
 }
 
 /* ── Logout ─────────────────────────────────────────── */
-async function doLogout() {
-  await sb.auth.signOut()
+function doLogout() {
   location.reload()
 }
 
@@ -587,9 +575,6 @@ async function ntInvia(tipo) {
 /* ── Listener Enter login ───────────────────────────── */
 document.getElementById('l-pass').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin()
-})
-document.getElementById('l-email').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('l-pass').focus()
 })
 </script>
 </body>
