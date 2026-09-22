@@ -1049,12 +1049,12 @@ select.form-input:focus{border-color:var(--accent)}
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
             <div>
               <div class="card-title" style="color:#15803d;margin-bottom:4px">🟢 Inizio Gara</div>
-              <div style="font-size:.82rem;color:#166534">Invia una notifica push ai tifosi per segnalare che la partita è iniziata</div>
+              <div style="font-size:.82rem;color:#166534">Invia una email ai tifosi per segnalare che la partita è iniziata</div>
               <span id="ge-done-inizio" style="display:none;font-size:11px;color:#15803d;font-weight:600;margin-top:4px;display:none">✅ Notifica inviata</span>
             </div>
             <button class="btn btn-sm" id="ge-btn-inizio" onclick="inviaNotificaEsterna('inizio')"
               style="background:#22c55e;color:#fff;font-weight:700;padding:10px 20px;font-size:.9rem;border:none;border-radius:.6rem;cursor:pointer;white-space:nowrap">
-              🏀 Inizio Gara — Invia notifica
+              🏀 Inizio Gara — Invia email
             </button>
           </div>
         </div>
@@ -1124,7 +1124,7 @@ select.form-input:focus{border-color:var(--accent)}
 
         <!-- Sponsor -->
         <div class="card" style="margin-bottom:16px">
-          <div class="card-title" style="margin-bottom:10px">🤝 Sponsor della notifica (opzionale)</div>
+          <div class="card-title" style="margin-bottom:10px">🤝 Sponsor dell'email (opzionale)</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div class="form-group" style="margin:0">
               <label style="font-size:11px">Nome sponsor</label>
@@ -1140,7 +1140,7 @@ select.form-input:focus{border-color:var(--accent)}
 
         <!-- Lista tifosi -->
         <div class="card">
-          <div class="card-title" style="margin-bottom:10px">👥 Tifosi con notifiche trasferta attive</div>
+          <div class="card-title" style="margin-bottom:10px">👥 Tifosi con aggiornamenti email trasferta attivi</div>
           <table class="table">
             <thead><tr><th>Tifoso</th><th>Piano</th><th>Email</th></tr></thead>
             <tbody id="ge-tifosi-list">
@@ -4178,8 +4178,8 @@ async function caricaDatiGaraEsterna() {
   const inizioInviato = g.notifica_inizio_inviata || false
   const doneInizio = document.getElementById('ge-done-inizio')
   const btnInizio  = document.getElementById('ge-btn-inizio')
-  if (doneInizio) { doneInizio.style.display = inizioInviato ? 'inline' : 'none'; doneInizio.textContent = '✅ Notifica inviata' }
-  if (btnInizio)  { btnInizio.disabled = inizioInviato; btnInizio.style.background = inizioInviato ? '#86efac' : '#22c55e'; btnInizio.textContent = inizioInviato ? '✅ Già inviato' : '🏀 Inizio Gara — Invia notifica' }
+  if (doneInizio) { doneInizio.style.display = inizioInviato ? 'inline' : 'none'; doneInizio.textContent = '✅ Email inviata' }
+  if (btnInizio)  { btnInizio.disabled = inizioInviato; btnInizio.style.background = inizioInviato ? '#86efac' : '#22c55e'; btnInizio.textContent = inizioInviato ? '✅ Già inviata' : '🏀 Inizio Gara — Invia email' }
 
   const campoMap = { '1q':'parziale_1q','2q':'parziale_2q','3q':'parziale_3q','finale':'risultato_finale' }
   const invMap   = { '1q':'notifica_1q_inviata','2q':'notifica_2q_inviata','3q':'notifica_parziale_inviata','finale':'notifica_finale_inviata' }
@@ -4200,7 +4200,7 @@ async function caricaDatiGaraEsterna() {
     const doneEl = document.getElementById(`ge-done-${t}`)
     const btnEl  = document.getElementById(`ge-btn-${t}`)
     if (doneEl) doneEl.style.display = inviato ? 'inline' : 'none'
-    if (inviato && btnEl) btnEl.textContent = '✅ Già inviato'
+    if (inviato && btnEl) btnEl.textContent = '✅ Già inviata'
   })
   document.getElementById('ge-sponsor-nome').value     = g.sponsor_notifica||''
   document.getElementById('ge-sponsor-logo').value     = g.sponsor_notifica_logo||''
@@ -4212,7 +4212,7 @@ async function caricaDatiGaraEsterna() {
 
   const abbonati = (tifosi||[]).filter(t => t.membership?.length>0)
   const info = document.getElementById('ge-abbonati-info')
-  if (info) info.textContent = `${abbonati.length} tifos${abbonati.length===1?'o':'i'} con notifiche attive`
+  if (info) info.textContent = `${abbonati.length} tifos${abbonati.length===1?'o':'i'} con email trasferta attivi`
 
   const tbody = document.getElementById('ge-tifosi-list')
   if (tbody) {
@@ -4222,7 +4222,7 @@ async function caricaDatiGaraEsterna() {
           <td><span class="badge badge-gray">${t.membership?.[0]?.piano?.nome||'—'}</span></td>
           <td style="font-size:12px;color:var(--muted)">${t.email}</td>
         </tr>`).join('')
-      : '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:12px">Nessun tifoso con notifiche attive</td></tr>'
+      : '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:12px">Nessun tifoso con aggiornamenti email attivi</td></tr>'
   }
 }
 
@@ -4253,11 +4253,11 @@ async function inviaNotificaEsterna(tipo) {
     const luogo  = g?.luogo ? ` · ${g.luogo}` : ''
     const body   = `La Virtus Molfetta è in campo${luogo}. Segui i parziali in tempo reale!${sponsorTxt}`
 
-    if (!confirm(`Stai per inviare una notifica INIZIO GARA.\n\nTitolo: ${titolo}\nMessaggio: ${body}\n\nConfermi?`)) return
+    if (!confirm(`Stai per inviare una email INIZIO GARA.\n\nTitolo: ${titolo}\nMessaggio: ${body}\n\nConfermi?`)) return
 
     await sbAdmin.from('gare').update({ notifica_inizio_inviata: true }).eq('id', garaId)
     try {
-      const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/notify-trasferta', {
+      const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/email-trasferta', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ garaId, tipo: 'inizio', titolo, body })
@@ -4266,14 +4266,14 @@ async function inviaNotificaEsterna(tipo) {
         toast('✅ Notifica Inizio Gara inviata', 'success')
         const doneEl = document.getElementById('ge-done-inizio')
         const btnEl  = document.getElementById('ge-btn-inizio')
-        if (doneEl) { doneEl.style.display = 'inline'; doneEl.textContent = '✅ Notifica inviata' }
-        if (btnEl)  { btnEl.textContent = '✅ Già inviato'; btnEl.disabled = true; btnEl.style.background = '#86efac' }
+        if (doneEl) { doneEl.style.display = 'inline'; doneEl.textContent = '✅ Email inviata' }
+        if (btnEl)  { btnEl.textContent = '✅ Già inviata'; btnEl.disabled = true; btnEl.style.background = '#86efac' }
         if (g) g.notifica_inizio_inviata = true
       } else {
-        toast('Errore nell\'invio della notifica', 'error')
+        toast('Errore nell\'invio della email', 'error')
       }
     } catch(e) {
-      toast('Errore connessione servizio notifiche.', 'error')
+      toast('Errore connessione servizio email.', 'error')
     }
     return
   }
@@ -4289,7 +4289,7 @@ async function inviaNotificaEsterna(tipo) {
   const titolo = `${emoji} ${labels[tipo]} — vs ${opp}`
   const body   = `${risultato}${sponsorTxt}`
 
-  if (!confirm(`Stai per inviare una notifica push a tutti i tifosi con notifiche trasferta attive.\n\nTitolo: ${titolo}\nMessaggio: ${body}\n\nConfermi?`)) return
+  if (!confirm(`Stai per inviare una email a tutti i tifosi con notifiche trasferta attive.\n\nTitolo: ${titolo}\nMessaggio: ${body}\n\nConfermi?`)) return
 
   const campoRis = { '1q':'parziale_1q', '2q':'parziale_2q', '3q':'parziale_3q', 'finale':'risultato_finale' }[tipo]
   const campoInv = { '1q':'notifica_1q_inviata', '2q':'notifica_2q_inviata', '3q':'notifica_parziale_inviata', 'finale':'notifica_finale_inviata' }[tipo]
@@ -4297,7 +4297,7 @@ async function inviaNotificaEsterna(tipo) {
   await sbAdmin.from('gare').update({ [campoRis]:risultato, [campoInv]:true }).eq('id',garaId)
 
   try {
-    const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/notify-trasferta',{
+    const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/email-trasferta',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ garaId, tipo, titolo, body })
@@ -4307,13 +4307,13 @@ async function inviaNotificaEsterna(tipo) {
       const doneEl2 = document.getElementById(`ge-done-${tipo}`)
       const btnEl2  = document.getElementById(`ge-btn-${tipo}`)
       if (doneEl2) doneEl2.style.display = 'inline'
-      if (btnEl2)  btnEl2.textContent = '✅ Già inviato'
+      if (btnEl2)  btnEl2.textContent = '✅ Già inviata'
       if(g){ g[campoInv]=true; g[campoRis]=risultato }
     } else {
-      toast('Risultato salvato, errore notifica','error')
+      toast('Risultato salvato, errore invio email','error')
     }
   } catch(e) {
-    toast('Risultato salvato. Errore connessione servizio notifiche.','error')
+    toast('Risultato salvato. Errore connessione servizio email.','error')
   }
 }
 
