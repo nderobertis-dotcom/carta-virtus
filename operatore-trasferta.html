@@ -434,6 +434,12 @@ function mostraGara() {
     if (el) el.textContent = casa
   })
 
+  // Pre-compila sponsor da DB se presente
+  if (g.sponsor_notifica)
+    document.getElementById('sp-nome').value = g.sponsor_notifica
+  if (g.sponsor_notifica_logo)
+    document.getElementById('sp-logo').value = g.sponsor_notifica_logo
+
   document.getElementById('main-content').style.display = 'block'
 
   // Aggiorna stato bottoni da DB
