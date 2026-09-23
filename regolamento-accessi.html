@@ -1051,7 +1051,7 @@ function accShowTab(t) {
   if (t === 'cancello')     accPopulateCancelloSelect();
   if (t === 'partite')      accRenderPartite();
   if (t === 'aventi')       accRenderAventi();
-  if (t === 'impostazioni') accUpdateInfoCounts();
+  if (t === 'impostazioni') { accUpdateInfoCounts(); regLoad(); }
 }
 
 /* ── PARTITE ── */
@@ -1477,12 +1477,7 @@ function regApplyLock(locked) {
   regRenderRows(reg.rows);
 }
 
-// Carica il regolamento quando si apre la tab impostazioni
-const _origAccShowTab = accShowTab;
-accShowTab = function(t) {
-  _origAccShowTab(t);
-  if (t === 'impostazioni') regLoad();
-};
+
 </script>
 </body>
 </html>
