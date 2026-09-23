@@ -15,9 +15,17 @@
   --bg:#f4f7fc;--white:#fff;--radius:12px;
 }
 @media print{
-  body{background:#fff!important}
+  body{background:#fff!important;padding:0}
   .no-print{display:none!important}
   .page-break{page-break-before:always}
+  /* Forza griglia 3 colonne in stampa per far stare tutti e 5 i box in pag.2 */
+  .accessi-grid{grid-template-columns:1fr 1fr 1fr!important;gap:10px!important}
+  .accesso-card{font-size:12px}
+  .accesso-nome{font-size:14px!important}
+  .tag{font-size:10px!important}
+  /* Banner gara visibile in stampa su ogni pagina tramite header fisso */
+  .print-gara-header{display:block!important}
+  .wrapper{margin-top:8px}
 }
 body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 60px}
 
@@ -175,7 +183,10 @@ select.editable{cursor:pointer}
   </div>
 
   <!-- ACCESSI -->
-  <div class="section-title" style="page-break-before:always">Punti di accesso</div>
+  <div class="print-gara-header" style="display:none;background:#0d2147;color:#fff;padding:6px 0 6px 0;margin-bottom:10px;border-radius:8px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.04em" id="print-header-p2">
+    <span id="ph2-titolo"></span> &nbsp;·&nbsp; <span id="ph2-data"></span> &nbsp;·&nbsp; <span id="ph2-luogo"></span>
+  </div>
+  <div class="section-title" style="page-break-before:always;margin-top:0">Punti di accesso</div>
   <div class="accessi-grid">
 
     <!-- ACCESSO A -->
@@ -332,7 +343,10 @@ select.editable{cursor:pointer}
   </div>
 
   <!-- TABELLA ADDETTI -->
-  <div class="section-title">Elenco addetti di serata</div>
+  <div class="print-gara-header" style="display:none;background:#0d2147;color:#fff;padding:6px 0 6px 0;margin-bottom:10px;border-radius:8px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.04em" id="print-header-p3">
+    <span id="ph3-titolo"></span> &nbsp;·&nbsp; <span id="ph3-data"></span> &nbsp;·&nbsp; <span id="ph3-luogo"></span>
+  </div>
+  <div class="section-title" style="page-break-before:always;margin-top:0">Elenco addetti di serata</div>
   <div class="addetti-table">
     <table>
       <thead>
@@ -431,10 +445,22 @@ async function caricaGare() {
       const opt = this.options[this.selectedIndex]
       const box = document.getElementById('gara-selezionata')
       if (!opt.value) { box.style.display='none'; return }
-      document.getElementById('gara-titolo').textContent = opt.dataset.titolo
-      document.getElementById('gara-data').textContent = opt.dataset.data
-      document.getElementById('gara-luogo').textContent = '📍 ' + opt.dataset.luogo
+      const titolo = opt.dataset.titolo
+      const data   = opt.dataset.data
+      const luogo  = opt.dataset.luogo
+      // banner principale (visibile su schermo)
+      document.getElementById('gara-titolo').textContent = titolo
+      document.getElementById('gara-data').textContent   = data
+      document.getElementById('gara-luogo').textContent  = '📍 ' + luogo
       box.style.display = 'block'
+      // banner pagina 2
+      document.getElementById('ph2-titolo').textContent = titolo
+      document.getElementById('ph2-data').textContent   = data
+      document.getElementById('ph2-luogo').textContent  = '📍 ' + luogo
+      // banner pagina 3
+      document.getElementById('ph3-titolo').textContent = titolo
+      document.getElementById('ph3-data').textContent   = data
+      document.getElementById('ph3-luogo').textContent  = '📍 ' + luogo
     })
   } catch(e) {
     document.getElementById('sel-gara').innerHTML = '<option value="">Errore caricamento gare</option>'
