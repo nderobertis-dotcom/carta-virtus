@@ -107,11 +107,30 @@ select.editable{cursor:pointer}
 </head>
 <body>
 
+<!-- LOGIN -->
+<div id="login-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0d2147,#1a3a6b)">
+  <div style="background:#fff;border-radius:16px;padding:40px 36px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+    <img src="https://brwkwlyxkptzmkzkvava.supabase.co/storage/v1/object/public/assets/logo-virtus.png"
+         style="width:72px;height:72px;object-fit:contain;margin-bottom:16px"
+         onerror="this.style.display='none'" alt="Virtus"/>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#1a3a6b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Regolamento Accessi</div>
+    <div style="font-size:12px;color:#78909c;margin-bottom:24px">Documento riservato — Virtus Molfetta</div>
+    <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password"
+      style="width:100%;border:1.5px solid #dde6f0;border-radius:8px;padding:10px 14px;font-size:14px;font-family:'Barlow',sans-serif;outline:none;margin-bottom:12px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')doLogin()"/>
+    <div id="login-err" style="color:#c62828;font-size:12px;margin-bottom:10px;display:none">Password errata</div>
+    <button onclick="doLogin()" style="width:100%;background:#1a3a6b;color:#fff;border:none;padding:11px;border-radius:8px;font-family:'Barlow',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Accedi</button>
+  </div>
+</div>
+
+<!-- CONTENUTO (nascosto fino al login) -->
+<div id="main-content" style="display:none">
+
 <div class="doc-header">
   <div class="doc-header-logo">
-    <img src="https://virtusfanmolfetta.com/images/logo-virtus.png"
-         onerror="this.onerror=null;this.src='https://brwkwlyxkptzmkzkvava.supabase.co/storage/v1/object/public/assets/logo-virtus.png'"
-         alt="Virtus Molfetta"/>
+    <img src="https://brwkwlyxkptzmkzkvava.supabase.co/storage/v1/object/public/assets/logo-virtus.png"
+         onerror="this.onerror=null;this.style.display='none';this.parentElement.innerHTML='<span style=\'font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:#1a3a6b\'>V</span>'"
+         alt="Virtus Molfetta" style="width:68px;height:68px;object-fit:contain"/>
   </div>
   <div class="doc-header-text" style="flex:1">
     <h1>Regolamento Accessi — PalaPoli</h1>
@@ -139,7 +158,7 @@ select.editable{cursor:pointer}
   <!-- SELETTORE GARA -->
   <div class="no-print" id="banner-gara" style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
     <span style="font-size:13px;font-weight:700;color:var(--blu);white-space:nowrap">🏀 Gara di riferimento</span>
-    <select id="sel-gara" style="flex:1;min-width:220px;border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text);background:#fff;cursor:pointer">
+    <select id="sel-gara" style="flex:1;min-width:220px;border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-family:'Barlow',sans-serif;font-size:13px;color:#1a2a3a;background:#ffffff;cursor:pointer;-webkit-appearance:auto">
       <option value="">⏳ Carico gare…</option>
     </select>
     <button class="btn-print" onclick="window.print()">🖨️ Stampa / Salva PDF</button>
@@ -357,8 +376,23 @@ select.editable{cursor:pointer}
   </div>
 
 </div><!-- /wrapper -->
+</div><!-- /main-content -->
 
 <script>
+// LOGIN
+function doLogin() {
+  const pass = document.getElementById('login-pass').value
+  if (pass !== '2027Virtus!') {
+    document.getElementById('login-err').style.display = 'block'
+    return
+  }
+  document.getElementById('login-screen').style.display = 'none'
+  document.getElementById('main-content').style.display = 'block'
+  const oggi = new Date()
+  document.getElementById('data-doc').textContent = '📅 ' + oggi.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
+  caricaGare()
+}
+
 const SUPABASE_URL  = 'https://brwkwlyxkptzmkzkvava.supabase.co'
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
 
@@ -368,9 +402,6 @@ function getSb() {
   return sb
 }
 
-// Data documento
-const oggi = new Date()
-document.getElementById('data-doc').textContent = '📅 ' + oggi.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
 
 // Carica gare casalinghe (luogo contiene "palapoli")
 async function caricaGare() {
@@ -380,13 +411,13 @@ async function caricaGare() {
       .select('id,titolo,avversario,data_ora,luogo')
       .order('data_ora', { ascending: false })
     if (error) throw error
-    console.log('Tutte le gare:', (gare||[]).map(g => g.luogo))
     const casalinghe = (gare||[]).filter(g => g.luogo?.toLowerCase().includes('palapoli'))
-    console.log('Casalinghe trovate:', casalinghe.length)
+    const ph = document.getElementById('sel-gara-placeholder')
+    if (ph) ph.textContent = casalinghe.length ? `🏠 ${casalinghe.length} gare in casa` : '⚠️ Nessuna gara casalinga'
     const sel = document.getElementById('sel-gara')
     sel.innerHTML = '<option value="">— Seleziona la gara —</option>'
     if (casalinghe.length === 0) {
-      sel.innerHTML = `<option value="">Nessuna gara casalinga (${(gare||[]).length} gare totali)</option>`
+      sel.innerHTML = `<option value="">Nessuna gara casalinga trovata</option>`
       return
     }
     casalinghe.forEach(g => {
@@ -414,8 +445,6 @@ async function caricaGare() {
     console.error('Errore gare:', e)
   }
 }
-
-caricaGare()
 
 // Genera righe tabella addetti
 const addetti = [
