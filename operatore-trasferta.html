@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Carta Virtus — Notifiche Trasferta</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.39.3/umd/supabase.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -334,9 +334,16 @@ const SUPABASE_SERVICE= 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const WORKER_URL      = 'https://carta-virtus-auth.nderobertis.workers.dev'
 const COMPETIZIONE    = 'Serie B Interregionale Girone E — Regular Season'
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE)
-
+let sb = null
 let garaCorrente = null
+
+function getSb() {
+  if (!sb) {
+    if (typeof supabase === 'undefined') throw new Error('Libreria Supabase non caricata')
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE)
+  }
+  return sb
+}
 
 /* ── Toast ─────────────────────────────────────────── */
 function toast(msg, tipo = '') {
@@ -384,7 +391,7 @@ async function initApp() {
   const ora = new Date()
 
   // Prende tutte le gare e filtra lato client
-  const { data: gare, error: gareErr } = await sb.from('gare')
+  const { data: gare, error: gareErr } = await getSb().from('gare')
     .select('*')
     .order('data_ora', { ascending: true })
 
