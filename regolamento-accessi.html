@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Regolamento Accessi</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -21,9 +22,9 @@
 body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 60px}
 
 /* HEADER */
-.doc-header{background:linear-gradient(135deg,#0d2147,#1a3a6b);color:#fff;padding:32px 40px 28px;display:flex;align-items:center;gap:24px}
-.doc-header-logo{width:64px;height:64px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.doc-header-logo img{width:52px;height:52px;object-fit:contain}
+.doc-header{background:linear-gradient(135deg,#0d2147,#1a3a6b);color:#fff;padding:28px 40px 24px;display:flex;align-items:center;gap:24px}
+.doc-header-logo{width:80px;height:80px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.doc-header-logo img{width:68px;height:68px;object-fit:contain}
 .doc-header-text h1{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;line-height:1}
 .doc-header-text p{font-size:13px;color:rgba(255,255,255,.6);margin-top:6px}
 .doc-meta{margin-top:10px;display:flex;gap:16px;flex-wrap:wrap}
@@ -102,15 +103,31 @@ select.editable{cursor:pointer}
 
 <div class="doc-header">
   <div class="doc-header-logo">
-    <img src="https://brwkwlyxkptzmkzkvava.supabase.co/storage/v1/object/public/assets/logo-virtus.png" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 52 52%22><rect width=%2252%22 height=%2252%22 fill=%22%231a3a6b%22 rx=%2226%22/><text x=%2226%22 y=%2234%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2224%22 font-weight=%22bold%22>V</text></svg>'" alt="Virtus"/>
+    <img src="https://virtusfanmolfetta.com/images/logo-virtus.png"
+         onerror="this.onerror=null;this.src='https://brwkwlyxkptzmkzkvava.supabase.co/storage/v1/object/public/assets/logo-virtus.png'"
+         alt="Virtus Molfetta"/>
   </div>
-  <div class="doc-header-text">
+  <div class="doc-header-text" style="flex:1">
     <h1>Regolamento Accessi — PalaPoli</h1>
     <p>Virtus Molfetta Basket · Documento operativo per il direttivo</p>
     <div class="doc-meta">
       <span>🏀 Stagione 2026/2027</span>
       <span>📋 Uso interno</span>
       <span id="data-doc">📅 —</span>
+    </div>
+    <!-- selettore gara -->
+    <div class="no-print" style="margin-top:12px">
+      <select id="sel-gara" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;font-family:'Barlow',sans-serif;font-size:13px;cursor:pointer;max-width:340px">
+        <option value="">⏳ Carico gare in casa…</option>
+      </select>
+    </div>
+    <!-- info gara selezionata (visibile in stampa) -->
+    <div id="gara-selezionata" style="display:none;margin-top:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:8px 14px;font-size:13px">
+      <span id="gara-titolo" style="font-weight:700"></span>
+      <span style="color:rgba(255,255,255,.6);margin:0 8px">·</span>
+      <span id="gara-data"></span>
+      <span style="color:rgba(255,255,255,.6);margin:0 8px">·</span>
+      <span id="gara-luogo"></span>
     </div>
   </div>
 </div>
@@ -294,9 +311,63 @@ select.editable{cursor:pointer}
 </div><!-- /wrapper -->
 
 <script>
+const SUPABASE_URL  = 'https://brwkwlyxkptzmkzkvava.supabase.co'
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI'
+
+let sb = null
+function getSb() {
+  if (!sb) sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
+  return sb
+}
+
 // Data documento
 const oggi = new Date()
 document.getElementById('data-doc').textContent = '📅 ' + oggi.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
+
+// Carica gare casalinghe (luogo contiene "palapoli"), future o recenti (ultimi 7gg)
+async function caricaGare() {
+  try {
+    const limite = new Date()
+    limite.setDate(limite.getDate() - 7)
+    const { data: gare, error } = await getSb()
+      .from('gare')
+      .select('id,titolo,avversario,data_ora,luogo')
+      .order('data_ora', { ascending: true })
+    if (error) throw error
+    const casalinghe = (gare||[]).filter(g => g.luogo?.toLowerCase().includes('palapoli') && new Date(g.data_ora) >= limite)
+    const sel = document.getElementById('sel-gara')
+    sel.innerHTML = '<option value="">— Seleziona la gara —</option>'
+    if (casalinghe.length === 0) {
+      sel.innerHTML = '<option value="">Nessuna gara casalinga trovata</option>'
+      return
+    }
+    casalinghe.forEach(g => {
+      const dt = new Date(g.data_ora)
+      const label = `${g.titolo || ('Virtus vs ' + g.avversario)} · ${dt.toLocaleDateString('it-IT',{day:'2-digit',month:'short'})} ${dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}`
+      const opt = document.createElement('option')
+      opt.value = g.id
+      opt.textContent = label
+      opt.dataset.titolo = g.titolo || ('Virtus vs ' + g.avversario)
+      opt.dataset.data = dt.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}) + ' ore ' + dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})
+      opt.dataset.luogo = g.luogo || 'PalaPoli, Molfetta'
+      sel.appendChild(opt)
+    })
+    sel.addEventListener('change', function() {
+      const opt = this.options[this.selectedIndex]
+      const box = document.getElementById('gara-selezionata')
+      if (!opt.value) { box.style.display='none'; return }
+      document.getElementById('gara-titolo').textContent = opt.dataset.titolo
+      document.getElementById('gara-data').textContent = opt.dataset.data
+      document.getElementById('gara-luogo').textContent = '📍 ' + opt.dataset.luogo
+      box.style.display = 'block'
+    })
+  } catch(e) {
+    document.getElementById('sel-gara').innerHTML = '<option value="">Errore caricamento gare</option>'
+    console.error('Errore gare:', e)
+  }
+}
+
+caricaGare()
 
 // Genera righe tabella addetti
 const addetti = [
