@@ -753,17 +753,26 @@ select.editable{cursor:pointer}
 
 <script>
 // LOGIN
+function apriContenuto() {
+  document.getElementById('login-screen').style.display = 'none'
+  document.getElementById('main-content').style.display = 'block'
+  const oggi = new Date()
+  document.getElementById('data-doc').textContent = '📅 ' + oggi.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
+  caricaGare()
+}
+
 function doLogin() {
   const pass = document.getElementById('login-pass').value
   if (pass !== '2027Virtus!') {
     document.getElementById('login-err').style.display = 'block'
     return
   }
-  document.getElementById('login-screen').style.display = 'none'
-  document.getElementById('main-content').style.display = 'block'
-  const oggi = new Date()
-  document.getElementById('data-doc').textContent = '📅 ' + oggi.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
-  caricaGare()
+  apriContenuto()
+}
+
+// Bypass automatico se si arriva dall'admin panel (?admin=1)
+if (new URLSearchParams(window.location.search).get('admin') === '1') {
+  document.addEventListener('DOMContentLoaded', apriContenuto)
 }
 
 const SUPABASE_URL  = 'https://brwkwlyxkptzmkzkvava.supabase.co'
@@ -934,7 +943,7 @@ function switchView(v) {
   document.getElementById('view-accrediti').style.display   = v === 'accrediti'   ? '' : 'none';
   document.getElementById('tab-btn-reg').classList.toggle('active', v === 'regolamento');
   document.getElementById('tab-btn-acc').classList.toggle('active', v === 'accrediti');
-  if (v === 'accrediti') { accLoad(); accRenderPartite(); }
+  if (v === 'accrediti') { accLoad(); accShowTab('partite'); }
 }
 
 let accDb = { partite: [], aventi: [], accrediti: [], squadName: '' };
