@@ -772,7 +772,7 @@ function doLogin() {
 
 // Bypass automatico se si arriva dall'admin panel (?admin=1)
 if (new URLSearchParams(window.location.search).get('admin') === '1') {
-  document.addEventListener('DOMContentLoaded', apriContenuto)
+  apriContenuto()
 }
 
 const SUPABASE_URL  = 'https://brwkwlyxkptzmkzkvava.supabase.co'
@@ -939,8 +939,8 @@ function verificaLock() {
    ═══════════════════════════════════════════ */
 
 function switchView(v) {
-  document.getElementById('view-regolamento').style.display = v === 'regolamento' ? '' : 'none';
-  document.getElementById('view-accrediti').style.display   = v === 'accrediti'   ? '' : 'none';
+  document.getElementById('view-regolamento').style.display = v === 'regolamento' ? 'block' : 'none';
+  document.getElementById('view-accrediti').style.display   = v === 'accrediti'   ? 'block' : 'none';
   document.getElementById('tab-btn-reg').classList.toggle('active', v === 'regolamento');
   document.getElementById('tab-btn-acc').classList.toggle('active', v === 'accrediti');
   if (v === 'accrediti') { accLoad(); accShowTab('partite'); }
