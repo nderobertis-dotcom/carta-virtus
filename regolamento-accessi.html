@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Regolamento Accessi</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -111,6 +111,98 @@ select.editable{cursor:pointer}
 /* PRINT BTN */
 .btn-print{background:var(--blu);color:#fff;border:none;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;display:inline-flex;align-items:center;gap:8px}
 .btn-print:hover{background:var(--blu2)}
+
+/* TAB SWITCHER */
+.view-switcher{background:linear-gradient(135deg,#0d2147,#1a3a6b);padding:0 40px;display:flex;gap:4px;border-bottom:1px solid rgba(255,255,255,.12)}
+.view-switcher.no-print{display:flex}
+.view-tab{padding:12px 20px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:700;color:rgba(255,255,255,.55);cursor:pointer;border:none;background:transparent;border-bottom:3px solid transparent;transition:all .2s;display:flex;align-items:center;gap:7px;letter-spacing:.02em}
+.view-tab:hover{color:rgba(255,255,255,.85)}
+.view-tab.active{color:#fff;border-bottom-color:#c8960c}
+
+/* ACCREDITI VIEW */
+#view-accrediti{display:none}
+#view-accrediti *,#view-accrediti *::before,#view-accrediti *::after{box-sizing:border-box}
+#view-accrediti{--acc-navy:#0d1117;--acc-navy-2:#161b22;--acc-navy-3:#21262d;--acc-navy-4:#30363d;--acc-navy-5:#3d444d;--acc-electric:#3b82f6;--acc-electric-d:#2563eb;--acc-electric-g:rgba(59,130,246,.12);--acc-electric-glow:rgba(59,130,246,.25);--acc-text:#e6edf3;--acc-text-2:#8b949e;--acc-text-3:#484f58;--acc-border:rgba(255,255,255,.08);--acc-border-2:rgba(255,255,255,.14);--acc-border-acc:rgba(59,130,246,.4);--acc-green:#3fb950;--acc-green-bg:rgba(63,185,80,.1);--acc-green-border:rgba(63,185,80,.3);--acc-red:#f85149;--acc-red-bg:rgba(248,81,73,.1);--acc-red-border:rgba(248,81,73,.3);--acc-amber:#d29922;--acc-amber-bg:rgba(210,153,34,.1);--acc-amber-border:rgba(210,153,34,.3);font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--acc-text);background:var(--acc-navy);min-height:60vh}
+.acc-topbar{background:var(--acc-navy-2);border-bottom:1px solid var(--acc-border);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;height:56px}
+.acc-logo-mark{width:28px;height:28px;background:var(--acc-electric);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 20px var(--acc-electric-glow)}
+.acc-logo-text strong{font-size:13px;font-weight:600;color:var(--acc-text);letter-spacing:-.01em;display:block}
+.acc-logo-text span{font-size:11px;color:var(--acc-text-2)}
+.acc-topbar-squad{margin-left:auto;font-size:12px;color:var(--acc-text-2);background:var(--acc-navy-3);border:1px solid var(--acc-border);border-radius:6px;padding:4px 10px;font-family:'DM Mono',monospace}
+.acc-layout{display:flex;min-height:calc(60vh - 56px)}
+.acc-sidebar{width:200px;background:var(--acc-navy-2);border-right:1px solid var(--acc-border);padding:1rem .6rem;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.acc-nav-group{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--acc-text-3);padding:10px 10px 4px;margin-top:4px}
+.acc-nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:400;color:var(--acc-text-2);border:1px solid transparent;transition:all .15s;user-select:none}
+.acc-nav-item:hover{background:var(--acc-navy-3);color:var(--acc-text)}
+.acc-nav-item.active{background:var(--acc-electric-g);border-color:var(--acc-border-acc);color:var(--acc-text);font-weight:500}
+.acc-nav-item.active .acc-nav-icon{color:var(--acc-electric);opacity:1}
+.acc-nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.6}
+.acc-sidebar-footer{margin-top:auto;padding-top:1rem;border-top:1px solid var(--acc-border)}
+.acc-main{flex:1;padding:2rem 2rem;max-width:860px}
+.acc-section{display:none}
+.acc-section.active{display:block;animation:accFadeIn .18s ease}
+@keyframes accFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.acc-page-header{margin-bottom:1.5rem;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+.acc-page-title{font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--acc-text)}
+.acc-page-sub{font-size:13px;color:var(--acc-text-2);margin-top:3px}
+.acc-card{background:var(--acc-navy-2);border:1px solid var(--acc-border);border-radius:14px;padding:1.25rem;margin-bottom:1rem}
+.acc-card-title{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--acc-text-3);margin-bottom:1rem}
+.acc-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.acc-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.acc-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+#view-accrediti label{display:block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--acc-text-2);margin-bottom:6px}
+#view-accrediti input,#view-accrediti select{width:100%;padding:9px 12px;border:1px solid var(--acc-border-2);border-radius:10px;font-size:13px;background:var(--acc-navy-3);color:var(--acc-text);font-family:'DM Sans',sans-serif;transition:border-color .15s,box-shadow .15s;appearance:none}
+#view-accrediti select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%238b949e' d='M5 7L0 2h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+#view-accrediti input:focus,#view-accrediti select:focus{outline:none;border-color:var(--acc-electric);box-shadow:0 0 0 3px var(--acc-electric-g)}
+#view-accrediti input::placeholder{color:var(--acc-text-3)}
+.acc-form-row{display:flex;gap:8px;align-items:flex-end}
+.acc-form-row>div{flex:1}
+.acc-form-row>.acc-btn{flex:0 0 auto}
+.acc-btn{padding:9px 16px;border-radius:10px;border:1px solid var(--acc-border-2);background:var(--acc-navy-3);color:var(--acc-text);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.acc-btn:hover{background:var(--acc-navy-4)}
+.acc-btn-primary{background:var(--acc-electric);border-color:var(--acc-electric-d);color:#fff;box-shadow:0 2px 12px var(--acc-electric-glow)}
+.acc-btn-primary:hover{background:var(--acc-electric-d)}
+.acc-btn-danger{color:var(--acc-red);border-color:var(--acc-red-border)}
+.acc-btn-danger:hover{background:var(--acc-red-bg)}
+.acc-btn-sm{padding:6px 12px;font-size:12px}
+.acc-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--acc-border)}
+.acc-row:last-child{border-bottom:none}
+.acc-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:500;border:1px solid transparent}
+.acc-badge-blue{background:var(--acc-electric-g);color:#60a5fa;border-color:rgba(96,165,250,.2)}
+.acc-badge-green{background:var(--acc-green-bg);color:#4ade80;border-color:var(--acc-green-border)}
+.acc-badge-amber{background:var(--acc-amber-bg);color:#fbbf24;border-color:var(--acc-amber-border)}
+.acc-badge-red{background:var(--acc-red-bg);color:var(--acc-red);border-color:var(--acc-red-border)}
+.acc-stat{background:var(--acc-navy-3);border:1px solid var(--acc-border);border-radius:12px;padding:1rem;text-align:center}
+.acc-stat-n{font-size:26px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-.02em;color:var(--acc-text)}
+.acc-stat-l{font-size:10px;color:var(--acc-text-2);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.acc-meter{height:4px;border-radius:2px;background:var(--acc-navy-4);margin-top:8px;overflow:hidden}
+.acc-meter-fill{height:100%;border-radius:2px;background:var(--acc-green);transition:width .3s}
+.acc-meter-warn{background:var(--acc-amber)}
+.acc-meter-full{background:var(--acc-red)}
+.acc-info-box{background:var(--acc-navy-3);border:1px solid var(--acc-border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem}
+.acc-alert{padding:9px 14px;border-radius:10px;font-size:13px;margin-top:10px;border:1px solid transparent}
+.acc-alert-red{background:var(--acc-red-bg);color:var(--acc-red);border-color:var(--acc-red-border)}
+.acc-alert-green{background:var(--acc-green-bg);color:var(--acc-green);border-color:var(--acc-green-border)}
+.acc-empty{color:var(--acc-text-3);font-size:13px;padding:2.5rem;text-align:center;border:1px dashed var(--acc-border);border-radius:12px}
+.acc-empty-icon{font-size:26px;margin-bottom:8px;display:block;opacity:.5}
+.acc-partita-card{background:var(--acc-navy-2);border:1px solid var(--acc-border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;display:flex;align-items:center;gap:14px;transition:border-color .15s}
+.acc-partita-card:hover{border-color:var(--acc-border-2)}
+.acc-partita-date{font-family:'DM Mono',monospace;font-size:12px;color:var(--acc-text-2);background:var(--acc-navy-3);border:1px solid var(--acc-border);border-radius:6px;padding:4px 9px;white-space:nowrap;flex-shrink:0}
+.acc-partita-vs{font-size:15px;font-weight:500;flex:1;color:var(--acc-text)}
+.acc-partita-vs em{color:var(--acc-text-3);font-style:normal;font-weight:400;font-size:13px;margin:0 6px}
+.acc-partita-nacc{font-family:'DM Mono',monospace;font-size:12px;color:var(--acc-text-2);white-space:nowrap}
+.acc-cancello-header-row{display:grid;grid-template-columns:28px 1fr;gap:12px;padding:0 6px 10px;border-bottom:1px solid var(--acc-border);margin-bottom:2px;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--acc-text-3)}
+.acc-cancello-item{display:grid;grid-template-columns:28px 1fr;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--acc-border);cursor:pointer;border-radius:6px;transition:background .1s}
+.acc-cancello-item:last-child{border-bottom:none}
+.acc-cancello-item:hover{background:var(--acc-navy-3)}
+.acc-cancello-item.acc-ritirato{background:var(--acc-green-bg)}
+.acc-cancello-check{width:20px;height:20px;border:1.5px solid var(--acc-border-2);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.acc-ritirato .acc-cancello-check{background:var(--acc-green);border-color:var(--acc-green)}
+.acc-cancello-name{font-weight:500;font-size:14px;color:var(--acc-text)}
+.acc-ritirato .acc-cancello-name{text-decoration:line-through;color:var(--acc-text-2);font-weight:400}
+.acc-cancello-invitante{font-size:12px;color:var(--acc-text-3);margin-left:4px}
+.acc-sep{border:none;border-top:1px solid var(--acc-border);margin:1.25rem 0}
+@media(max-width:768px){.acc-sidebar{display:none}.acc-main{padding:1rem}.acc-grid3{grid-template-columns:1fr 1fr}.acc-grid4{grid-template-columns:1fr 1fr}}
+@media print{.view-switcher,.acc-topbar,.acc-sidebar,.no-print{display:none!important}}
 </style>
 </head>
 <body>
@@ -131,6 +223,14 @@ select.editable{cursor:pointer}
 
 <!-- CONTENUTO (nascosto fino al login) -->
 <div id="main-content" style="display:none">
+
+<!-- TAB SWITCHER -->
+<div class="view-switcher no-print">
+  <button class="view-tab active" id="tab-btn-reg" onclick="switchView('regolamento')">📋 Regolamento</button>
+  <button class="view-tab" id="tab-btn-acc" onclick="switchView('accrediti')">🎟️ Accrediti</button>
+</div>
+
+<div id="view-regolamento">
 
 <div class="doc-header">
   <div class="doc-header-logo">
@@ -425,6 +525,230 @@ select.editable{cursor:pointer}
   </div>
 
 </div><!-- /wrapper -->
+</div><!-- /view-regolamento -->
+
+<!-- GESTIONALE ACCREDITI -->
+<div id="view-accrediti" style="display:none">
+
+  <header class="acc-topbar no-print">
+    <div class="acc-logo-mark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </div>
+    <div class="acc-logo-text">
+      <strong>Accrediti</strong>
+      <span>Gestionale ingressi omaggio</span>
+    </div>
+    <div class="acc-topbar-squad" id="acc-squad-name-display">Virtus Molfetta</div>
+  </header>
+
+  <div class="acc-layout">
+
+    <aside class="acc-sidebar no-print">
+      <div class="acc-nav-group">Gestione</div>
+
+      <div class="acc-nav-item active" onclick="accShowTab('partite')">
+        <svg class="acc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Partite
+      </div>
+
+      <div class="acc-nav-item" onclick="accShowTab('aventi')">
+        <svg class="acc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+        </svg>
+        Aventi diritto
+      </div>
+
+      <div class="acc-nav-item" onclick="accShowTab('accrediti')">
+        <svg class="acc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Inserisci accrediti
+      </div>
+
+      <div class="acc-nav-group">Operativo</div>
+
+      <div class="acc-nav-item" onclick="accShowTab('cancello')">
+        <svg class="acc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        Lista cancello
+      </div>
+
+      <div class="acc-sidebar-footer">
+        <div class="acc-nav-item" onclick="accShowTab('impostazioni')">
+          <svg class="acc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Impostazioni
+        </div>
+      </div>
+    </aside>
+
+    <main class="acc-main">
+
+      <!-- PARTITE -->
+      <div class="acc-section active" id="tab-partite">
+        <div class="acc-page-header">
+          <div>
+            <div class="acc-page-title">Partite</div>
+            <div class="acc-page-sub">Calendario delle gare casalinghe</div>
+          </div>
+        </div>
+        <div class="acc-card">
+          <div class="acc-card-title">Nuova partita</div>
+          <div class="acc-grid2" style="margin-bottom:14px">
+            <div><label>Data</label><input type="date" id="p-data"></div>
+            <div><label>Avversario</label><input type="text" id="p-avversario" placeholder="es. Bari Basket" onkeydown="if(event.key==='Enter')accAddPartita()"></div>
+          </div>
+          <button class="acc-btn acc-btn-primary" onclick="accAddPartita()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Aggiungi partita
+          </button>
+        </div>
+        <div id="lista-partite"></div>
+      </div>
+
+      <!-- AVENTI DIRITTO -->
+      <div class="acc-section" id="tab-aventi">
+        <div class="acc-page-header">
+          <div>
+            <div class="acc-page-title">Aventi diritto</div>
+            <div class="acc-page-sub">Atleti, staff e dirigenti autorizzati a concedere accrediti</div>
+          </div>
+        </div>
+        <div class="acc-card">
+          <div class="acc-card-title">Nuovo avente diritto</div>
+          <div class="acc-grid3" style="margin-bottom:14px">
+            <div><label>Nome e cognome</label><input type="text" id="a-nome" placeholder="es. Mario Rossi"></div>
+            <div><label>Ruolo</label>
+              <select id="a-ruolo">
+                <option value="atleta">Atleta</option>
+                <option value="staff">Staff</option>
+                <option value="dirigente">Dirigente</option>
+              </select>
+            </div>
+            <div><label>Max accrediti / partita</label><input type="number" id="a-max" min="1" max="20" value="2"></div>
+          </div>
+          <button class="acc-btn acc-btn-primary" onclick="accAddAvente()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Aggiungi
+          </button>
+        </div>
+        <div id="lista-aventi"></div>
+      </div>
+
+      <!-- INSERISCI ACCREDITI -->
+      <div class="acc-section" id="tab-accrediti">
+        <div class="acc-page-header">
+          <div>
+            <div class="acc-page-title">Inserisci accrediti</div>
+            <div class="acc-page-sub">Registra gli ospiti per conto degli aventi diritto</div>
+          </div>
+        </div>
+        <div class="acc-card">
+          <div class="acc-card-title">Selezione</div>
+          <div class="acc-grid2" style="margin-bottom:1rem">
+            <div><label>Partita</label>
+              <select id="acc-partita" onchange="accUpdateAventeSelect()"><option value="">— seleziona partita —</option></select>
+            </div>
+            <div><label>Avente diritto</label>
+              <select id="acc-avente" onchange="accUpdateAventeInfo()"><option value="">— seleziona avente diritto —</option></select>
+            </div>
+          </div>
+          <div class="acc-info-box" id="avente-info" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span id="avente-info-nome" style="font-weight:600;font-size:15px"></span>
+              <span id="avente-info-badge"></span>
+            </div>
+            <div class="acc-meter"><div class="acc-meter-fill" id="avente-meter" style="width:0%"></div></div>
+            <p style="font-size:12px;color:var(--acc-text-2);margin-top:6px;font-family:'DM Mono',monospace" id="avente-info-count"></p>
+          </div>
+          <div id="acc-form" style="display:none">
+            <hr style="border:none;border-top:1px solid var(--acc-border);margin:1rem 0">
+            <div class="acc-card-title">Nuovo ospite</div>
+            <div style="display:flex;gap:8px;align-items:flex-end">
+              <div style="flex:1"><label>Nome e cognome ospite</label><input type="text" id="acc-ospite" placeholder="es. Lucia Verdi" onkeydown="if(event.key==='Enter')accAddAccredito()"></div>
+              <button class="acc-btn acc-btn-primary" onclick="accAddAccredito()" style="flex-shrink:0">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Aggiungi
+              </button>
+            </div>
+          </div>
+          <div id="acc-alert"></div>
+        </div>
+        <div id="lista-accrediti-avente"></div>
+      </div>
+
+      <!-- LISTA CANCELLO -->
+      <div class="acc-section" id="tab-cancello">
+        <div class="acc-page-header">
+          <div>
+            <div class="acc-page-title">Lista cancello</div>
+            <div class="acc-page-sub">Gestione ingressi e ritiro ticket in tempo reale</div>
+          </div>
+          <button class="acc-btn no-print" onclick="window.print()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Stampa lista
+          </button>
+        </div>
+        <div class="acc-card no-print" style="margin-bottom:1.5rem">
+          <label>Partita</label>
+          <select id="cancello-partita" onchange="accRenderCancello()"><option value="">— seleziona partita —</option></select>
+        </div>
+        <div id="cancello-stats" style="display:none;margin-bottom:1.5rem"></div>
+        <div id="cancello-lista"></div>
+      </div>
+
+      <!-- IMPOSTAZIONI -->
+      <div class="acc-section" id="tab-impostazioni">
+        <div class="acc-page-header">
+          <div>
+            <div class="acc-page-title">Impostazioni</div>
+            <div class="acc-page-sub">Configurazione e gestione dati</div>
+          </div>
+        </div>
+        <div class="acc-card">
+          <div class="acc-card-title">Nome squadra</div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <div style="flex:1"><input type="text" id="acc-squad-name-input" placeholder="es. Virtus Molfetta"></div>
+            <button class="acc-btn acc-btn-primary" onclick="accSaveSquadName()" style="flex-shrink:0">Salva</button>
+          </div>
+        </div>
+        <div class="acc-card">
+          <div class="acc-card-title">Backup dati</div>
+          <p style="font-size:13px;color:var(--acc-text-2);margin-bottom:14px;line-height:1.7">
+            Tutti i dati sono salvati localmente nel browser (localStorage).<br>
+            Esporta un backup JSON per sicurezza o per trasferire i dati su un altro dispositivo.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="acc-btn acc-btn-primary" onclick="accExportData()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Esporta JSON
+            </button>
+            <button class="acc-btn" onclick="accImportData()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Importa JSON
+            </button>
+            <button class="acc-btn acc-btn-danger" onclick="accResetAll()">Cancella tutti i dati</button>
+          </div>
+          <input type="file" id="acc-import-file" accept=".json" style="display:none" onchange="accHandleImport(event)">
+        </div>
+        <div class="acc-card">
+          <div class="acc-card-title">Riepilogo</div>
+          <p style="font-size:13px;color:var(--acc-text-2);font-family:'DM Mono',monospace;line-height:1.8" id="acc-info-counts">—</p>
+          <p style="font-size:11px;color:var(--acc-text-3);margin-top:8px">Versione locale 1.0 · Pronto per migrazione web</p>
+        </div>
+      </div>
+
+    </main>
+  </div><!-- /acc-layout -->
+</div><!-- /view-accrediti -->
+
 </div><!-- /main-content -->
 
 <script>
@@ -600,6 +924,320 @@ function verificaLock() {
     if (banner) banner.style.display = 'flex'
   }
 }
+
+/* ═══════════════════════════════════════════
+   GESTIONALE ACCREDITI
+   ═══════════════════════════════════════════ */
+
+function switchView(v) {
+  document.getElementById('view-regolamento').style.display = v === 'regolamento' ? '' : 'none';
+  document.getElementById('view-accrediti').style.display   = v === 'accrediti'   ? '' : 'none';
+  document.getElementById('tab-btn-reg').classList.toggle('active', v === 'regolamento');
+  document.getElementById('tab-btn-acc').classList.toggle('active', v === 'accrediti');
+  if (v === 'accrediti') { accLoad(); accRenderPartite(); }
+}
+
+let accDb = { partite: [], aventi: [], accrediti: [], squadName: '' };
+
+function accLoad() {
+  try { const s = localStorage.getItem('accrediti_app'); if (s) accDb = JSON.parse(s); } catch(e) {}
+  const dn = document.getElementById('acc-squad-name-display');
+  const di = document.getElementById('acc-squad-name-input');
+  if (dn) dn.textContent = accDb.squadName || 'Squadra sportiva';
+  if (di) di.value = accDb.squadName || '';
+  accUpdateInfoCounts();
+}
+
+function accSave() { localStorage.setItem('accrediti_app', JSON.stringify(accDb)); accUpdateInfoCounts(); }
+function accUid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function accFmtData(d) { if (!d) return ''; const [y,m,g] = d.split('-'); return `${g}/${m}/${y}`; }
+
+function accUpdateInfoCounts() {
+  const el = document.getElementById('acc-info-counts');
+  if (el) el.textContent = `${accDb.partite.length} partite · ${accDb.aventi.length} aventi diritto · ${accDb.accrediti.length} accrediti totali`;
+}
+
+function accShowTab(t) {
+  document.querySelectorAll('#view-accrediti .acc-nav-item').forEach(b => {
+    b.classList.toggle('active', !!(b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+t+"'")));
+  });
+  document.querySelectorAll('#view-accrediti .acc-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if (t === 'accrediti')    accPopulateAccSelects();
+  if (t === 'cancello')     accPopulateCancelloSelect();
+  if (t === 'partite')      accRenderPartite();
+  if (t === 'aventi')       accRenderAventi();
+  if (t === 'impostazioni') accUpdateInfoCounts();
+}
+
+/* ── PARTITE ── */
+function accAddPartita() {
+  const data = document.getElementById('acc-p-data').value;
+  const avv  = document.getElementById('acc-p-avversario').value.trim();
+  if (!data || !avv) { alert('Inserisci data e avversario.'); return; }
+  accDb.partite.push({ id: accUid(), data, avversario: avv });
+  accSave(); accRenderPartite();
+  document.getElementById('acc-p-avversario').value = '';
+}
+
+function accDeletePartita(id) {
+  if (!confirm('Eliminare la partita? Verranno eliminati anche tutti gli accrediti associati.')) return;
+  accDb.partite   = accDb.partite.filter(p => p.id !== id);
+  accDb.accrediti = accDb.accrediti.filter(a => a.partitaId !== id);
+  accSave(); accRenderPartite();
+}
+
+function accRenderPartite() {
+  const el = document.getElementById('acc-lista-partite');
+  if (!el) return;
+  const sorted = [...accDb.partite].sort((a,b) => a.data.localeCompare(b.data));
+  if (!sorted.length) { el.innerHTML = '<div class="acc-empty"><span class="acc-empty-icon">📅</span>Nessuna partita inserita</div>'; return; }
+  el.innerHTML = sorted.map(p => {
+    const nacc = accDb.accrediti.filter(a => a.partitaId === p.id).length;
+    return `<div class="acc-partita-card">
+      <div class="acc-partita-date">${accFmtData(p.data)}</div>
+      <div class="acc-partita-vs"><em>vs</em>${p.avversario}</div>
+      <div class="acc-partita-nacc">${nacc} accrediti</div>
+      <button class="acc-btn acc-btn-sm acc-btn-danger" onclick="accDeletePartita('${p.id}')">Elimina</button>
+    </div>`;
+  }).join('');
+}
+
+/* ── AVENTI DIRITTO ── */
+function accAddAvente() {
+  const nome  = document.getElementById('acc-a-nome').value.trim();
+  const ruolo = document.getElementById('acc-a-ruolo').value;
+  const max   = parseInt(document.getElementById('acc-a-max').value) || 2;
+  if (!nome) { alert('Inserisci nome e cognome.'); return; }
+  accDb.aventi.push({ id: accUid(), nome, ruolo, max });
+  accSave(); accRenderAventi();
+  document.getElementById('acc-a-nome').value = '';
+}
+
+function accDeleteAvente(id) {
+  if (!confirm('Eliminare avente diritto? Verranno eliminati anche i suoi accrediti.')) return;
+  accDb.aventi    = accDb.aventi.filter(a => a.id !== id);
+  accDb.accrediti = accDb.accrediti.filter(a => a.aventeId !== id);
+  accSave(); accRenderAventi();
+}
+
+function accRenderAventi() {
+  const el = document.getElementById('acc-lista-aventi');
+  if (!el) return;
+  const sorted = [...accDb.aventi].sort((a,b) => a.nome.localeCompare(b.nome));
+  if (!sorted.length) { el.innerHTML = '<div class="acc-empty"><span class="acc-empty-icon">👤</span>Nessun avente diritto inserito</div>'; return; }
+  const rb = { atleta:'acc-badge-blue', staff:'acc-badge-green', dirigente:'acc-badge-amber' };
+  el.innerHTML = `<div class="acc-card">${sorted.map(a => `
+    <div class="acc-row">
+      <div style="flex:1;display:flex;align-items:center;gap:8px">
+        <span style="font-weight:500">${a.nome}</span>
+        <span class="acc-badge-blue ${rb[a.ruolo]||'acc-badge-blue'}">${a.ruolo}</span>
+      </div>
+      <span style="font-size:12px;opacity:.6;font-family:'DM Mono',monospace;white-space:nowrap">max ${a.max}/partita</span>
+      <button class="acc-btn acc-btn-sm acc-btn-danger" onclick="accDeleteAvente('${a.id}')">Elimina</button>
+    </div>`).join('')}</div>`;
+}
+
+/* ── ACCREDITI ── */
+function accPopulateAccSelects() {
+  const sp = document.getElementById('acc-partita');
+  if (!sp) return;
+  const curP = sp.value;
+  sp.innerHTML = '<option value="">— seleziona partita —</option>' +
+    [...accDb.partite].sort((a,b) => b.data.localeCompare(a.data))
+      .map(p => `<option value="${p.id}">${accFmtData(p.data)} — ${p.avversario}</option>`).join('');
+  sp.value = curP;
+  accUpdateAventeSelect();
+}
+
+function accUpdateAventeSelect() {
+  const sa = document.getElementById('acc-avente');
+  if (!sa) return;
+  const cur = sa.value;
+  sa.innerHTML = '<option value="">— seleziona avente diritto —</option>' +
+    [...accDb.aventi].sort((a,b) => a.nome.localeCompare(b.nome))
+      .map(a => `<option value="${a.id}">${a.nome} (${a.ruolo})</option>`).join('');
+  sa.value = cur;
+  accUpdateAventeInfo();
+}
+
+function accUpdateAventeInfo() {
+  const pid = document.getElementById('acc-partita').value;
+  const aid = document.getElementById('acc-avente').value;
+  const infoEl  = document.getElementById('acc-avente-info');
+  const formEl  = document.getElementById('acc-form');
+  const alertEl = document.getElementById('acc-alert');
+  alertEl.innerHTML = '';
+  if (!pid || !aid) { infoEl.style.display='none'; formEl.style.display='none'; accRenderAccreditiAvente(); return; }
+  const avente = accDb.aventi.find(a => a.id === aid);
+  if (!avente) { infoEl.style.display='none'; formEl.style.display='none'; return; }
+  const usati = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid).length;
+  const perc  = Math.round((usati / avente.max) * 100);
+  const meter = document.getElementById('acc-avente-meter');
+  meter.style.width = Math.min(perc, 100) + '%';
+  meter.className = 'acc-meter-fill' + (usati >= avente.max ? ' acc-meter-full' : usati/avente.max >= 0.5 ? ' acc-meter-warn' : '');
+  document.getElementById('acc-avente-info-nome').textContent  = avente.nome;
+  document.getElementById('acc-avente-info-count').textContent = `${usati} / ${avente.max} accrediti utilizzati`;
+  document.getElementById('acc-avente-info-badge').innerHTML   = usati >= avente.max
+    ? '<span class="acc-badge-red">Limite raggiunto</span>'
+    : `<span class="acc-badge-green">${avente.max - usati} disponibili</span>`;
+  infoEl.style.display = 'block';
+  formEl.style.display = usati < avente.max ? 'block' : 'none';
+  if (usati >= avente.max) alertEl.innerHTML = '<div class="acc-alert acc-alert-red">Limite accrediti raggiunto per questa partita.</div>';
+  accRenderAccreditiAvente();
+}
+
+function accAddAccredito() {
+  const pid    = document.getElementById('acc-partita').value;
+  const aid    = document.getElementById('acc-avente').value;
+  const ospite = document.getElementById('acc-ospite').value.trim();
+  if (!pid || !aid || !ospite) { alert('Seleziona partita, avente diritto e inserisci il nome ospite.'); return; }
+  const avente = accDb.aventi.find(a => a.id === aid);
+  const usati  = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid).length;
+  if (usati >= avente.max) { alert('Limite accrediti raggiunto.'); return; }
+  accDb.accrediti.push({ id: accUid(), partitaId: pid, aventeId: aid, ospite, ts: Date.now() });
+  accSave();
+  document.getElementById('acc-ospite').value = '';
+  document.getElementById('acc-ospite').focus();
+  const alertEl = document.getElementById('acc-alert');
+  alertEl.innerHTML = '<div class="acc-alert acc-alert-green">✓ Accredito aggiunto con successo.</div>';
+  setTimeout(() => { alertEl.innerHTML = ''; }, 2000);
+  accUpdateAventeInfo();
+}
+
+function accDeleteAccredito(id) {
+  if (!confirm('Rimuovere questo accredito?')) return;
+  accDb.accrediti = accDb.accrediti.filter(a => a.id !== id);
+  accSave(); accUpdateAventeInfo();
+}
+
+function accRenderAccreditiAvente() {
+  const pid = document.getElementById('acc-partita').value;
+  const aid = document.getElementById('acc-avente').value;
+  const el  = document.getElementById('acc-lista-accrediti-avente');
+  if (!el) return;
+  if (!pid || !aid) { el.innerHTML = ''; return; }
+  const list = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid);
+  if (!list.length) { el.innerHTML = '<div class="acc-empty">Nessun ospite inserito per questa selezione</div>'; return; }
+  el.innerHTML = `<div class="acc-card">
+    <div class="acc-card-title">Ospiti inseriti (${list.length})</div>
+    ${list.map((a,i) => `
+      <div class="acc-row">
+        <span style="opacity:.4;font-size:12px;font-family:'DM Mono',monospace;min-width:24px">${String(i+1).padStart(2,'0')}</span>
+        <span style="flex:1">${a.ospite}</span>
+        <button class="acc-btn acc-btn-sm acc-btn-danger" onclick="accDeleteAccredito('${a.id}')">Rimuovi</button>
+      </div>`).join('')}
+  </div>`;
+}
+
+/* ── CANCELLO ── */
+function accPopulateCancelloSelect() {
+  const sp = document.getElementById('cancello-partita');
+  if (!sp) return;
+  sp.innerHTML = '<option value="">— seleziona partita —</option>' +
+    [...accDb.partite].sort((a,b) => b.data.localeCompare(a.data))
+      .map(p => `<option value="${p.id}">${accFmtData(p.data)} — ${p.avversario}</option>`).join('');
+  accRenderCancello();
+}
+
+function accToggleRitiro(id) {
+  const acc = accDb.accrediti.find(a => a.id === id);
+  if (acc) { acc.ritirato = !acc.ritirato; accSave(); accRenderCancello(); }
+}
+
+function accRenderCancello() {
+  const pid     = document.getElementById('cancello-partita').value;
+  const statsEl = document.getElementById('cancello-stats');
+  const listaEl = document.getElementById('cancello-lista');
+  if (!pid) { statsEl.style.display='none'; listaEl.innerHTML=''; return; }
+  const partita      = accDb.partite.find(p => p.id === pid);
+  const accs         = accDb.accrediti.filter(a => a.partitaId === pid);
+  const aventiConAcc = [...new Set(accs.map(a => a.aventeId))];
+  const ritirati     = accs.filter(a => a.ritirato).length;
+
+  statsEl.style.display = 'block';
+  statsEl.innerHTML = `<div class="acc-grid4">
+    <div class="acc-stat"><div class="acc-stat-n">${accs.length}</div><div class="acc-stat-l">Ospiti totali</div></div>
+    <div class="acc-stat"><div class="acc-stat-n" style="color:#3fb950">${ritirati}</div><div class="acc-stat-l">Ticket ritirati</div></div>
+    <div class="acc-stat"><div class="acc-stat-n" style="color:#d29922">${accs.length - ritirati}</div><div class="acc-stat-l">Da ritirare</div></div>
+    <div class="acc-stat"><div class="acc-stat-n">${aventiConAcc.length}</div><div class="acc-stat-l">Aventi diritto</div></div>
+  </div>`;
+
+  if (!accs.length) { listaEl.innerHTML = '<div class="acc-empty"><span class="acc-empty-icon">🎟</span>Nessun accredito per questa partita</div>'; return; }
+
+  const sorted = [...accs]
+    .map(a => ({ ...a, avente: accDb.aventi.find(av => av.id === a.aventeId) }))
+    .filter(a => a.avente)
+    .sort((a,b) => a.ospite.localeCompare(b.ospite, 'it'));
+
+  listaEl.innerHTML = `<div class="acc-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid rgba(255,255,255,.08)">
+      <div>
+        <div style="font-weight:600;font-size:16px">${accDb.squadName || 'Squadra sportiva'}</div>
+        <div style="font-size:12px;opacity:.5;margin-top:3px;font-family:'DM Mono',monospace">${accFmtData(partita?.data)} · vs ${partita?.avversario}</div>
+      </div>
+      <div style="font-size:11px;opacity:.4;text-align:right;font-family:'DM Mono',monospace">${accs.length} ospiti<br>ordine alfabetico</div>
+    </div>
+    <div class="acc-cancello-header-row"><span></span><span>Ospite (invitante)</span></div>
+    ${sorted.map(a => `
+      <div class="acc-cancello-item${a.ritirato ? ' ritirato':''}" onclick="accToggleRitiro('${a.id}')">
+        <div class="acc-cancello-check">
+          ${a.ritirato ? `<svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>` : ''}
+        </div>
+        <div>
+          <span class="acc-cancello-name">${a.ospite}</span>
+          <span class="acc-cancello-invitante">(${a.avente.nome})</span>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+/* ── IMPOSTAZIONI ── */
+function accSaveSquadName() {
+  accDb.squadName = document.getElementById('acc-squad-name-input').value.trim();
+  accSave();
+  document.getElementById('acc-squad-name-display').textContent = accDb.squadName || 'Squadra sportiva';
+  alert('Nome squadra salvato.');
+}
+
+function accExportData() {
+  const blob = new Blob([JSON.stringify(accDb, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `accrediti_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function accImportData() { document.getElementById('acc-import-file').click(); }
+
+function accHandleImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.partite || !imported.aventi || !imported.accrediti) { alert('File non valido.'); return; }
+      if (!confirm('Sovrascrivere tutti i dati attuali con il backup importato?')) return;
+      accDb = imported; accSave(); accLoad(); accRenderPartite(); alert('Importazione completata.');
+    } catch { alert("Errore durante l'importazione."); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function accResetAll() {
+  if (confirm('Eliminare TUTTI i dati degli accrediti? Questa azione è irreversibile.')) {
+    localStorage.removeItem('accrediti_app');
+    accDb = { partite: [], aventi: [], accrediti: [], squadName: '' };
+    accLoad(); accRenderPartite();
+    alert('Dati eliminati.');
+  }
+}
+
+/* init accrediti (lazy — called when switching to the accrediti view) */
 </script>
 </body>
 </html>
