@@ -372,21 +372,21 @@ function getSb() {
 const oggi = new Date()
 document.getElementById('data-doc').textContent = '📅 ' + oggi.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
 
-// Carica gare casalinghe (luogo contiene "palapoli"), future o recenti (ultimi 7gg)
+// Carica gare casalinghe (luogo contiene "palapoli")
 async function caricaGare() {
   try {
-    const limite = new Date()
-    limite.setDate(limite.getDate() - 7)
     const { data: gare, error } = await getSb()
       .from('gare')
       .select('id,titolo,avversario,data_ora,luogo')
-      .order('data_ora', { ascending: true })
+      .order('data_ora', { ascending: false })
     if (error) throw error
-    const casalinghe = (gare||[]).filter(g => g.luogo?.toLowerCase().includes('palapoli') && new Date(g.data_ora) >= limite)
+    console.log('Tutte le gare:', (gare||[]).map(g => g.luogo))
+    const casalinghe = (gare||[]).filter(g => g.luogo?.toLowerCase().includes('palapoli'))
+    console.log('Casalinghe trovate:', casalinghe.length)
     const sel = document.getElementById('sel-gara')
     sel.innerHTML = '<option value="">— Seleziona la gara —</option>'
     if (casalinghe.length === 0) {
-      sel.innerHTML = '<option value="">Nessuna gara casalinga trovata</option>'
+      sel.innerHTML = `<option value="">Nessuna gara casalinga (${(gare||[]).length} gare totali)</option>`
       return
     }
     casalinghe.forEach(g => {
