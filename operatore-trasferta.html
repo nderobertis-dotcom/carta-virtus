@@ -381,17 +381,16 @@ async function initApp() {
   document.getElementById('login-screen').style.display = 'none'
   document.getElementById('app').style.display = 'flex'
 
-  const ora  = new Date()
-  const fra24 = new Date(ora.getTime() + 24 * 3600 * 1000)
+  const ora    = new Date()
+  const fra30g = new Date(ora.getTime() + 30 * 24 * 3600 * 1000)
 
-  // Cerca gare di trasferta (non PalaPoli) nelle prossime 24h
+  // Cerca gare di trasferta (non PalaPoli) nei prossimi 30 giorni
   const { data: gare } = await sb.from('gare')
     .select('*')
-    .eq('attiva', true)
     .gte('data_ora', ora.toISOString())
-    .lte('data_ora', fra24.toISOString())
+    .lte('data_ora', fra30g.toISOString())
     .order('data_ora', { ascending: true })
-    .limit(10)
+    .limit(20)
 
   // Filtra solo trasferte (luogo != palapoli)
   const trasferte = (gare || []).filter(g =>
