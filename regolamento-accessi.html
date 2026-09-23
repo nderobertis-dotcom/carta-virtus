@@ -91,8 +91,13 @@ select.editable{cursor:pointer}
 .firma-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:28px}
 @media(max-width:640px){.firma-row{grid-template-columns:1fr}}
 .firma-box{border-top:2px solid var(--text);padding-top:8px}
-.firma-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
-.firma-name{font-size:12px;font-weight:600;color:var(--text);margin-top:4px;min-height:18px}
+.firma-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.firma-input{border:none;border-bottom:1px solid var(--border);outline:none;width:100%;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;color:var(--text);padding:4px 0;background:transparent}
+.firma-input::placeholder{font-weight:400;color:#b0bec5}
+.btn-stamp{margin-top:8px;background:var(--blu-light);color:var(--blu);border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+.btn-stamp:hover{background:#d0e4f7}
+.firma-timestamp{margin-top:6px;font-size:12px;color:var(--blu);font-weight:700;min-height:18px}
+@media print{.firma-timestamp{font-size:11px}}
 
 /* PRINT BTN */
 .btn-print{background:var(--blu);color:#fff;border:none;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;display:inline-flex;align-items:center;gap:8px}
@@ -144,9 +149,9 @@ select.editable{cursor:pointer}
   <div class="note-box">
     <ul>
       <li>Ogni accesso è presidiato da <strong>1 operatore</strong> con funzione di controllo Fan Card / biglietto. Gli addetti alla sicurezza possono svolgere anche funzioni di operatore durante l'accoglienza del pubblico.</li>
-      <li>Gli operatori verificano la validità della Fan Card tramite l'app <strong>Carta Virtus — Operatore</strong> (scansione QR).</li>
+      <li>Gli operatori verificano la validità della Fan Card tramite l'app <strong>Carta Virtus — Operatore</strong> (scansione QR). All'<strong>Accesso C</strong> è ammessa in alternativa l'app <strong>Liveticket</strong> per la scansione dei biglietti singoli.</li>
       <li>In caso di dubbi su una tessera, l'operatore contatta il responsabile di serata prima di consentire l'ingresso.</li>
-      <li>I cancelli aprono <strong>60 minuti prima</strong> dell'orario di palla a due e chiudono al termine del 1° quarto.</li>
+      <li>I cancelli aprono <strong>60 minuti prima</strong> dell'orario di palla a due e chiudono al termine del <strong>2° quarto</strong>. Gli operatori e gli addetti alla sicurezza incaricati devono garantire la presenza in palazzetto almeno <strong>2 ore prima</strong> della gara.</li>
       <li>Gli accrediti e i biglietti singoli sono gestiti esclusivamente all'<strong>Accesso C</strong>. Nessun altro accesso è autorizzato ad accogliere biglietti singoli.</li>
       <li>Il piano Gold prevede accesso all'<strong>area ospitality</strong> e alle <strong>Tribune A e B</strong> (Accesso A dal parcheggio).</li>
       <li>I possessori di Fan Card <strong>Disability</strong> con accompagnatore hanno diritto all'ingresso per 2 persone (verificare flag nell'app).</li>
@@ -296,15 +301,19 @@ select.editable{cursor:pointer}
   <div class="firma-row">
     <div class="firma-box">
       <div class="firma-label">Responsabile di serata</div>
-      <div class="firma-name"></div>
+      <input class="firma-input" type="text" placeholder="Nome e cognome" id="firma-resp"/>
+      <button class="btn-stamp no-print" onclick="stampaFirma('resp')">🕐 Segna presenza</button>
+      <div class="firma-timestamp" id="ts-resp"></div>
     </div>
     <div class="firma-box">
       <div class="firma-label">Direttore Sportivo</div>
-      <div class="firma-name"></div>
+      <input class="firma-input" type="text" placeholder="Nome e cognome" id="firma-ds"/>
+      <button class="btn-stamp no-print" onclick="stampaFirma('ds')">🕐 Segna presenza</button>
+      <div class="firma-timestamp" id="ts-ds"></div>
     </div>
     <div class="firma-box">
-      <div class="firma-label">Data e ora</div>
-      <div class="firma-name"></div>
+      <div class="firma-label">Note di serata</div>
+      <input class="firma-input" type="text" placeholder="Eventuali annotazioni"/>
     </div>
   </div>
 
@@ -414,6 +423,15 @@ addetti.forEach(a => {
   `
   tbody.appendChild(tr)
 })
+
+// Timestamp firma
+function stampaFirma(chi) {
+  const ora = new Date()
+  const ts = ora.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) +
+             ' · ore ' + ora.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})
+  const nome = document.getElementById('firma-' + chi)?.value?.trim() || '—'
+  document.getElementById('ts-' + chi).textContent = '✅ ' + nome + ' · ' + ts
+}
 </script>
 </body>
 </html>
