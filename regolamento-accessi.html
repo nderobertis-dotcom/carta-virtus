@@ -44,6 +44,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 
 /* ACCESSI GRID */
 .accessi-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}
+@media(min-width:900px){.accessi-grid{grid-template-columns:1fr 1fr 1fr}}
 @media(max-width:640px){.accessi-grid{grid-template-columns:1fr}}
 
 .accesso-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
@@ -248,6 +249,44 @@ select.editable{cursor:pointer}
       </div>
     </div>
 
+    <!-- ACCESSO E -->
+    <div class="accesso-card">
+      <div class="accesso-header">
+        <div class="accesso-badge" style="background:#e65100">E</div>
+        <div>
+          <div class="accesso-nome">Accesso E</div>
+          <div class="accesso-luogo">📍 Cancello squadre e addetti ai lavori</div>
+        </div>
+      </div>
+      <div class="accesso-body">
+        <div class="card-label">Tipologie ammesse</div>
+        <div class="card-tags">
+          <span class="tag" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80">🏀 Squadra di casa</span>
+          <span class="tag" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80">🏀 Squadra ospite</span>
+          <span class="tag" style="background:#fce4ec;color:#c62828;border:1px solid #ef9a9a">⚖️ Squadra arbitrale</span>
+          <span class="tag tag-altri">📋 Addetti ai lavori (lista FIP)</span>
+        </div>
+        <div class="card-label">Note operative</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Verifica accredito su lista FIP ufficiale. Il cancello <strong>chiude 45 min prima</strong> della gara. La squadra arbitrale è accolta da un dirigente Virtus.</div>
+        <div class="card-label">Operatore cancello</div>
+        <div class="campo-operatore" style="margin-bottom:10px">
+          <span class="op-icon">👤</span>
+          <div class="op-line">
+            <input class="op-name" type="text" placeholder="Nome e cognome operatore"/>
+            <div class="op-role">Operatore accesso E — verifica lista FIP</div>
+          </div>
+        </div>
+        <div class="card-label">Dirigente Virtus (accoglienza arbitri)</div>
+        <div class="campo-operatore">
+          <span class="op-icon">🤝</span>
+          <div class="op-line">
+            <input class="op-name" type="text" placeholder="Nome e cognome dirigente"/>
+            <div class="op-role">Dirigente Virtus — accoglienza squadra arbitrale</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ACCESSO D -->
     <div class="accesso-card">
       <div class="accesso-header">
@@ -388,12 +427,15 @@ const addetti = [
   { n:6, ruolo:'sicurezza',  accesso:'—' },
   { n:7, ruolo:'sicurezza',  accesso:'—' },
   { n:8, ruolo:'sicurezza',  accesso:'—' },
+  { n:9, ruolo:'operatore',  accesso:'E' },
+  { n:10,ruolo:'dirigente',  accesso:'E' },
 ]
 
 const ruoloLabel = {
   operatore: '<span class="ruolo-chip chip-op">🎟️ Operatore</span>',
   sicurezza:  '<span class="ruolo-chip chip-sic">🛡️ Sicurezza</span>',
   dual:       '<span class="ruolo-chip chip-dual">🛡️🎟️ Sic. + Op.</span>',
+  dirigente:  '<span class="ruolo-chip" style="background:#fff3e0;color:#e65100">🤝 Dirigente</span>',
 }
 
 const tbody = document.getElementById('tbody-addetti')
@@ -407,6 +449,7 @@ addetti.forEach(a => {
         <option value="operatore" ${a.ruolo==='operatore'?'selected':''}>🎟️ Operatore</option>
         <option value="sicurezza" ${a.ruolo==='sicurezza'?'selected':''}>🛡️ Sicurezza</option>
         <option value="dual">🛡️🎟️ Sicurezza + Operatore</option>
+        <option value="dirigente" ${a.ruolo==='dirigente'?'selected':''}>🤝 Dirigente</option>
       </select>
     </td>
     <td>
@@ -415,6 +458,7 @@ addetti.forEach(a => {
         <option value="B" ${a.accesso==='B'?'selected':''}>Accesso B</option>
         <option value="C" ${a.accesso==='C'?'selected':''}>Accesso C</option>
         <option value="D" ${a.accesso==='D'?'selected':''}>Accesso D</option>
+        <option value="E" ${a.accesso==='E'?'selected':''}>Accesso E</option>
         <option value="—" ${a.accesso==='—'?'selected':''}>—</option>
       </select>
     </td>
