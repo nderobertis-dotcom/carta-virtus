@@ -343,7 +343,10 @@ select.editable{cursor:pointer}
   </div>
 
   <!-- BIGLIETTERIA -->
-  <div class="section-title" style="margin-top:28px">Biglietteria</div>
+  <div class="print-gara-header" style="display:none;background:#0d2147;color:#fff;padding:6px 0 6px 0;margin-bottom:10px;border-radius:8px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.04em" id="print-header-p4">
+    <span id="ph4-titolo"></span> &nbsp;·&nbsp; <span id="ph4-data"></span> &nbsp;·&nbsp; <span id="ph4-luogo"></span>
+  </div>
+  <div class="section-title" style="page-break-before:always;margin-top:0">Biglietteria</div>
   <div class="note-box" style="margin-bottom:12px">
     <ul>
       <li>La biglietteria è situata nel <strong>gabbiotto esterno al PalaPoli</strong> e apre la vendita <strong>60 minuti prima</strong> dell'inizio della gara.</li>
@@ -487,6 +490,10 @@ async function caricaGare() {
       document.getElementById('ph3-titolo').textContent = titolo
       document.getElementById('ph3-data').textContent   = data
       document.getElementById('ph3-luogo').textContent  = '📍 ' + luogo
+      // banner pagina 4
+      document.getElementById('ph4-titolo').textContent = titolo
+      document.getElementById('ph4-data').textContent   = data
+      document.getElementById('ph4-luogo').textContent  = '📍 ' + luogo
     })
   } catch(e) {
     document.getElementById('sel-gara').innerHTML = '<option value="">Errore caricamento gare</option>'
