@@ -393,6 +393,16 @@ select.editable{cursor:pointer}
     </table>
   </div>
 
+  <!-- BANNER BLOCCO (visibile dopo entrambe le firme) -->
+  <div id="lock-banner" class="no-print" style="display:none;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;align-items:center;gap:14px">
+    <span style="font-size:22px">🔒</span>
+    <div>
+      <div style="font-weight:700;color:#2e7d32;font-size:14px">Documento bloccato</div>
+      <div style="font-size:12px;color:#388e3c;margin-top:2px">Entrambe le firme sono state apposte. Il documento non è più modificabile — puoi solo stamparlo o salvarlo come PDF.</div>
+    </div>
+    <button class="btn-print" style="margin-left:auto" onclick="window.print()">🖨️ Stampa / PDF</button>
+  </div>
+
   <!-- FIRME -->
   <div class="section-title">Approvazione</div>
   <div class="firma-row">
@@ -554,11 +564,41 @@ addetti.forEach(a => {
 
 // Timestamp firma
 function stampaFirma(chi) {
+  const nomeEl = document.getElementById('firma-' + chi)
+  const nome = nomeEl?.value?.trim() || '—'
   const ora = new Date()
   const ts = ora.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) +
              ' · ore ' + ora.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})
-  const nome = document.getElementById('firma-' + chi)?.value?.trim() || '—'
   document.getElementById('ts-' + chi).textContent = '✅ ' + nome + ' · ' + ts
+  // disabilita il campo e il bottone di questa firma
+  if (nomeEl) { nomeEl.disabled = true; nomeEl.style.color = 'var(--muted)' }
+  const btn = document.querySelector('[onclick="stampaFirma(\'' + chi + '\')"]')
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'default' }
+  // controlla se entrambe le firme sono state apposte
+  verificaLock()
+}
+
+function verificaLock() {
+  const tsResp = document.getElementById('ts-resp').textContent.trim()
+  const tsDs   = document.getElementById('ts-ds').textContent.trim()
+  if (tsResp && tsDs) {
+    // congela tutti gli input e select del documento
+    document.querySelectorAll('#main-content input, #main-content select, #main-content textarea').forEach(el => {
+      el.disabled = true
+      el.style.pointerEvents = 'none'
+    })
+    // congela i bottoni tranne quello di stampa
+    document.querySelectorAll('#main-content button').forEach(btn => {
+      if (!btn.classList.contains('btn-print')) {
+        btn.disabled = true
+        btn.style.opacity = '0.4'
+        btn.style.cursor = 'default'
+      }
+    })
+    // mostra banner di blocco
+    const banner = document.getElementById('lock-banner')
+    if (banner) banner.style.display = 'flex'
+  }
 }
 </script>
 </body>
