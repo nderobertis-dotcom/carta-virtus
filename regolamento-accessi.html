@@ -110,9 +110,9 @@ select.editable{cursor:pointer}
 <!-- LOGIN -->
 <div id="login-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0d2147,#1a3a6b)">
   <div style="background:#fff;border-radius:16px;padding:40px 36px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3)">
-    <img src="https://brwkwlyxkptzmkzkvava.supabase.co/storage/v1/object/public/assets/logo-virtus.png"
+    <img src="https://virtusfanmolfetta.com/logo-virtus.png"
          style="width:72px;height:72px;object-fit:contain;margin-bottom:16px"
-         onerror="this.style.display='none'" alt="Virtus"/>
+         onerror="this.onerror=null;tryNextLogo(this)" alt="Virtus"/>
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#1a3a6b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Regolamento Accessi</div>
     <div style="font-size:12px;color:#78909c;margin-bottom:24px">Documento riservato — Virtus Molfetta</div>
     <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password"
@@ -128,9 +128,8 @@ select.editable{cursor:pointer}
 
 <div class="doc-header">
   <div class="doc-header-logo">
-    <img src="https://brwkwlyxkptzmkzkvava.supabase.co/storage/v1/object/public/assets/logo-virtus.png"
-         onerror="this.onerror=null;this.style.display='none';this.parentElement.innerHTML='<span style=\'font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:#1a3a6b\'>V</span>'"
-         alt="Virtus Molfetta" style="width:68px;height:68px;object-fit:contain"/>
+    <img id="logo-img" src="https://virtusfanmolfetta.com/logo-virtus.png" alt="Virtus Molfetta" style="width:68px;height:68px;object-fit:contain"
+         onerror="this.onerror=null;tryNextLogo(this)"/>
   </div>
   <div class="doc-header-text" style="flex:1">
     <h1>Regolamento Accessi — PalaPoli</h1>
@@ -156,7 +155,7 @@ select.editable{cursor:pointer}
 <div class="wrapper">
 
   <!-- SELETTORE GARA -->
-  <div class="no-print" id="banner-gara" style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+  <div class="no-print" id="banner-gara" style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;color-scheme:light">
     <span style="font-size:13px;font-weight:700;color:var(--blu);white-space:nowrap">🏀 Gara di riferimento</span>
     <select id="sel-gara" style="flex:1;min-width:220px;border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-family:'Barlow',sans-serif;font-size:13px;color:#1a2a3a;background:#ffffff;cursor:pointer;-webkit-appearance:auto">
       <option value="">⏳ Carico gare…</option>
@@ -379,6 +378,24 @@ select.editable{cursor:pointer}
 </div><!-- /main-content -->
 
 <script>
+// Fallback logo a cascata
+const LOGO_URLS = [
+  'https://virtusfanmolfetta.com/logo-virtus.png',
+  'https://virtusfanmolfetta.com/images/logo-virtus.png',
+  'https://virtusfanmolfetta.com/assets/logo-virtus.png',
+  'https://brwkwlyxkptzmkzkvava.supabase.co/storage/v1/object/public/assets/logo-virtus.png',
+]
+function tryNextLogo(el) {
+  const tried = el.dataset.tried ? parseInt(el.dataset.tried) : 0
+  const next = tried + 1
+  if (next < LOGO_URLS.length) {
+    el.dataset.tried = next
+    el.src = LOGO_URLS[next]
+  } else {
+    el.style.display = 'none'
+  }
+}
+
 // LOGIN
 function doLogin() {
   const pass = document.getElementById('login-pass').value
