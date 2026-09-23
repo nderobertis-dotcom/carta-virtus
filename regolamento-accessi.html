@@ -47,7 +47,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 @media(min-width:900px){.accessi-grid{grid-template-columns:1fr 1fr 1fr}}
 @media(max-width:640px){.accessi-grid{grid-template-columns:1fr}}
 
-.accesso-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.accesso-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;break-inside:avoid}
 .accesso-header{padding:14px 18px;display:flex;align-items:center;gap:12px}
 .accesso-badge{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}
 .badge-a{background:var(--gold)}
@@ -175,7 +175,7 @@ select.editable{cursor:pointer}
   </div>
 
   <!-- ACCESSI -->
-  <div class="section-title">Punti di accesso</div>
+  <div class="section-title" style="page-break-before:always">Punti di accesso</div>
   <div class="accessi-grid">
 
     <!-- ACCESSO A -->
