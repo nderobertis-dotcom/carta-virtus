@@ -121,12 +121,8 @@ select.editable{cursor:pointer}
       <span>📋 Uso interno</span>
       <span id="data-doc">📅 —</span>
     </div>
-    <!-- selettore gara -->
-    <div class="no-print" style="margin-top:12px">
-      <select id="sel-gara" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;font-family:'Barlow',sans-serif;font-size:13px;cursor:pointer;max-width:340px">
-        <option value="">⏳ Carico gare in casa…</option>
-      </select>
-    </div>
+    <!-- selettore gara (placeholder visibile in header) -->
+    <div id="sel-gara-placeholder" style="margin-top:10px;font-size:12px;color:rgba(255,255,255,.5)">⏳ Carico gare in casa…</div>
     <!-- info gara selezionata (visibile in stampa) -->
     <div id="gara-selezionata" style="display:none;margin-top:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:8px 14px;font-size:13px">
       <span id="gara-titolo" style="font-weight:700"></span>
@@ -140,8 +136,12 @@ select.editable{cursor:pointer}
 
 <div class="wrapper">
 
-  <!-- PRINT -->
-  <div class="no-print" style="margin-bottom:20px;display:flex;justify-content:flex-end">
+  <!-- SELETTORE GARA -->
+  <div class="no-print" id="banner-gara" style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:700;color:var(--blu);white-space:nowrap">🏀 Gara di riferimento</span>
+    <select id="sel-gara" style="flex:1;min-width:220px;border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text);background:#fff;cursor:pointer">
+      <option value="">⏳ Carico gare…</option>
+    </select>
     <button class="btn-print" onclick="window.print()">🖨️ Stampa / Salva PDF</button>
   </div>
 
