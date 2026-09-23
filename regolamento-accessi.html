@@ -815,10 +815,9 @@ select.editable{cursor:pointer}
             <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
               <button class="acc-btn acc-btn-primary" id="reg-save-btn" onclick="regSave()">💾 Salva regolamento</button>
             </div>
-          </div>
-        </div>
-
-      </div>
+          </div><!-- /firme -->
+        </div><!-- /reg-accrediti-card -->
+      </div><!-- /tab-impostazioni -->
 
     </main>
   </div><!-- /acc-layout -->
@@ -1371,17 +1370,17 @@ function regRenderRows(rows) {
       <td style="padding:7px 10px">
         ${locked
           ? `<span style="font-size:13px;color:var(--acc-text)">${r.categoria}</span>`
-          : `<input type="text" class="acc-input" style="width:100%" value="${r.categoria.replace(/"/g,'&quot;')}" onchange="regUpdateRow(${i},'categoria',this.value)">`}
+          : `<input type="text" class="acc-input" style="width:100%" value="${r.categoria.replace(/"/g,'&quot;')}" onchange="regUpdateRow(${i},&quot;categoria&quot;,this.value)">`}
       </td>
       <td style="padding:7px 10px;text-align:center">
         ${locked
           ? `<strong style="font-size:14px">${r.qty === 0 ? 'DS' : r.qty}</strong>`
-          : `<input type="number" min="0" class="acc-input" style="width:64px;text-align:center" value="${r.qty}" onchange="regUpdateRow(${i},'qty',+this.value)">`}
+          : `<input type="number" min="0" class="acc-input" style="width:64px;text-align:center" value="${r.qty}" onchange="regUpdateRow(${i},&quot;qty&quot;,+this.value)">`}
       </td>
       <td style="padding:7px 10px;color:var(--acc-text-2);font-size:12px">
         ${locked
           ? r.note
-          : `<input type="text" class="acc-input" style="width:100%" value="${r.note.replace(/"/g,'&quot;')}" onchange="regUpdateRow(${i},'note',this.value)">`}
+          : `<input type="text" class="acc-input" style="width:100%" value="${r.note.replace(/"/g,'&quot;')}" onchange="regUpdateRow(${i},&quot;note&quot;,this.value)">`}
       </td>
       <td style="padding:7px 6px;text-align:center">
         ${locked ? '' : `<button onclick="regDeleteRow(${i})" style="background:none;border:none;cursor:pointer;color:#e53935;font-size:16px;line-height:1" title="Rimuovi">×</button>`}
