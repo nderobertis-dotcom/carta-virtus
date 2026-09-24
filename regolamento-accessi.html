@@ -1171,12 +1171,12 @@ function accShowTab(t) {
 
 /* ── PARTITE ── */
 function accAddPartita() {
-  const data = document.getElementById('acc-p-data').value;
-  const avv  = document.getElementById('acc-p-avversario').value.trim();
+  const data = document.getElementById('p-data').value;
+  const avv  = document.getElementById('p-avversario').value.trim();
   if (!data || !avv) { alert('Inserisci data e avversario.'); return; }
   accDb.partite.push({ id: accUid(), data, avversario: avv });
   accSave(); accRenderPartite();
-  document.getElementById('acc-p-avversario').value = '';
+  document.getElementById('p-avversario').value = '';
 }
 
 function accDeletePartita(id) {
@@ -1187,7 +1187,7 @@ function accDeletePartita(id) {
 }
 
 function accRenderPartite() {
-  const el = document.getElementById('acc-lista-partite');
+  const el = document.getElementById('lista-partite');
   if (!el) return;
   const sorted = [...accDb.partite].sort((a,b) => a.data.localeCompare(b.data));
   if (!sorted.length) { el.innerHTML = '<div class="acc-empty"><span class="acc-empty-icon">📅</span>Nessuna partita inserita</div>'; return; }
@@ -1221,7 +1221,7 @@ function accDeleteAvente(id) {
 }
 
 function accRenderAventi() {
-  const el = document.getElementById('acc-lista-aventi');
+  const el = document.getElementById('lista-aventi');
   if (!el) return;
   const sorted = [...accDb.aventi].sort((a,b) => a.nome.localeCompare(b.nome));
   if (!sorted.length) { el.innerHTML = '<div class="acc-empty"><span class="acc-empty-icon">👤</span>Nessun avente diritto inserito</div>'; return; }
@@ -1313,7 +1313,7 @@ function accDeleteAccredito(id) {
 function accRenderAccreditiAvente() {
   const pid = document.getElementById('acc-partita').value;
   const aid = document.getElementById('acc-avente').value;
-  const el  = document.getElementById('acc-lista-accrediti-avente');
+  const el  = document.getElementById('lista-accrediti-avente');
   if (!el) return;
   if (!pid || !aid) { el.innerHTML = ''; return; }
   const list = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid);
