@@ -704,6 +704,7 @@ select.editable{cursor:pointer}
             <div class="acc-card-title">Nuovo ospite</div>
             <div style="display:flex;gap:8px;align-items:flex-end">
               <div style="flex:1"><label>Nome e cognome ospite</label><input type="text" id="acc-ospite" placeholder="es. Lucia Verdi" onkeydown="if(event.key==='Enter')accAddAccredito()"></div>
+              <div style="width:80px"><label>Quantità</label><input type="number" id="acc-qty" min="1" max="10" value="1" style="width:100%;text-align:center"></div>
               <button class="acc-btn acc-btn-primary" onclick="accAddAccredito()" style="flex-shrink:0">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Aggiungi
@@ -1312,17 +1313,27 @@ function accAddAccredito() {
   const pid    = document.getElementById('acc-partita').value;
   const aid    = document.getElementById('acc-avente').value;
   const ospite = document.getElementById('acc-ospite').value.trim();
+  const qty    = Math.max(1, parseInt(document.getElementById('acc-qty')?.value) || 1);
   if (!pid || !aid || !ospite) { alert('Seleziona partita, avente diritto e inserisci il nome ospite.'); return; }
   const avente = accDb.aventi.find(a => a.id === aid);
   const usati  = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid).length;
-  if (usati >= avente.max) { alert('Limite accrediti raggiunto.'); return; }
-  accDb.accrediti.push({ id: accUid(), partitaId: pid, aventeId: aid, ospite, ts: Date.now() });
+  const disponibili = avente.max - usati;
+  if (disponibili <= 0) { alert('Limite accrediti raggiunto.'); return; }
+  const daAggiungere = Math.min(qty, disponibili);
+  for (let i = 0; i < daAggiungere; i++) {
+    const label = daAggiungere > 1 ? `${ospite} (${i+1}/${daAggiungere})` : ospite;
+    accDb.accrediti.push({ id: accUid(), partitaId: pid, aventeId: aid, ospite: label, ts: Date.now() });
+  }
   accSave();
   document.getElementById('acc-ospite').value = '';
+  document.getElementById('acc-qty').value = '1';
   document.getElementById('acc-ospite').focus();
   const alertEl = document.getElementById('acc-alert');
-  alertEl.innerHTML = '<div class="acc-alert acc-alert-green">✓ Accredito aggiunto con successo.</div>';
-  setTimeout(() => { alertEl.innerHTML = ''; }, 2000);
+  const msg = daAggiungere < qty
+    ? `✓ ${daAggiungere} accrediti aggiunti (limite raggiunto, richiesti ${qty}).`
+    : `✓ ${daAggiungere} accredito${daAggiungere>1?'i':''} aggiunto${daAggiungere>1?'i':''} con successo.`;
+  alertEl.innerHTML = `<div class="acc-alert acc-alert-green">${msg}</div>`;
+  setTimeout(() => { alertEl.innerHTML = ''; }, 3000);
   accUpdateAventeInfo();
 }
 
