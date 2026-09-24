@@ -670,6 +670,10 @@ select.editable{cursor:pointer}
             Aggiungi
           </button>
         </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+          <label style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--acc-text-2);margin:0;white-space:nowrap">Filtra per categoria:</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="acc-aventi-filtri"></div>
+        </div>
         <div id="lista-aventi"></div>
       </div>
 
@@ -1243,13 +1247,29 @@ function accDeleteAvente(id) {
   accSave(); accRenderAventi();
 }
 
+let accAventiFilter = 'tutti';
+
+function accRenderAventiFilter() {
+  const el = document.getElementById('acc-aventi-filtri');
+  if (!el) return;
+  const cats = ['tutti', ...new Set(accDb.aventi.map(a => a.ruolo).filter(Boolean))];
+  el.innerHTML = cats.map(c => {
+    const active = accAventiFilter === c;
+    return `<button onclick="accAventiFilter='${c}';accRenderAventiFilter();accRenderAventi()"
+      style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ${active ? 'var(--acc-electric)' : 'var(--acc-border-2)'};background:${active ? 'var(--acc-electric-g)' : 'transparent'};color:${active ? 'var(--acc-electric)' : 'var(--acc-text-2)'};transition:all .15s">${c === 'tutti' ? 'Tutti' : c}</button>`;
+  }).join('');
+}
+
 function accRenderAventi() {
   const el = document.getElementById('lista-aventi');
   if (!el) return;
-  const sorted = [...accDb.aventi].sort((a,b) => a.nome.localeCompare(b.nome));
-  if (!sorted.length) { el.innerHTML = '<div class="acc-empty"><span class="acc-empty-icon">👤</span>Nessun avente diritto inserito</div>'; return; }
+  accRenderAventiFilter();
+  const all = [...accDb.aventi].sort((a,b) => a.nome.localeCompare(b.nome));
+  const filtered = accAventiFilter === 'tutti' ? all : all.filter(a => a.ruolo === accAventiFilter);
+  if (!all.length) { el.innerHTML = '<div class="acc-empty"><span class="acc-empty-icon">👤</span>Nessun avente diritto inserito</div>'; return; }
+  if (!filtered.length) { el.innerHTML = '<div class="acc-empty"><span class="acc-empty-icon">🔍</span>Nessun risultato per questa categoria</div>'; return; }
   const rb = { atleta:'acc-badge-blue', staff:'acc-badge-green', dirigente:'acc-badge-amber' };
-  el.innerHTML = `<div class="acc-card">${sorted.map(a => `
+  el.innerHTML = `<div class="acc-card">${filtered.map(a => `
     <div class="acc-row">
       <div style="flex:1;display:flex;align-items:center;gap:8px">
         <span style="font-weight:500">${a.nome}</span>
