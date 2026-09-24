@@ -655,15 +655,15 @@ select.editable{cursor:pointer}
         <div class="acc-card">
           <div class="acc-card-title">Nuovo avente diritto</div>
           <div class="acc-grid3" style="margin-bottom:14px">
-            <div><label>Nome e cognome</label><input type="text" id="a-nome" placeholder="es. Mario Rossi"></div>
-            <div><label>Ruolo</label>
-              <select id="a-ruolo">
+            <div><label>Nome e cognome</label><input type="text" id="acc-a-nome" placeholder="es. Mario Rossi"></div>
+            <div><label>Categoria</label>
+              <select id="acc-a-ruolo">
                 <option value="atleta">Atleta</option>
                 <option value="staff">Staff</option>
                 <option value="dirigente">Dirigente</option>
               </select>
             </div>
-            <div><label>Max accrediti / partita</label><input type="number" id="a-max" min="1" max="20" value="2"></div>
+            <div><label>Max accrediti / partita</label><input type="number" id="acc-a-max" min="1" max="20" value="2"></div>
           </div>
           <button class="acc-btn acc-btn-primary" onclick="accAddAvente()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1145,6 +1145,11 @@ function accLoad() {
   if (dn) dn.textContent = accDb.squadName || 'Squadra sportiva';
   if (di) di.value = accDb.squadName || '';
   accUpdateInfoCounts();
+  // Render tab attivo dopo il caricamento
+  accRenderPartite();
+  accRenderAventi();
+  accPopulateAccSelects();
+  accPopulateCancelloSelect();
 }
 
 function accSave() { localStorage.setItem('accrediti_app', JSON.stringify(accDb)); accUpdateInfoCounts(); }
@@ -1165,7 +1170,7 @@ function accShowTab(t) {
   if (t === 'accrediti')    accPopulateAccSelects();
   if (t === 'cancello')     accPopulateCancelloSelect();
   if (t === 'partite')      accRenderPartite();
-  if (t === 'aventi')       accRenderAventi();
+  if (t === 'aventi')       { accPopulateCategorieSelect(); accRenderAventi(); }
   if (t === 'impostazioni') { accUpdateInfoCounts(); regLoad(); }
 }
 
@@ -1203,6 +1208,20 @@ function accRenderPartite() {
 }
 
 /* ── AVENTI DIRITTO ── */
+function accPopulateCategorieSelect() {
+  const sel = document.getElementById('acc-a-ruolo');
+  if (!sel) return;
+  const cur = sel.value;
+  const reg = regGetData();
+  const cats = (reg.rows || []).map(r => r.categoria).filter(Boolean);
+  if (cats.length) {
+    sel.innerHTML = cats.map(c => `<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
+  } else {
+    sel.innerHTML = '<option value="atleta">Atleta</option><option value="staff">Staff</option><option value="dirigente">Dirigente</option>';
+  }
+  if (cur) sel.value = cur;
+}
+
 function accAddAvente() {
   const nome  = document.getElementById('acc-a-nome').value.trim();
   const ruolo = document.getElementById('acc-a-ruolo').value;
