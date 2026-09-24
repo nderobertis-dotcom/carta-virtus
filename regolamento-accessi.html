@@ -62,6 +62,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 .badge-b{background:#1565c0}
 .badge-c{background:#2e7d32}
 .badge-d{background:#6a1b9a}
+.badge-e{background:#e65100}
 .badge-f{background:#b71c1c}
 .accesso-nome{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:var(--blu);text-transform:uppercase;line-height:1.1}
 .accesso-luogo{font-size:11px;color:var(--muted);margin-top:2px}
@@ -377,6 +378,44 @@ select.editable{cursor:pointer}
       </div>
     </div>
 
+    <!-- ACCESSO E -->
+    <div class="accesso-card">
+      <div class="accesso-header">
+        <div class="accesso-badge badge-e">E</div>
+        <div>
+          <div class="accesso-nome">Accesso E</div>
+          <div class="accesso-luogo">📍 Cancello squadre e addetti ai lavori</div>
+        </div>
+      </div>
+      <div class="accesso-body">
+        <div class="card-label">Tipologie ammesse</div>
+        <div class="card-tags">
+          <span class="tag" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80">🏀 Squadra di casa</span>
+          <span class="tag" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80">🏀 Squadra ospite</span>
+          <span class="tag" style="background:#fce4ec;color:#c62828;border:1px solid #ef9a9a">⚖️ Squadra arbitrale</span>
+          <span class="tag tag-altri">📋 Addetti ai lavori (lista FIP)</span>
+        </div>
+        <div class="card-label">Note operative</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Verifica accredito su lista FIP ufficiale. Il cancello <strong>chiude 45 min prima</strong> della gara. La squadra arbitrale è accolta da un dirigente Virtus.</div>
+        <div class="card-label">Operatore cancello</div>
+        <div class="campo-operatore" style="margin-bottom:10px">
+          <span class="op-icon">👤</span>
+          <div class="op-line">
+            <input class="op-name" type="text" placeholder="Nome e cognome operatore"/>
+            <div class="op-role">Operatore accesso E — verifica lista FIP</div>
+          </div>
+        </div>
+        <div class="card-label">Dirigente Virtus (accoglienza arbitri)</div>
+        <div class="campo-operatore">
+          <span class="op-icon">🤝</span>
+          <div class="op-line">
+            <input class="op-name" type="text" placeholder="Nome e cognome dirigente"/>
+            <div class="op-role">Dirigente Virtus — accoglienza squadra arbitrale</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ACCESSO F -->
     <div class="accesso-card">
       <div class="accesso-header">
@@ -464,7 +503,10 @@ select.editable{cursor:pointer}
   <div class="print-gara-header" style="display:none;background:#0d2147;color:#fff;padding:6px 0 6px 0;margin-bottom:10px;border-radius:8px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.04em" id="print-header-p3">
     <span id="ph3-titolo"></span> &nbsp;·&nbsp; <span id="ph3-data"></span> &nbsp;·&nbsp; <span id="ph3-luogo"></span>
   </div>
-  <div class="section-title" style="page-break-before:always;margin-top:0">Elenco addetti di serata</div>
+  <div class="section-title" style="page-break-before:always;margin-top:0;display:flex;align-items:center;justify-content:space-between">
+    <span>Elenco addetti di serata</span>
+    <button class="no-print" onclick="addettiReset()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--white);color:var(--muted);cursor:pointer;font-family:inherit">🔄 Nuova serata</button>
+  </div>
   <div class="addetti-table">
     <table>
       <thead>
@@ -919,6 +961,7 @@ const addetti = [
   { n:8, ruolo:'sicurezza',  accesso:'—' },
   { n:9, ruolo:'operatore',  accesso:'E' },
   { n:10,ruolo:'dirigente',  accesso:'E' },
+  { n:11,ruolo:'operatore',  accesso:'F' },
 ]
 
 const ruoloLabel = {
@@ -928,35 +971,84 @@ const ruoloLabel = {
   dirigente:  '<span class="ruolo-chip" style="background:#fff3e0;color:#e65100">🤝 Dirigente</span>',
 }
 
+const ADDETTI_KEY = 'reg_addetti_v1'
+
+function addettiSalva() {
+  try {
+    const righe = []
+    document.querySelectorAll('#tbody-addetti tr').forEach(tr => {
+      const inputs = tr.querySelectorAll('input.editable, select.editable')
+      righe.push({
+        nome:     inputs[0]?.value || '',
+        ruolo:    inputs[1]?.value || '',
+        accesso:  inputs[2]?.value || '',
+        telefono: inputs[3]?.value || '',
+        note:     inputs[4]?.value || '',
+      })
+    })
+    localStorage.setItem(ADDETTI_KEY, JSON.stringify(righe))
+  } catch(e) {}
+}
+
+function addettiCarica() {
+  try {
+    const raw = localStorage.getItem(ADDETTI_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch(e) { return null }
+}
+
 const tbody = document.getElementById('tbody-addetti')
-addetti.forEach(a => {
+const savedAddetti = addettiCarica()
+
+addetti.forEach((a, idx) => {
+  const saved = savedAddetti ? savedAddetti[idx] : null
+  const nome     = saved?.nome     || ''
+  const ruolo    = saved?.ruolo    || a.ruolo
+  const accesso  = saved?.accesso  || a.accesso
+  const telefono = saved?.telefono || ''
+  const note     = saved?.note     || ''
+
   const tr = document.createElement('tr')
   tr.innerHTML = `
     <td style="font-weight:700;color:var(--muted);width:32px">${a.n}</td>
-    <td><input class="editable" type="text" placeholder="Nome e cognome"/></td>
+    <td><input class="editable" type="text" placeholder="Nome e cognome" value="${nome.replace(/"/g,'&quot;')}"/></td>
     <td>
       <select class="editable" onchange="aggiornaChip(this)">
-        <option value="operatore" ${a.ruolo==='operatore'?'selected':''}>🎟️ Operatore</option>
-        <option value="sicurezza" ${a.ruolo==='sicurezza'?'selected':''}>🛡️ Sicurezza</option>
-        <option value="dual">🛡️🎟️ Sicurezza + Operatore</option>
-        <option value="dirigente" ${a.ruolo==='dirigente'?'selected':''}>🤝 Dirigente</option>
+        <option value="operatore" ${ruolo==='operatore'?'selected':''}>🎟️ Operatore</option>
+        <option value="sicurezza"  ${ruolo==='sicurezza'?'selected':''}>🛡️ Sicurezza</option>
+        <option value="dual"       ${ruolo==='dual'?'selected':''}>🛡️🎟️ Sicurezza + Operatore</option>
+        <option value="dirigente"  ${ruolo==='dirigente'?'selected':''}>🤝 Dirigente</option>
       </select>
     </td>
     <td>
       <select class="editable">
-        <option value="A" ${a.accesso==='A'?'selected':''}>Accesso A</option>
-        <option value="B" ${a.accesso==='B'?'selected':''}>Accesso B</option>
-        <option value="C" ${a.accesso==='C'?'selected':''}>Accesso C</option>
-        <option value="D" ${a.accesso==='D'?'selected':''}>Accesso D</option>
-        <option value="F" ${a.accesso==='F'?'selected':''}>Accesso F — Ingresso posteriore</option>
-        <option value="—" ${a.accesso==='—'?'selected':''}>—</option>
+        <option value="A" ${accesso==='A'?'selected':''}>Accesso A</option>
+        <option value="B" ${accesso==='B'?'selected':''}>Accesso B</option>
+        <option value="C" ${accesso==='C'?'selected':''}>Accesso C</option>
+        <option value="D" ${accesso==='D'?'selected':''}>Accesso D</option>
+        <option value="E" ${accesso==='E'?'selected':''}>Accesso E — Cancello squadre</option>
+        <option value="F" ${accesso==='F'?'selected':''}>Accesso F — Ingresso posteriore</option>
+        <option value="—" ${accesso==='—'?'selected':''}>—</option>
       </select>
     </td>
-    <td><input class="editable" type="text" placeholder="3xx xxx xxxx"/></td>
-    <td><input class="editable" type="text" placeholder=""/></td>
+    <td><input class="editable" type="text" placeholder="3xx xxx xxxx" value="${telefono.replace(/"/g,'&quot;')}"/></td>
+    <td><input class="editable" type="text" placeholder="" value="${note.replace(/"/g,'&quot;')}"/></td>
   `
   tbody.appendChild(tr)
 })
+
+// Salva automaticamente ad ogni modifica
+tbody.addEventListener('input',  addettiSalva)
+tbody.addEventListener('change', addettiSalva)
+
+// Pulsante reset addetti (svuota solo i nomi, non ruoli/accessi)
+function addettiReset() {
+  if (!confirm('Svuotare tutti i nomi degli addetti per la prossima serata?')) return
+  try { localStorage.removeItem(ADDETTI_KEY) } catch(e) {}
+  document.querySelectorAll('#tbody-addetti input.editable').forEach(inp => inp.value = '')
+}
+
 
 // Timestamp firma
 function stampaFirma(chi) {
