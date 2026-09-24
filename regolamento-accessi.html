@@ -758,7 +758,7 @@ select.editable{cursor:pointer}
         <div class="acc-card">
           <div class="acc-card-title">Backup dati</div>
           <p style="font-size:13px;color:var(--acc-text-2);margin-bottom:14px;line-height:1.7">
-            Tutti i dati sono salvati localmente nel browser (localStorage).<br>
+            I dati sono sincronizzati su Supabase e accessibili da qualsiasi dispositivo dopo il login.<br>
             Esporta un backup JSON per sicurezza o per trasferire i dati su un altro dispositivo.
           </p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1141,29 +1141,71 @@ function switchView(v) {
   if (v === 'accrediti') { accLoad(); accShowTab('partite'); }
 }
 
-let accDb = { partite: [], aventi: [], accrediti: [], squadName: '' };
+/* ── STATO IN MEMORIA (cache locale) ── */
+let accDb = { partite: [], aventi: [], accrediti: [], squadName: 'Virtus Basket Molfetta' };
 
-function accLoad() {
-  try { const s = localStorage.getItem('accrediti_app'); if (s) accDb = JSON.parse(s); } catch(e) {}
+/* ── SUPABASE ACCREDITI HELPERS ── */
+async function accSbSignIn() {
+  const s = getSb();
+  const { data: { session } } = await s.auth.getSession();
+  if (session) return true;
+  const { error } = await s.auth.signInWithPassword({ email: 'accrediti@virtus.app', password: '2027Virtus!' });
+  return !error;
+}
+
+function accShowLoading(msg) {
+  ['lista-partite','lista-aventi','lista-accrediti-avente','cancello-lista'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = `<div class="acc-empty" style="opacity:.5">${msg || 'Caricamento…'}</div>`;
+  });
+}
+
+async function accLoad() {
+  accShowLoading('Connessione in corso…');
+  await accSbSignIn();
+  const sb = getSb();
+
+  // Carica aventi
+  const { data: aventi } = await sb.from('acc_aventi').select('*').order('nome');
+  accDb.aventi = (aventi || []).map(r => ({ id: r.id, nome: r.nome, ruolo: r.ruolo, max: r.max_accrediti }));
+
+  // Carica partite (da tabella gare esistente, solo casalinghe)
+  const { data: gare } = await sb.from('gare').select('id,avversario,data_ora').order('data_ora');
+  accDb.partite = (gare || []).map(r => ({
+    id: r.id,
+    avversario: r.avversario,
+    data: r.data_ora ? r.data_ora.slice(0,10) : ''
+  }));
+
+  // Carica accrediti
+  const { data: accrediti } = await sb.from('acc_accrediti').select('*').order('creato_il');
+  accDb.accrediti = (accrediti || []).map(r => ({
+    id: r.id, partitaId: r.partita_id, aventeId: r.avente_id,
+    ospite: r.ospite, ritirato: r.ritirato, ts: new Date(r.creato_il).getTime()
+  }));
+
+  // Squad name da impostazioni
+  const { data: imp } = await sb.from('impostazioni').select('valore').eq('chiave','nome_squadra_accrediti').maybeSingle();
+  if (imp?.valore) accDb.squadName = imp.valore;
+
   const dn = document.getElementById('acc-squad-name-display');
   const di = document.getElementById('acc-squad-name-input');
-  if (dn) dn.textContent = accDb.squadName || 'Squadra sportiva';
-  if (di) di.value = accDb.squadName || '';
+  if (dn) dn.textContent = accDb.squadName;
+  if (di) di.value = accDb.squadName;
+
   accUpdateInfoCounts();
-  // Render tab attivo dopo il caricamento
   accRenderPartite();
   accRenderAventi();
   accPopulateAccSelects();
   accPopulateCancelloSelect();
 }
 
-function accSave() { localStorage.setItem('accrediti_app', JSON.stringify(accDb)); accUpdateInfoCounts(); }
 function accUid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function accFmtData(d) { if (!d) return ''; const [y,m,g] = d.split('-'); return `${g}/${m}/${y}`; }
 
 function accUpdateInfoCounts() {
   const el = document.getElementById('acc-info-counts');
-  if (el) el.textContent = `${accDb.partite.length} partite · ${accDb.aventi.length} aventi diritto · ${accDb.accrediti.length} accrediti totali`;
+  if (el) el.textContent = `${accDb.partite.length} partite · ${accDb.aventi.length} aventi diritto · ${accDb.accrediti.length} accrediti totali — sincronizzato con Supabase`;
 }
 
 function accShowTab(t) {
@@ -1180,23 +1222,32 @@ function accShowTab(t) {
 }
 
 /* ── PARTITE ── */
-function accAddPartita() {
+async function accAddPartita() {
   const dataEl = document.getElementById('p-data');
   const avvEl  = document.getElementById('p-avversario');
   const data   = dataEl ? dataEl.value : '';
   const avv    = avvEl  ? avvEl.value.trim() : '';
   if (!avv) { alert('Inserisci almeno il nome dell\'avversario.'); return; }
-  accDb.partite.push({ id: accUid(), data: data || '', avversario: avv });
-  accSave(); accRenderPartite();
+  const sb = getSb();
+  const row = { avversario: avv, titolo: avv, luogo: 'PalaPoli – Molfetta', attiva: true };
+  if (data) row.data_ora = data + 'T20:00:00+02:00';
+  const { data: ins, error } = await sb.from('gare').insert(row).select().single();
+  if (error) { alert('Errore salvataggio: ' + error.message); return; }
+  accDb.partite.push({ id: ins.id, avversario: ins.avversario, data: data || '' });
+  accUpdateInfoCounts(); accRenderPartite(); accPopulateAccSelects();
   if (avvEl)  avvEl.value  = '';
   if (dataEl) dataEl.value = '';
 }
 
-function accDeletePartita(id) {
+async function accDeletePartita(id) {
   if (!confirm('Eliminare la partita? Verranno eliminati anche tutti gli accrediti associati.')) return;
+  await accSbSignIn();
+  const sb = getSb();
+  const { error } = await sb.from('gare').delete().eq('id', id);
+  if (error) { alert('Errore eliminazione: ' + error.message); return; }
   accDb.partite   = accDb.partite.filter(p => p.id !== id);
   accDb.accrediti = accDb.accrediti.filter(a => a.partitaId !== id);
-  accSave(); accRenderPartite();
+  accUpdateInfoCounts(); accRenderPartite(); accPopulateAccSelects();
 }
 
 function accRenderPartite() {
@@ -1230,21 +1281,28 @@ function accPopulateCategorieSelect() {
   if (cur) sel.value = cur;
 }
 
-function accAddAvente() {
+async function accAddAvente() {
   const nome  = document.getElementById('acc-a-nome').value.trim();
   const ruolo = document.getElementById('acc-a-ruolo').value;
   const max   = parseInt(document.getElementById('acc-a-max').value) || 2;
   if (!nome) { alert('Inserisci nome e cognome.'); return; }
-  accDb.aventi.push({ id: accUid(), nome, ruolo, max });
-  accSave(); accRenderAventi();
+  const sb = getSb();
+  const { data: ins, error } = await sb.from('acc_aventi').insert({ nome, ruolo, max_accrediti: max }).select().single();
+  if (error) { alert('Errore salvataggio: ' + error.message); return; }
+  accDb.aventi.push({ id: ins.id, nome: ins.nome, ruolo: ins.ruolo, max: ins.max_accrediti });
+  accUpdateInfoCounts(); accRenderAventi(); accUpdateAventeSelect();
   document.getElementById('acc-a-nome').value = '';
 }
 
-function accDeleteAvente(id) {
+async function accDeleteAvente(id) {
   if (!confirm('Eliminare avente diritto? Verranno eliminati anche i suoi accrediti.')) return;
+  await accSbSignIn();
+  const sb = getSb();
+  const { error } = await sb.from('acc_aventi').delete().eq('id', id);
+  if (error) { alert('Errore eliminazione: ' + error.message); return; }
   accDb.aventi    = accDb.aventi.filter(a => a.id !== id);
   accDb.accrediti = accDb.accrediti.filter(a => a.aventeId !== id);
-  accSave(); accRenderAventi();
+  accUpdateInfoCounts(); accRenderAventi(); accUpdateAventeSelect();
 }
 
 let accAventiFilter = 'tutti';
@@ -1329,7 +1387,7 @@ function accUpdateAventeInfo() {
   accRenderAccreditiAvente();
 }
 
-function accAddAccredito() {
+async function accAddAccredito() {
   const pid    = document.getElementById('acc-partita').value;
   const aid    = document.getElementById('acc-avente').value;
   const ospite = document.getElementById('acc-ospite').value.trim();
@@ -1340,11 +1398,16 @@ function accAddAccredito() {
   const disponibili = avente.max - usati;
   if (disponibili <= 0) { alert('Limite accrediti raggiunto.'); return; }
   const daAggiungere = Math.min(qty, disponibili);
+  const sb = getSb();
+  const rows = [];
   for (let i = 0; i < daAggiungere; i++) {
     const label = daAggiungere > 1 ? `${ospite} (${i+1}/${daAggiungere})` : ospite;
-    accDb.accrediti.push({ id: accUid(), partitaId: pid, aventeId: aid, ospite: label, ts: Date.now() });
+    rows.push({ partita_id: pid, avente_id: aid, ospite: label });
   }
-  accSave();
+  const { data: ins, error } = await sb.from('acc_accrediti').insert(rows).select();
+  if (error) { alert('Errore salvataggio: ' + error.message); return; }
+  (ins || []).forEach(r => accDb.accrediti.push({ id: r.id, partitaId: r.partita_id, aventeId: r.avente_id, ospite: r.ospite, ritirato: false, ts: Date.now() }));
+  accUpdateInfoCounts();
   document.getElementById('acc-ospite').value = '';
   document.getElementById('acc-qty').value = '1';
   document.getElementById('acc-ospite').focus();
@@ -1357,10 +1420,14 @@ function accAddAccredito() {
   accUpdateAventeInfo();
 }
 
-function accDeleteAccredito(id) {
+async function accDeleteAccredito(id) {
   if (!confirm('Rimuovere questo accredito?')) return;
+  await accSbSignIn();
+  const sb = getSb();
+  const { error } = await sb.from('acc_accrediti').delete().eq('id', id);
+  if (error) { alert('Errore eliminazione: ' + error.message); return; }
   accDb.accrediti = accDb.accrediti.filter(a => a.id !== id);
-  accSave(); accUpdateAventeInfo();
+  accUpdateInfoCounts(); accUpdateAventeInfo();
 }
 
 function accRenderAccreditiAvente() {
@@ -1392,9 +1459,13 @@ function accPopulateCancelloSelect() {
   accRenderCancello();
 }
 
-function accToggleRitiro(id) {
+async function accToggleRitiro(id) {
   const acc = accDb.accrediti.find(a => a.id === id);
-  if (acc) { acc.ritirato = !acc.ritirato; accSave(); accRenderCancello(); }
+  if (!acc) return;
+  acc.ritirato = !acc.ritirato;
+  accRenderCancello();
+  const sb = getSb();
+  await sb.from('acc_accrediti').update({ ritirato: acc.ritirato }).eq('id', id);
 }
 
 function accRenderCancello() {
@@ -1447,10 +1518,12 @@ function accRenderCancello() {
 }
 
 /* ── IMPOSTAZIONI ── */
-function accSaveSquadName() {
-  accDb.squadName = document.getElementById('acc-squad-name-input').value.trim();
-  accSave();
-  document.getElementById('acc-squad-name-display').textContent = accDb.squadName || 'Squadra sportiva';
+async function accSaveSquadName() {
+  const nome = document.getElementById('acc-squad-name-input').value.trim();
+  accDb.squadName = nome;
+  document.getElementById('acc-squad-name-display').textContent = nome || 'Squadra sportiva';
+  const sb = getSb();
+  await sb.from('impostazioni').upsert({ chiave: 'nome_squadra_accrediti', valore: nome }, { onConflict: 'chiave' });
   alert('Nome squadra salvato.');
 }
 
@@ -1468,23 +1541,43 @@ function accHandleImport(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try {
       const imported = JSON.parse(e.target.result);
-      if (!imported.partite || !imported.aventi || !imported.accrediti) { alert('File non valido.'); return; }
+      if (!imported.aventi || !imported.accrediti) { alert('File non valido.'); return; }
       if (!confirm('Sovrascrivere tutti i dati attuali con il backup importato?')) return;
-      accDb = imported; accSave(); accLoad(); accRenderPartite(); alert('Importazione completata.');
-    } catch { alert("Errore durante l'importazione."); }
+      accShowLoading('Importazione in corso…');
+      const sb = getSb();
+      // 1. Cancella tutti i dati esistenti
+      await sb.from('acc_accrediti').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await sb.from('acc_aventi').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      // 2. Inserisci aventi diritto
+      if (imported.aventi.length) {
+        const aventiRows = imported.aventi.map(a => ({ id: a.id, nome: a.nome, ruolo: a.ruolo || 'atleta', max_accrediti: a.max || 2 }));
+        await sb.from('acc_aventi').insert(aventiRows);
+      }
+      // 3. Inserisci accrediti (solo quelli con avente_id valido)
+      if (imported.accrediti.length) {
+        const accRows = imported.accrediti.map(a => ({ id: a.id, partita_id: a.partitaId, avente_id: a.aventeId, ospite: a.ospite, ritirato: !!a.ritirato }));
+        await sb.from('acc_accrediti').insert(accRows);
+      }
+      // 4. Ricarica da Supabase
+      await accLoad();
+      alert('Importazione completata.');
+    } catch(err) { accHideLoading(); alert("Errore durante l'importazione: " + err.message); }
   };
   reader.readAsText(file);
   event.target.value = '';
 }
 
-function accResetAll() {
-  if (confirm('Eliminare TUTTI i dati degli accrediti? Questa azione è irreversibile.')) {
-    localStorage.removeItem('accrediti_app');
-    accDb = { partite: [], aventi: [], accrediti: [], squadName: '' };
-    accLoad(); accRenderPartite();
+async function accResetAll() {
+  if (confirm('Eliminare TUTTI gli aventi diritto e accrediti? Questa azione è irreversibile.')) {
+    const sb = getSb();
+    await sb.from('acc_accrediti').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await sb.from('acc_aventi').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    accDb.aventi    = [];
+    accDb.accrediti = [];
+    accUpdateInfoCounts(); accRenderPartite(); accRenderAventi();
     alert('Dati eliminati.');
   }
 }
