@@ -378,6 +378,33 @@ select.editable{cursor:pointer}
       </div>
     </div>
 
+    <!-- ACCESSO D -->
+    <div class="accesso-card">
+      <div class="accesso-header">
+        <div class="accesso-badge badge-d">D</div>
+        <div>
+          <div class="accesso-nome">Accesso D</div>
+          <div class="accesso-luogo">📍 Porta opposta al lato Bar</div>
+        </div>
+      </div>
+      <div class="accesso-body">
+        <div class="card-label">Fan Card ammesse</div>
+        <div class="card-tags">
+          <span class="tag tag-silver">🥈 Silver</span>
+        </div>
+        <div class="card-label">Destinazione</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Tribune Numerate</div>
+        <div class="card-label">Operatore</div>
+        <div class="campo-operatore">
+          <span class="op-icon">👤</span>
+          <div class="op-line">
+            <input class="op-name" type="text" placeholder="Nome e cognome operatore"/>
+            <div class="op-role">Operatore accesso D</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ACCESSO E -->
     <div class="accesso-card">
       <div class="accesso-header">
@@ -441,33 +468,6 @@ select.editable{cursor:pointer}
       </div>
     </div>
 
-    <!-- ACCESSO D -->
-    <div class="accesso-card">
-      <div class="accesso-header">
-        <div class="accesso-badge badge-d">D</div>
-        <div>
-          <div class="accesso-nome">Accesso D</div>
-          <div class="accesso-luogo">📍 Porta opposta al lato Bar</div>
-        </div>
-      </div>
-      <div class="accesso-body">
-        <div class="card-label">Fan Card ammesse</div>
-        <div class="card-tags">
-          <span class="tag tag-silver">🥈 Silver</span>
-        </div>
-        <div class="card-label">Destinazione</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Tribune Numerate</div>
-        <div class="card-label">Operatore</div>
-        <div class="campo-operatore">
-          <span class="op-icon">👤</span>
-          <div class="op-line">
-            <input class="op-name" type="text" placeholder="Nome e cognome operatore"/>
-            <div class="op-role">Operatore accesso D</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <!-- BIGLIETTERIA -->
@@ -486,14 +486,14 @@ select.editable{cursor:pointer}
     <div class="campo-operatore" style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px">
       <span class="op-icon">🎟️</span>
       <div class="op-line">
-        <input class="op-name" type="text" placeholder="Nome e cognome addetto biglietteria"/>
+        <input id="big-posto1" class="op-name" type="text" placeholder="Nome e cognome addetto biglietteria"/>
         <div class="op-role">Addetto biglietteria — posto 1</div>
       </div>
     </div>
     <div class="campo-operatore" style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px">
       <span class="op-icon">🎟️</span>
       <div class="op-line">
-        <input class="op-name" type="text" placeholder="Nome e cognome addetto biglietteria"/>
+        <input id="big-posto2" class="op-name" type="text" placeholder="Nome e cognome addetto biglietteria"/>
         <div class="op-role">Addetto biglietteria — posto 2</div>
       </div>
     </div>
@@ -1048,6 +1048,41 @@ function addettiReset() {
   try { localStorage.removeItem(ADDETTI_KEY) } catch(e) {}
   document.querySelectorAll('#tbody-addetti input.editable').forEach(inp => inp.value = '')
 }
+
+// Biglietteria persistence
+const BIGLIETTERIA_KEY = 'reg_biglietteria_v1'
+
+function biglietteriaCarica() {
+  try {
+    const raw = localStorage.getItem(BIGLIETTERIA_KEY)
+    if (!raw) return
+    const data = JSON.parse(raw)
+    const p1 = document.getElementById('big-posto1')
+    const p2 = document.getElementById('big-posto2')
+    if (p1 && data.posto1 != null) p1.value = data.posto1
+    if (p2 && data.posto2 != null) p2.value = data.posto2
+  } catch(e) {}
+}
+
+function biglietteriaReset() {
+  try { localStorage.removeItem(BIGLIETTERIA_KEY) } catch(e) {}
+}
+
+;(function() {
+  const p1 = document.getElementById('big-posto1')
+  const p2 = document.getElementById('big-posto2')
+  const salva = () => {
+    try {
+      localStorage.setItem(BIGLIETTERIA_KEY, JSON.stringify({
+        posto1: p1?.value || '',
+        posto2: p2?.value || ''
+      }))
+    } catch(e) {}
+  }
+  if (p1) p1.addEventListener('input', salva)
+  if (p2) p2.addEventListener('input', salva)
+  biglietteriaCarica()
+})()
 
 
 // Timestamp firma
