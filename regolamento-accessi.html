@@ -633,7 +633,7 @@ select.editable{cursor:pointer}
         <div class="acc-card">
           <div class="acc-card-title">Nuova partita</div>
           <div class="acc-grid2" style="margin-bottom:14px">
-            <div><label>Data</label><input type="date" id="p-data"></div>
+            <div><label>Data gara</label><input type="date" id="p-data" onkeydown="if(event.key==='Enter')accAddPartita()"></div>
             <div><label>Avversario</label><input type="text" id="p-avversario" placeholder="es. Bari Basket" onkeydown="if(event.key==='Enter')accAddPartita()"></div>
           </div>
           <button class="acc-btn acc-btn-primary" onclick="accAddPartita()">
@@ -1176,12 +1176,15 @@ function accShowTab(t) {
 
 /* ── PARTITE ── */
 function accAddPartita() {
-  const data = document.getElementById('p-data').value;
-  const avv  = document.getElementById('p-avversario').value.trim();
-  if (!data || !avv) { alert('Inserisci data e avversario.'); return; }
-  accDb.partite.push({ id: accUid(), data, avversario: avv });
+  const dataEl = document.getElementById('p-data');
+  const avvEl  = document.getElementById('p-avversario');
+  const data   = dataEl ? dataEl.value : '';
+  const avv    = avvEl  ? avvEl.value.trim() : '';
+  if (!avv) { alert('Inserisci almeno il nome dell\'avversario.'); return; }
+  accDb.partite.push({ id: accUid(), data: data || '', avversario: avv });
   accSave(); accRenderPartite();
-  document.getElementById('p-avversario').value = '';
+  if (avvEl)  avvEl.value  = '';
+  if (dataEl) dataEl.value = '';
 }
 
 function accDeletePartita(id) {
