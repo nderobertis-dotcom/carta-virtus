@@ -1147,10 +1147,10 @@ let accDb = { partite: [], aventi: [], accrediti: [], squadName: 'Virtus Basket 
 /* ── SUPABASE ACCREDITI HELPERS ── */
 async function accSbSignIn() {
   const s = getSb();
-  const { data: { session } } = await s.auth.getSession();
-  if (session) return true;
+  // Forza sempre il signin per evitare sessioni scadute su siti statici
   const { error } = await s.auth.signInWithPassword({ email: 'accrediti@virtus.app', password: '2027Virtus!' });
-  return !error;
+  if (error) { console.error('Supabase auth error:', error.message); return false; }
+  return true;
 }
 
 function accShowLoading(msg) {
@@ -1169,9 +1169,9 @@ async function accLoad() {
   const { data: aventi } = await sb.from('acc_aventi').select('*').order('nome');
   accDb.aventi = (aventi || []).map(r => ({ id: r.id, nome: r.nome, ruolo: r.ruolo, max: r.max_accrediti }));
 
-  // Carica partite (da tabella gare esistente, solo casalinghe)
-  const { data: gare } = await sb.from('gare').select('id,avversario,data_ora').order('data_ora');
-  accDb.partite = (gare || []).map(r => ({
+  // Carica partite (da tabella gare esistente, solo casalinghe al PalaPoli)
+  const { data: gare } = await sb.from('gare').select('id,avversario,data_ora,luogo').order('data_ora');
+  accDb.partite = (gare || []).filter(r => r.luogo?.toLowerCase().includes('palapoli')).map(r => ({
     id: r.id,
     avversario: r.avversario,
     data: r.data_ora ? r.data_ora.slice(0,10) : ''
