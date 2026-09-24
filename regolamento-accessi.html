@@ -62,6 +62,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 .badge-b{background:#1565c0}
 .badge-c{background:#2e7d32}
 .badge-d{background:#6a1b9a}
+.badge-f{background:#b71c1c}
 .accesso-nome{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:var(--blu);text-transform:uppercase;line-height:1.1}
 .accesso-luogo{font-size:11px;color:var(--muted);margin-top:2px}
 .accesso-body{padding:14px 18px;border-top:1px solid var(--border)}
@@ -279,6 +280,7 @@ select.editable{cursor:pointer}
       <li>Gli accrediti e i biglietti singoli sono gestiti esclusivamente all'<strong>Accesso C</strong>. Nessun altro accesso è autorizzato ad accogliere biglietti singoli.</li>
       <li>Il piano Gold prevede accesso all'<strong>area ospitality</strong> e alle <strong>Tribune A e B</strong> (Accesso A dal parcheggio).</li>
       <li>I possessori di Fan Card <strong>Disability</strong> con accompagnatore hanno diritto all'ingresso per 2 persone (verificare flag nell'app).</li>
+      <li>L'<strong>Accesso F (Ingresso posteriore)</strong> è riservato ai tifosi ospiti ed è attivato <strong>a discrezione della società</strong>, su indicazione del Responsabile di serata, in previsione di arrivi massivi. Se non attivato, l'ingresso posteriore rimane chiuso.</li>
     </ul>
   </div>
 
@@ -375,39 +377,26 @@ select.editable{cursor:pointer}
       </div>
     </div>
 
-    <!-- ACCESSO E -->
+    <!-- ACCESSO F -->
     <div class="accesso-card">
       <div class="accesso-header">
-        <div class="accesso-badge" style="background:#e65100">E</div>
+        <div class="accesso-badge badge-f">F</div>
         <div>
-          <div class="accesso-nome">Accesso E</div>
-          <div class="accesso-luogo">📍 Cancello squadre e addetti ai lavori</div>
+          <div class="accesso-nome">Accesso F</div>
+          <div class="accesso-luogo">📍 Ingresso posteriore</div>
         </div>
       </div>
       <div class="accesso-body">
-        <div class="card-label">Tipologie ammesse</div>
-        <div class="card-tags">
-          <span class="tag" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80">🏀 Squadra di casa</span>
-          <span class="tag" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80">🏀 Squadra ospite</span>
-          <span class="tag" style="background:#fce4ec;color:#c62828;border:1px solid #ef9a9a">⚖️ Squadra arbitrale</span>
-          <span class="tag tag-altri">📋 Addetti ai lavori (lista FIP)</span>
-        </div>
+        <div class="card-label">Destinazione</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Settore tifosi ospiti</div>
         <div class="card-label">Note operative</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Verifica accredito su lista FIP ufficiale. Il cancello <strong>chiude 45 min prima</strong> della gara. La squadra arbitrale è accolta da un dirigente Virtus.</div>
-        <div class="card-label">Operatore cancello</div>
-        <div class="campo-operatore" style="margin-bottom:10px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Ingresso aperto <strong>a discrezione della società</strong>, attivato in previsione di arrivi massivi di tifosi ospiti. L'apertura è comunicata dal Responsabile di serata.</div>
+        <div class="card-label">Operatore</div>
+        <div class="campo-operatore">
           <span class="op-icon">👤</span>
           <div class="op-line">
             <input class="op-name" type="text" placeholder="Nome e cognome operatore"/>
-            <div class="op-role">Operatore accesso E — verifica lista FIP</div>
-          </div>
-        </div>
-        <div class="card-label">Dirigente Virtus (accoglienza arbitri)</div>
-        <div class="campo-operatore">
-          <span class="op-icon">🤝</span>
-          <div class="op-line">
-            <input class="op-name" type="text" placeholder="Nome e cognome dirigente"/>
-            <div class="op-role">Dirigente Virtus — accoglienza squadra arbitrale</div>
+            <div class="op-role">Operatore accesso F — tifosi ospiti</div>
           </div>
         </div>
       </div>
@@ -959,7 +948,7 @@ addetti.forEach(a => {
         <option value="B" ${a.accesso==='B'?'selected':''}>Accesso B</option>
         <option value="C" ${a.accesso==='C'?'selected':''}>Accesso C</option>
         <option value="D" ${a.accesso==='D'?'selected':''}>Accesso D</option>
-        <option value="E" ${a.accesso==='E'?'selected':''}>Accesso E</option>
+        <option value="F" ${a.accesso==='F'?'selected':''}>Accesso F — Ingresso posteriore</option>
         <option value="—" ${a.accesso==='—'?'selected':''}>—</option>
       </select>
     </td>
