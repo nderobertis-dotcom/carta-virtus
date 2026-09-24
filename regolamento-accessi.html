@@ -124,14 +124,14 @@ select.editable{cursor:pointer}
 /* ACCREDITI VIEW */
 #view-accrediti{display:none}
 #view-accrediti *,#view-accrediti *::before,#view-accrediti *::after{box-sizing:border-box}
-#view-accrediti{--acc-navy:#0d1117;--acc-navy-2:#161b22;--acc-navy-3:#21262d;--acc-navy-4:#30363d;--acc-navy-5:#3d444d;--acc-electric:#3b82f6;--acc-electric-d:#2563eb;--acc-electric-g:rgba(59,130,246,.12);--acc-electric-glow:rgba(59,130,246,.25);--acc-text:#e6edf3;--acc-text-2:#8b949e;--acc-text-3:#484f58;--acc-border:rgba(255,255,255,.08);--acc-border-2:rgba(255,255,255,.14);--acc-border-acc:rgba(59,130,246,.4);--acc-green:#3fb950;--acc-green-bg:rgba(63,185,80,.1);--acc-green-border:rgba(63,185,80,.3);--acc-red:#f85149;--acc-red-bg:rgba(248,81,73,.1);--acc-red-border:rgba(248,81,73,.3);--acc-amber:#d29922;--acc-amber-bg:rgba(210,153,34,.1);--acc-amber-border:rgba(210,153,34,.3);font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--acc-text);background:var(--acc-navy);min-height:60vh}
-.acc-topbar{background:var(--acc-navy-2);border-bottom:1px solid var(--acc-border);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;height:56px}
-.acc-logo-mark{width:28px;height:28px;background:var(--acc-electric);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 20px var(--acc-electric-glow)}
+#view-accrediti{--acc-navy:#f0f4f8;--acc-navy-2:#ffffff;--acc-navy-3:#f5f7fa;--acc-navy-4:#e8ecf1;--acc-navy-5:#dde3ea;--acc-electric:#1a56db;--acc-electric-d:#1344b7;--acc-electric-g:rgba(26,86,219,.09);--acc-electric-glow:rgba(26,86,219,.18);--acc-text:#111827;--acc-text-2:#4b5563;--acc-text-3:#9ca3af;--acc-border:rgba(0,0,0,.08);--acc-border-2:rgba(0,0,0,.14);--acc-border-acc:rgba(26,86,219,.35);--acc-green:#16a34a;--acc-green-bg:rgba(22,163,74,.08);--acc-green-border:rgba(22,163,74,.25);--acc-red:#dc2626;--acc-red-bg:rgba(220,38,38,.07);--acc-red-border:rgba(220,38,38,.25);--acc-amber:#b45309;--acc-amber-bg:rgba(180,83,9,.08);--acc-amber-border:rgba(180,83,9,.25);font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--acc-text);background:var(--acc-navy);min-height:60vh}
+.acc-topbar{background:var(--acc-navy-2);border-bottom:2px solid var(--acc-border);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;height:56px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.acc-logo-mark{width:28px;height:28px;background:var(--acc-electric);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px var(--acc-electric-glow)}
 .acc-logo-text strong{font-size:13px;font-weight:600;color:var(--acc-text);letter-spacing:-.01em;display:block}
 .acc-logo-text span{font-size:11px;color:var(--acc-text-2)}
-.acc-topbar-squad{margin-left:auto;font-size:12px;color:var(--acc-text-2);background:var(--acc-navy-3);border:1px solid var(--acc-border);border-radius:6px;padding:4px 10px;font-family:'DM Mono',monospace}
+.acc-topbar-squad{margin-left:auto;font-size:12px;color:var(--acc-text-2);background:var(--acc-navy-3);border:1px solid var(--acc-border-2);border-radius:6px;padding:4px 10px;font-family:'DM Mono',monospace}
 .acc-layout{display:flex;min-height:calc(60vh - 56px)}
-.acc-sidebar{width:200px;background:var(--acc-navy-2);border-right:1px solid var(--acc-border);padding:1rem .6rem;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.acc-sidebar{width:200px;background:var(--acc-navy-2);border-right:2px solid var(--acc-border);padding:1rem .6rem;display:flex;flex-direction:column;gap:2px;flex-shrink:0;box-shadow:2px 0 8px rgba(0,0,0,.04)}
 .acc-nav-group{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--acc-text-3);padding:10px 10px 4px;margin-top:4px}
 .acc-nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:400;color:var(--acc-text-2);border:1px solid transparent;transition:all .15s;user-select:none}
 .acc-nav-item:hover{background:var(--acc-navy-3);color:var(--acc-text)}
@@ -816,7 +816,7 @@ select.editable{cursor:pointer}
           <div style="font-size:11px;font-weight:700;color:var(--acc-text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Aventi diritto e quantitativi</div>
           <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px">
             <thead>
-              <tr style="background:var(--acc-bg-2)">
+              <tr style="background:var(--acc-navy-3)">
                 <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--acc-text-3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--acc-border)">Categoria</th>
                 <th style="padding:8px 10px;text-align:center;font-size:11px;font-weight:700;color:var(--acc-text-3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--acc-border);width:100px">N° biglietti</th>
                 <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--acc-text-3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--acc-border)">Note</th>
