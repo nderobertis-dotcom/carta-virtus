@@ -1204,6 +1204,7 @@ select.form-input:focus{border-color:var(--accent)}
           <div class="card-title">Operatori registrati</div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-ghost btn-sm" onclick="loadOperatori()">↻ Aggiorna</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-nuovo-operatore')">+ Nuovo operatore</button>
           </div>
         </div>
         <div class="card-body">
@@ -5995,6 +5996,69 @@ async function attivaOperatore(email, btn) {
   }
 }
 
+function generaPasswordOp() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'
+  let pwd = ''
+  for (let i = 0; i < 10; i++) pwd += chars[Math.floor(Math.random() * chars.length)]
+  document.getElementById('nop-password').value = pwd
+}
+
+async function creaOperatore() {
+  const WORKER = 'https://carta-virtus-auth.nderobertis.workers.dev'
+  const nome     = document.getElementById('nop-nome').value.trim()
+  const cognome  = document.getElementById('nop-cognome').value.trim()
+  const email    = document.getElementById('nop-email').value.trim()
+  const password = document.getElementById('nop-password').value.trim()
+  const errEl    = document.getElementById('nop-error')
+  const btn      = document.getElementById('nop-btn-crea')
+
+  errEl.style.display = 'none'
+  if (!nome || !cognome || !email || !password) {
+    errEl.textContent = 'Compila tutti i campi obbligatori.'
+    errEl.style.display = 'block'
+    return
+  }
+  if (password.length < 8) {
+    errEl.textContent = 'La password deve essere di almeno 8 caratteri.'
+    errEl.style.display = 'block'
+    return
+  }
+  btn.disabled = true
+  btn.textContent = 'Creazione...'
+  try {
+    const resp = await fetch(WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'register',
+        email,
+        password,
+        user_metadata: { nome, cognome, ruolo: 'operatore' }
+      })
+    })
+    const data = await resp.json()
+    if (!resp.ok || data.error || data.msg) {
+      const msg = data.error || data.msg || `Errore ${resp.status}`
+      errEl.textContent = msg.includes('already registered') || msg.includes('already been registered')
+        ? 'Esiste già un account con questa email.'
+        : 'Errore: ' + msg
+      errEl.style.display = 'block'
+      return
+    }
+    toast(`Operatore ${nome} ${cognome} creato con successo`, 'success')
+    closeModal('modal-nuovo-operatore')
+    // Reset form
+    ;['nop-nome','nop-cognome','nop-email','nop-password'].forEach(id => document.getElementById(id).value = '')
+    await loadOperatori()
+  } catch(e) {
+    errEl.textContent = 'Errore di rete: ' + e.message
+    errEl.style.display = 'block'
+  } finally {
+    btn.disabled = false
+    btn.textContent = 'Crea Operatore'
+  }
+}
+
 async function loadScansioni(email) {
   currentOpEmail = email
   document.getElementById('op-scansioni-title').textContent = 'Scansioni di ' + email
@@ -7817,6 +7881,8 @@ document.addEventListener('DOMContentLoaded', function() {
   window.annullaContratto = annullaContratto;
   window.loadOperatori = loadOperatori;
   window.attivaOperatore = attivaOperatore;
+  window.creaOperatore = creaOperatore;
+  window.generaPasswordOp = generaPasswordOp;
   window.filtraMembership = filtraMembership;
   window.attivaMemb = attivaMemb;
   window.sospendiMemb = sospendiMemb;
@@ -7899,6 +7965,39 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-fop-prodotto')">Annulla</button>
       <button class="btn btn-primary" onclick="salvaFopProdotto()">Salva Prodotto</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuovo Operatore -->
+<div class="modal-overlay" id="modal-nuovo-operatore">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">Nuovo Operatore</div>
+      <button class="modal-close" onclick="closeModal('modal-nuovo-operatore')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+        Crea direttamente un account operatore già attivo. La password provvisoria sarà comunicata all'operatore che potrà cambiarla al primo accesso.
+      </p>
+      <div class="form-grid">
+        <div class="form-group"><label>Nome *</label><input class="form-input" id="nop-nome" placeholder="Mario"/></div>
+        <div class="form-group"><label>Cognome *</label><input class="form-input" id="nop-cognome" placeholder="Rossi"/></div>
+        <div class="full form-group"><label>Email *</label><input class="form-input" id="nop-email" type="email" placeholder="mario.rossi@email.com"/></div>
+        <div class="full form-group">
+          <label>Password provvisoria *</label>
+          <div style="display:flex;gap:8px">
+            <input class="form-input" id="nop-password" type="text" placeholder="Es. Virtus2027!" style="font-family:monospace;flex:1"/>
+            <button class="btn btn-ghost btn-sm" style="white-space:nowrap" onclick="generaPasswordOp()">⟳ Genera</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Min. 8 caratteri. Comunica questa password all'operatore.</div>
+        </div>
+      </div>
+      <div id="nop-error" style="display:none;background:#fef2f2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-nuovo-operatore')">Annulla</button>
+      <button class="btn btn-primary" id="nop-btn-crea" onclick="creaOperatore()">Crea Operatore</button>
     </div>
   </div>
 </div>
