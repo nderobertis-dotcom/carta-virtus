@@ -1184,6 +1184,21 @@ select.form-input:focus{border-color:var(--accent)}
 
     <!-- OPERATORI -->
     <div class="section" id="section-operatori">
+      <!-- Operatori in attesa di attivazione -->
+      <div id="pending-operatori-container" style="display:none;margin-bottom:20px">
+        <div class="card" style="border:2px solid #f59e0b">
+          <div class="card-header" style="background:#fffbeb">
+            <div class="card-title" style="color:#b45309">⏳ In attesa di attivazione</div>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead><tr><th>Email</th><th>Nome</th><th>Registrato il</th><th></th></tr></thead>
+              <tbody id="pending-operatori-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
           <div class="card-title">Operatori registrati</div>
@@ -5912,7 +5927,6 @@ async function loadOperatori() {
       <td style="font-size:11px;color:var(--muted)">${lastLogin}</td>
       <td>
         <button class="btn btn-ghost btn-sm" data-email="${op.email}" data-nome="${op.email}" onclick="loadScansioni(this.dataset.email)">Scansioni</button>
-        <button class="btn btn-primary btn-sm" data-email="${op.email}" onclick="attivaOperatore(this.dataset.email)">✓ Attiva</button>
       </td>
     </tr>`
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Nessun operatore registrato</td></tr>'
@@ -5924,16 +5938,61 @@ async function loadOperatori() {
 }
 
 async function loadPendingOperatori() {
-  // Cerca utenti con ruolo operatore_pending nella tabella auth via management API
-  // Non direttamente accessibile via REST standard — usiamo una query alternativa
-  // cercando nel log delle transazioni operatori non ancora attivi
-  // Per ora mostriamo solo messaggio
+  const WORKER = 'https://carta-virtus-auth.nderobertis.workers.dev'
+  let pending = []
+  try {
+    const resp = await fetch(WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'list_pending_operators' })
+    })
+    if (resp.ok) pending = await resp.json()
+  } catch(e) { /* ignora errori di rete */ }
+
+  const container = document.getElementById('pending-operatori-container')
+  if (!container) return
+
+  if (!pending.length) {
+    container.style.display = 'none'
+    return
+  }
+  container.style.display = 'block'
+  const tbody = document.getElementById('pending-operatori-list')
+  if (!tbody) return
+  tbody.innerHTML = pending.map(u => {
+    const creato = u.created_at ? new Date(u.created_at).toLocaleDateString('it-IT') : '—'
+    return `<tr>
+      <td style="font-size:13px">${u.email}</td>
+      <td style="font-size:13px">${(u.nome || '') + ' ' + (u.cognome || '')}</td>
+      <td style="font-size:11px;color:var(--muted)">${creato}</td>
+      <td>
+        <button class="btn btn-primary btn-sm" onclick="attivaOperatore('${u.email}', this)">✓ Attiva</button>
+      </td>
+    </tr>`
+  }).join('')
 }
 
-async function attivaOperatore(email) {
-  // Usa Supabase Management API per aggiornare i metadata
-  // Non direttamente possibile via client — usiamo il worker
-  toast(`Per attivare un operatore: SQL Editor → update auth.users set raw_user_meta_data = jsonb_set(raw_user_meta_data, '{ruolo}', '"operatore"') where email = '${email}'`, 'success')
+async function attivaOperatore(email, btn) {
+  const WORKER = 'https://carta-virtus-auth.nderobertis.workers.dev'
+  if (btn) { btn.disabled = true; btn.textContent = '...' }
+  try {
+    const resp = await fetch(WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'activate_operator', email })
+    })
+    const data = await resp.json()
+    if (!resp.ok || data.error) {
+      toast('Errore attivazione: ' + (data.error || resp.status), 'error')
+      if (btn) { btn.disabled = false; btn.textContent = '✓ Attiva' }
+      return
+    }
+    toast(`Operatore ${email} attivato con successo`, 'success')
+    await loadOperatori()
+  } catch(e) {
+    toast('Errore di rete: ' + e.message, 'error')
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Attiva' }
+  }
 }
 
 async function loadScansioni(email) {
