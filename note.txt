@@ -1,0 +1,29 @@
+nome progetto supabase: brwkwlyxkptzmkzkvava
+sb_publishable_z1PXnQekOObCwtOF4Apcsg_1Q4tRrUl
+sb_secret_nLFPtRvj1cPJzsHCgHrQ7A_85LO1_wk
+anon public: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzE3NTAsImV4cCI6MjA5NDEwNzc1MH0.uurMQj0b4X_C0ouyXkpoZ9XiCIsqUwEArSf1sNPctxI
+service_role secret: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2t3bHl4a3B0em1remt2YXZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODUzMTc1MCwiZXhwIjoyMDk0MTA3NzUwfQ.Pb61V8euQwLt1KR-m29nr_s0F13gRXSToRiPPL6bLSQ
+id partner: b3d60ab8-85f6-4986-82c2-7a44564c58d1
+https://nderobertis-dotcom.github.io/carta-virtus/virtus-admin.html
+
+sbp_069c45bd985e1a93a1ac983df1589f044621ed40
+
+Ecco la lista TO DO prioritizzata per la prossima sessione:
+
+🔴 ALTA PRIORITÀ
+
+Dominio su Porkbun — acquisto dominio (es. virtuscard.it) e collegamento a GitHub Pages + aggiornamento CORS nel Worker Cloudflare e in Supabase
+
+🟡 MEDIA PRIORITÀ
+
+Dashboard admin: colonna anagrafica — mostrare via, CAP, città, sesso nella tabella tifosi e aggiornare il dettaglio tifoso
+Notifiche push — integrazione OneSignal per notifiche punti accumulati, soglie raggiunte e campagne (pattern già usato in VolleyLive)
+Pagamenti reali — attivazione Stripe e/o PayPal per completare il flusso di pagamento membership
+
+
+🟢 BASSA PRIORITÀ / FUTURA
+
+Area tifoso: catalogo premi + riscatto — permettere al tifoso di sfogliare premi e riscattarli direttamente dall'area personale
+Rinnovo annuale — logica automatica di scadenza membership e notifica di rinnovo
+Report admin avanzati — grafici saldo punti nel tempo, tifosi per piano, volume partner per mese
+App mobile — valutare PWA installabile su smartphone per tifosi e partner
