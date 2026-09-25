@@ -1,0 +1,17 @@
+{
+  "name": "virtus-loyalty-services",
+  "version": "1.0.0",
+  "description": "Microservizi per il programma fedeltà Virtus Basket Molfetta",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
