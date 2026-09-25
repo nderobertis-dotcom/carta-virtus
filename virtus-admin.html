@@ -7186,18 +7186,30 @@ async function loadCortesia() {
       .in('id', ids)
     if (error) throw error
     // Ordina per numero (cognome è "1","2",…,"40")
-    const sorted = [...data].sort((a, b) => parseInt(a.cognome) - parseInt(b.cognome))
-    tbody.innerHTML = sorted.map((t, i) => `
+    // Recupera numero Cortesia dal cognome originale (es. "1","2",…) oppure dall'email cortesiaN@
+    const getNumero = (t) => {
+      const m = (t.email || '').match(/cortesia(\d+)@/)
+      if (m) return parseInt(m[1])
+      const n = parseInt(t.cognome)
+      return isNaN(n) ? 999 : n
+    }
+    const sorted = [...data].sort((a, b) => getNumero(a) - getNumero(b))
+    tbody.innerHTML = sorted.map((t) => {
+      const num = getNumero(t)
+      // Cognome da mostrare: se è solo un numero (account non ancora personalizzato), mostra vuoto
+      const cognomeDisplay = /^\d+$/.test(t.cognome || '') ? '' : (t.cognome || '')
+      return `
       <tr id="cort-row-${t.id}">
-        <td style="color:var(--muted);font-size:12px;font-weight:600">${i+1}</td>
+        <td style="color:var(--muted);font-size:12px;font-weight:600;text-align:center">${num}</td>
         <td><input class="form-input" style="padding:4px 8px;font-size:13px" id="cort-nome-${t.id}" type="text" value="${escHtml(t.nome || '')}" placeholder="Nome"/></td>
-        <td><input class="form-input" style="padding:4px 8px;font-size:13px" id="cort-cogn-${t.id}" type="text" value="${escHtml(t.cognome || '')}" placeholder="Cognome"/></td>
+        <td><input class="form-input" style="padding:4px 8px;font-size:13px" id="cort-cogn-${t.id}" type="text" value="${escHtml(cognomeDisplay)}" placeholder="Cognome"/></td>
         <td><input class="form-input" style="padding:4px 8px;font-size:13px" id="cort-email-${t.id}" type="email" value="${escHtml(t.email || '')}" placeholder="email@esempio.com"/></td>
         <td style="font-size:11px;color:var(--muted);font-family:monospace">${t.qr_code ? t.qr_code.substring(0,8)+'…' : '—'}</td>
         <td>
           <button class="btn btn-primary btn-sm" onclick="salvaCortesia('${t.id}','${escHtml(t.auth_user_id||'')}')">Salva</button>
         </td>
-      </tr>`).join('')
+      </tr>`
+    }).join('')
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="6" style="color:#e53935;padding:16px">Errore: ${e.message}</td></tr>`
   }
@@ -7211,19 +7223,23 @@ async function salvaCortesia(tifoso_id, auth_user_id) {
   const btn = document.querySelector(`#cort-row-${tifoso_id} button`)
   btn.disabled = true; btn.textContent = '…'
   try {
-    // 1) Aggiorna record tifoso (nome, cognome, email)
-    const { error: e1 } = await sb.from('tifosi')
+    // 1) Aggiorna record tifoso con sbAdmin (service key, bypassa RLS)
+    const { data: updated, error: e1 } = await sbAdmin.from('tifosi')
       .update({ nome, cognome: cogn, email })
       .eq('id', tifoso_id)
+      .select('id')
     if (e1) throw e1
-    // 2) Aggiorna email in auth.users tramite sbAdmin (service key)
+    if (!updated || updated.length === 0) throw new Error('Nessuna riga aggiornata in tifosi (verifica ID)')
+
+    // 2) Aggiorna email in auth.users tramite sbAdmin
     if (auth_user_id) {
       const { error: e2 } = await sbAdmin.auth.admin.updateUserById(auth_user_id, {
         email,
         user_metadata: { nome, cognome: cogn, ruolo: 'tifoso' }
       })
-      if (e2) console.warn('Auth update warning:', e2.message)
+      if (e2) throw new Error('Errore auth: ' + e2.message)
     }
+
     btn.textContent = '✓'
     btn.style.background = '#2e7d32'
     setTimeout(() => { btn.disabled = false; btn.textContent = 'Salva'; btn.style.background = '' }, 2000)
