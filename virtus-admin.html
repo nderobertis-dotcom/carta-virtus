@@ -7231,17 +7231,26 @@ async function salvaCortesia(tifoso_id, auth_user_id) {
     if (e1) throw e1
     if (!updated || updated.length === 0) throw new Error('Nessuna riga aggiornata in tifosi (verifica ID)')
 
-    // 2) Aggiorna email in auth.users tramite sbAdmin
+    // 2) Aggiorna email in auth.users tramite sbAdmin (non bloccante)
+    let authWarn = ''
     if (auth_user_id) {
       const { error: e2 } = await sbAdmin.auth.admin.updateUserById(auth_user_id, {
         email,
         user_metadata: { nome, cognome: cogn, ruolo: 'tifoso' }
       })
-      if (e2) throw new Error('Errore auth: ' + e2.message)
+      if (e2) authWarn = ' (⚠️ accesso non aggiornato: ' + e2.message + ')'
     }
 
     btn.textContent = '✓'
     btn.style.background = '#2e7d32'
+    if (authWarn) {
+      const td = btn.closest('tr').querySelector('td:last-child')
+      const warn = document.createElement('div')
+      warn.style.cssText = 'font-size:10px;color:#e65100;margin-top:2px'
+      warn.textContent = authWarn
+      td.appendChild(warn)
+      setTimeout(() => warn.remove(), 5000)
+    }
     setTimeout(() => { btn.disabled = false; btn.textContent = 'Salva'; btn.style.background = '' }, 2000)
   } catch(e) {
     alert('Errore salvataggio: ' + e.message)
