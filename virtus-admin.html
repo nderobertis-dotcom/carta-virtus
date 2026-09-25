@@ -7168,11 +7168,22 @@ async function loadCortesia() {
   const tbody = document.getElementById('cortesia-list')
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Caricamento…</td></tr>'
   try {
-    const { data, error } = await sb
+    // Step 1: prendi i tifoso_id con piano Cortesia
+    const { data: memRows, error: mErr } = await sbAdmin
+      .from('membership')
+      .select('tifoso_id')
+      .eq('piano_id', '98d705d9-05b2-4572-9680-ea389acb74e2')
+    if (mErr) throw mErr
+    const ids = (memRows || []).map(r => r.tifoso_id).filter(Boolean)
+    if (!ids.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Nessun abbonamento Cortesia trovato.</td></tr>'
+      return
+    }
+    // Step 2: carica i tifosi con quegli ID
+    const { data, error } = await sbAdmin
       .from('tifosi')
-      .select('id, nome, cognome, email, qr_code, auth_user_id, membership!inner(piano_id)')
-      .eq('membership.piano_id', '98d705d9-05b2-4572-9680-ea389acb74e2')
-      .order('cognome')
+      .select('id, nome, cognome, email, qr_code, auth_user_id')
+      .in('id', ids)
     if (error) throw error
     // Ordina per numero (cognome è "1","2",…,"40")
     const sorted = [...data].sort((a, b) => parseInt(a.cognome) - parseInt(b.cognome))
