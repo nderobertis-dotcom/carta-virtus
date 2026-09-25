@@ -366,6 +366,21 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 
   <div class="content" id="main-content" style="display:none">
 
+    <!-- Banner accesso assegnato -->
+    <div id="banner-accesso-assegnato" style="display:none;margin:16px 16px 0;border-radius:14px;overflow:hidden">
+      <div style="background:linear-gradient(135deg,#bf360c,#e65100);padding:18px 20px;display:flex;align-items:center;gap:16px">
+        <div style="width:54px;height:54px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span style="font-size:26px;font-weight:900;color:#fff;font-family:'Barlow Condensed',sans-serif;letter-spacing:-1px" id="banner-acc-lettera">—</span>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Ingresso assegnato per questa gara</div>
+          <div style="font-size:22px;font-weight:800;color:#fff;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;line-height:1.1" id="banner-acc-label">—</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:4px">Controlla che i tifosi provengano da questo accesso</div>
+        </div>
+        <div style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:22px">🚪</div>
+      </div>
+    </div>
+
     <!-- Contatori -->
     <div class="counter-card">
       <div class="counter-item">
@@ -542,11 +557,22 @@ async function initApp() {
       .eq('operatore_email', currentOperatoreEmail)
       .single()
     accessoOperatore = assegn?.accesso || null
-    // Mostra badge accesso nell'header se assegnato
+    // Badge nell'header
     const badgeAcc = document.getElementById('badge-accesso')
     if (badgeAcc) {
       badgeAcc.textContent = accessoOperatore ? 'Accesso ' + accessoOperatore : ''
       badgeAcc.style.display = accessoOperatore ? 'inline-block' : 'none'
+    }
+    // Banner grande accesso assegnato
+    const bannerAcc = document.getElementById('banner-accesso-assegnato')
+    if (bannerAcc) {
+      if (accessoOperatore) {
+        document.getElementById('banner-acc-lettera').textContent = accessoOperatore
+        document.getElementById('banner-acc-label').textContent = 'Ingresso ' + accessoOperatore
+        bannerAcc.style.display = 'block'
+      } else {
+        bannerAcc.style.display = 'none'
+      }
     }
   }
 
