@@ -125,6 +125,33 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 #toast.error{background:var(--rosso)}
 #toast.success{background:var(--verde)}
+
+/* Notifiche trasferta */
+.notif-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:16px}
+.notif-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#0d2147,#1a3a6b)}
+.notif-header-icon{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px}
+.notif-header-text .notif-title{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#fff;text-transform:uppercase}
+.notif-header-text .notif-sub{font-size:11px;color:rgba(255,255,255,.6)}
+.notif-body{padding:20px}
+.notif-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+@media(max-width:500px){.notif-row{grid-template-columns:1fr}}
+.notif-score{display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.notif-score-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.notif-score-input{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;color:var(--blu);width:64px;border:2px solid var(--border);border-radius:8px;text-align:center;background:#fff;padding:4px}
+.notif-score-dash{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:var(--muted)}
+.notif-parziali{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.parz-box{background:var(--bg);border-radius:8px;padding:10px 8px;text-align:center}
+.parz-label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.parz-row{display:flex;gap:4px;justify-content:center}
+.parz-input{width:36px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:var(--blu);border:1.5px solid var(--border);border-radius:6px;text-align:center;background:#fff;padding:2px 0}
+.parz-vs{font-size:14px;color:var(--muted);line-height:1;align-self:center}
+.btn-notif{width:100%;padding:12px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Barlow',sans-serif;color:#fff;transition:all .2s;margin-bottom:8px}
+.btn-notif:disabled{opacity:.45;cursor:not-allowed}
+.btn-notif-inizio{background:var(--verde)}
+.btn-notif-q{background:var(--blu2)}
+.btn-notif-finale{background:var(--rosso)}
+.notif-stato{font-size:12px;color:var(--muted);background:var(--bg);border-radius:8px;padding:10px 14px;margin-top:4px}
+.notif-stato span{font-weight:700;color:var(--verde)}
 </style>
 </head>
 <body>
@@ -189,6 +216,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
     </div>
     <div class="header-right">
+      <span id="badge-accesso" style="display:none;background:#e65100;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.06em"></span>
       <div class="operatore-chip" id="op-chip">—</div>
       <button class="btn-out" onclick="doLogout()">Esci</button>
     </div>
@@ -214,6 +242,125 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
       <div class="no-gara-icon">🏀</div>
       <div class="no-gara-title">Nessuna gara in programma</div>
       <div class="no-gara-text">Non ci sono gare nelle prossime 24 ore. Contatta l'amministratore per pianificare una gara.</div>
+    </div>
+  </div>
+
+  <!-- ── NOTIFICHE TRASFERTA (gare fuori casa) ── -->
+  <div id="notif-trasferta-wrap" style="display:none">
+    <div class="content" style="padding-bottom:0">
+      <div class="notif-card">
+        <div class="notif-header">
+          <div class="notif-header-icon">📧</div>
+          <div class="notif-header-text">
+            <div class="notif-title">Notifiche Trasferta</div>
+            <div class="notif-sub">Invia aggiornamenti email ai tifosi con abbonamento Away</div>
+          </div>
+        </div>
+        <div class="notif-body">
+
+          <!-- Sponsor (opzionale) -->
+          <div class="notif-row">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Sponsor gara (opzionale)</label>
+              <input class="form-input" id="nt-sponsor-nome" placeholder="es. Banca Meridionale"/>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>URL logo sponsor</label>
+              <input class="form-input" id="nt-sponsor-logo" placeholder="https://…/logo.png"/>
+            </div>
+          </div>
+
+          <div style="height:16px"></div>
+
+          <!-- INIZIO GARA -->
+          <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">1 — Inizio gara</div>
+            <button class="btn-notif btn-notif-inizio" id="btn-nt-inizio" onclick="ntInvia('inizio')">
+              🟢 Invia notifica inizio gara
+            </button>
+            <div class="notif-stato" id="nt-stato-inizio" style="display:none">
+              Inviata: <span id="nt-ts-inizio">—</span>
+            </div>
+          </div>
+
+          <!-- PARZIALI PER QUARTO -->
+          <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">2 — Fine quarto (punteggio)</div>
+            <div class="notif-parziali" id="nt-parziali-wrap">
+              <!-- Q1 -->
+              <div class="parz-box">
+                <div class="parz-label">1° Q</div>
+                <div class="parz-row">
+                  <input class="parz-input" id="nt-q1-casa" type="number" min="0" placeholder="0"/>
+                  <span class="parz-vs">-</span>
+                  <input class="parz-input" id="nt-q1-virt" type="number" min="0" placeholder="0"/>
+                </div>
+              </div>
+              <!-- Q2 -->
+              <div class="parz-box">
+                <div class="parz-label">2° Q</div>
+                <div class="parz-row">
+                  <input class="parz-input" id="nt-q2-casa" type="number" min="0" placeholder="0"/>
+                  <span class="parz-vs">-</span>
+                  <input class="parz-input" id="nt-q2-virt" type="number" min="0" placeholder="0"/>
+                </div>
+              </div>
+              <!-- Q3 -->
+              <div class="parz-box">
+                <div class="parz-label">3° Q</div>
+                <div class="parz-row">
+                  <input class="parz-input" id="nt-q3-casa" type="number" min="0" placeholder="0"/>
+                  <span class="parz-vs">-</span>
+                  <input class="parz-input" id="nt-q3-virt" type="number" min="0" placeholder="0"/>
+                </div>
+              </div>
+              <!-- Q4 -->
+              <div class="parz-box">
+                <div class="parz-label">4° Q</div>
+                <div class="parz-row">
+                  <input class="parz-input" id="nt-q4-casa" type="number" min="0" placeholder="0"/>
+                  <span class="parz-vs">-</span>
+                  <input class="parz-input" id="nt-q4-virt" type="number" min="0" placeholder="0"/>
+                </div>
+              </div>
+            </div>
+
+            <!-- Selezione quarto da inviare -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-notif btn-notif-q" style="flex:1;min-width:140px" id="btn-nt-1q" onclick="ntInvia('1q')">📊 Invia fine 1° quarto</button>
+              <button class="btn-notif btn-notif-q" style="flex:1;min-width:140px" id="btn-nt-2q" onclick="ntInvia('2q')">📊 Invia fine 2° quarto</button>
+              <button class="btn-notif btn-notif-q" style="flex:1;min-width:140px" id="btn-nt-3q" onclick="ntInvia('3q')">📊 Invia fine 3° quarto</button>
+              <button class="btn-notif btn-notif-q" style="flex:1;min-width:140px" id="btn-nt-4q" onclick="ntInvia('4q')">📊 Invia fine 4° quarto</button>
+            </div>
+            <div class="notif-stato" id="nt-stato-q" style="display:none">
+              Ultima notifica parziale inviata: <span id="nt-ts-q">—</span>
+            </div>
+          </div>
+
+          <!-- RISULTATO FINALE -->
+          <div style="border-top:1px solid var(--border);padding-top:14px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">3 — Risultato finale</div>
+            <div class="notif-score">
+              <div>
+                <div class="notif-score-label" id="nt-label-casa">Casa</div>
+                <input class="notif-score-input" id="nt-fin-casa" type="number" min="0" placeholder="0"/>
+              </div>
+              <div class="notif-score-dash">–</div>
+              <div>
+                <div class="notif-score-label">Virtus Molfetta</div>
+                <input class="notif-score-input" id="nt-fin-virt" type="number" min="0" placeholder="0"/>
+              </div>
+            </div>
+            <button class="btn-notif btn-notif-finale" id="btn-nt-finale" onclick="ntInvia('finale')">
+              🏁 Invia risultato finale
+            </button>
+            <div class="notif-stato" id="nt-stato-finale" style="display:none">
+              Inviata: <span id="nt-ts-finale">—</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   </div>
 
@@ -316,6 +463,7 @@ let cameraStream = null
 let scanInterval = null
 let countdownInterval = null
 let currentOperatoreEmail = null
+let accessoOperatore = null   // Accesso A-F assegnato per la gara corrente
 
 
 // ── LOGIN ──
@@ -385,6 +533,22 @@ async function initApp() {
   document.getElementById('gara-banner').style.display = 'block'
   document.getElementById('main-content').style.display = 'block'
   document.getElementById('no-gara-msg').style.display = 'none'
+
+  // Carica l'accesso assegnato a questo operatore per la gara
+  if (currentOperatoreEmail) {
+    const { data: assegn } = await sbA.from('operatori_accessi_gara')
+      .select('accesso')
+      .eq('gara_id', garaCorrente.id)
+      .eq('operatore_email', currentOperatoreEmail)
+      .single()
+    accessoOperatore = assegn?.accesso || null
+    // Mostra badge accesso nell'header se assegnato
+    const badgeAcc = document.getElementById('badge-accesso')
+    if (badgeAcc) {
+      badgeAcc.textContent = accessoOperatore ? 'Accesso ' + accessoOperatore : ''
+      badgeAcc.style.display = accessoOperatore ? 'inline-block' : 'none'
+    }
+  }
 
   aggiornaBanner()
   countdownInterval = setInterval(aggiornaBanner, 10000)
@@ -537,7 +701,8 @@ async function verificaIngresso(qr) {
       gara_id:         garaCorrente.id,
       tifoso_id:       tifoso.id,
       piano_nome:      'Sponsor',
-      operatore_email: currentOperatoreEmail || null
+      operatore_email: currentOperatoreEmail || null,
+      accesso:         accessoOperatore || null
     })
 
     mostraRisultato('ok', '🏢', 'Accesso consentito — SPONSOR',
@@ -580,13 +745,31 @@ async function verificaIngresso(qr) {
     return
   }
 
+  // ── Controlla accesso corretto (prima di registrare l'ingresso) ──
+  if (accessoOperatore) {
+    const { data: posto } = await sbA.from('posti')
+      .select('accesso')
+      .eq('tifoso_id', tifoso.auth_user_id)
+      .not('accesso', 'is', null)
+      .limit(1)
+      .maybeSingle()
+
+    if (posto && posto.accesso && posto.accesso !== accessoOperatore) {
+      mostraRisultato('wrong_access', '⚠️', 'Accesso non corretto',
+        `${tifoso.nome} ${tifoso.cognome} deve accedere dall'ingresso <strong>${posto.accesso}</strong>`,
+        pianoNome, 0, false, null, false, posto.accesso)
+      return
+    }
+  }
+
   // ── LOGICA SPECIALE DISABILITY CARD ──
   if (pianoNome?.toLowerCase() === 'disability') {
     const { data: ingresso, error: iErr } = await sbA.from('ingressi_gare').insert({
       gara_id:         garaCorrente.id,
       tifoso_id:       tifoso.id,
       piano_nome:      'Disability',
-      operatore_email: currentOperatoreEmail || null
+      operatore_email: currentOperatoreEmail || null,
+      accesso:         accessoOperatore || null
     }).select().single()
 
     if (iErr) {
@@ -622,7 +805,8 @@ async function verificaIngresso(qr) {
     gara_id:         garaCorrente.id,
     tifoso_id:       tifoso.id,
     piano_nome:      pianoNome,
-    operatore_email: currentOperatoreEmail || null
+    operatore_email: currentOperatoreEmail || null,
+    accesso:         accessoOperatore || null
   }).select().single()
 
   if (iErr) {
@@ -665,14 +849,30 @@ async function verificaIngresso(qr) {
 }
 
 // ── MOSTRA RISULTATO ──
-function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore, annoMinore, hasAccompDisabile) {
+function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore, annoMinore, hasAccompDisabile, accessoCorretto) {
   const card = document.getElementById('result-card')
   const isDisability = tipo === 'disability'
-  const cardType = isDisability ? 'ok' : (tipo === 'ok' ? 'ok' : tipo === 'warn' ? 'warn' : 'err')
+  const isWrongAccess = tipo === 'wrong_access'
+  const cardType = isDisability ? 'ok' : isWrongAccess ? 'warn' : (tipo === 'ok' ? 'ok' : tipo === 'warn' ? 'warn' : 'err')
   card.className = 'result-card show result-' + cardType
+
+  // Banner accesso errato (giallo)
+  if (isWrongAccess) {
+    let wrongBanner = document.getElementById('result-wrong-access')
+    if (!wrongBanner) {
+      wrongBanner = document.createElement('div')
+      wrongBanner.id = 'result-wrong-access'
+      card.appendChild(wrongBanner)
+    }
+    wrongBanner.style.cssText = 'margin-top:16px;background:rgba(245,124,0,.25);border:2px solid rgba(245,124,0,.7);border-radius:10px;padding:14px 16px;text-align:center;font-size:15px;font-weight:700;color:#f57c00;letter-spacing:.02em'
+    wrongBanner.innerHTML = `🚪 Recarsi all'ingresso <span style="font-size:20px;font-weight:900">${accessoCorretto || '?'}</span>`
+  } else {
+    const existing = document.getElementById('result-wrong-access')
+    if (existing) existing.style.display = 'none'
+  }
   document.getElementById('result-icon').textContent = icon
   document.getElementById('result-title').textContent = title
-  document.getElementById('result-sub').textContent = sub
+  document.getElementById('result-sub').innerHTML = sub   // innerHTML per supportare <strong> nel messaggio accesso errato
 
   const det = document.getElementById('result-detail')
   if (piano) {
@@ -847,6 +1047,169 @@ async function registraOperatore() {
       } catch(err) {
     errEl.textContent = err.message
     errEl.style.display = 'block'
+  }
+}
+
+// ── NOTIFICHE TRASFERTA ──
+// Mostra sezione se la gara è fuori casa (luogo != PalaPoli / contiene 'trasferta' o campo diverso)
+function mostraSezioneTrasf() {
+  if (!garaCorrente) return
+  // Considera "trasferta" ogni gara il cui luogo non contiene "PalaPoli" (case-insensitive)
+  const luogo = (garaCorrente.luogo || '').toLowerCase()
+  const isTrasf = !luogo.includes('palapoli')
+  const wrap = document.getElementById('notif-trasferta-wrap')
+  if (wrap) {
+    wrap.style.display = isTrasf ? 'block' : 'none'
+    if (isTrasf) {
+      // Imposta etichetta avversario
+      const labelCasa = document.getElementById('nt-label-casa')
+      if (labelCasa) labelCasa.textContent = garaCorrente.avversario || 'Casa'
+      // Rifletti stati già inviati dalla gara
+      ntRifletti()
+    }
+  }
+}
+
+function ntRifletti() {
+  if (!garaCorrente) return
+  const g = garaCorrente
+  // inizio
+  if (g.notifica_inizio_inviata) {
+    const el = document.getElementById('nt-stato-inizio')
+    const ts = document.getElementById('nt-ts-inizio')
+    if (el) el.style.display = 'block'
+    if (ts) ts.textContent = 'già inviata'
+    const btn = document.getElementById('btn-nt-inizio')
+    if (btn) { btn.textContent = '✅ Inizio già inviato'; btn.disabled = true }
+  }
+  // quarti
+  const qMap = { '1q': 'notifica_1q_inviata', '2q': 'notifica_2q_inviata', '3q': 'notifica_3q_inviata', '4q': 'notifica_4q_inviata' }
+  for (const [q, field] of Object.entries(qMap)) {
+    if (g[field]) {
+      const btn = document.getElementById('btn-nt-' + q)
+      if (btn) { btn.textContent = '✅ ' + q.toUpperCase() + ' già inviato'; btn.disabled = true }
+    }
+  }
+  // finale
+  if (g.notifica_finale_inviata) {
+    const el = document.getElementById('nt-stato-finale')
+    const ts = document.getElementById('nt-ts-finale')
+    if (el) el.style.display = 'block'
+    if (ts) ts.textContent = 'già inviata'
+    const btn = document.getElementById('btn-nt-finale')
+    if (btn) { btn.textContent = '✅ Finale già inviato'; btn.disabled = true }
+  }
+}
+
+async function ntInvia(tipo) {
+  if (!garaCorrente) { toast('Nessuna gara attiva', 'error'); return }
+
+  const sponsorNome = document.getElementById('nt-sponsor-nome')?.value.trim() || ''
+  const sponsorLogo = document.getElementById('nt-sponsor-logo')?.value.trim() || ''
+  const avversario  = garaCorrente.avversario || 'Avversario'
+  const luogo       = garaCorrente.luogo || ''
+  const competizione = 'Serie B Interregionale Girone E — Regular Season'
+
+  // Costruisci dataOra
+  let dataOra = ''
+  if (garaCorrente.data_ora) {
+    const dt = new Date(garaCorrente.data_ora)
+    const d = dt.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' })
+    const t = dt.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
+    dataOra = d + ' ' + t
+  }
+
+  // Disabilita il bottone premuto
+  const btnId = 'btn-nt-' + tipo === 'inizio' ? 'btn-nt-inizio' : tipo === 'finale' ? 'btn-nt-finale' : 'btn-nt-' + tipo
+  const btnEl = document.getElementById('btn-nt-' + (tipo === 'inizio' ? 'inizio' : tipo === 'finale' ? 'finale' : tipo))
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Invio in corso…' }
+
+  let payload = {
+    garaId: garaCorrente.id,
+    tipo,
+    avversario,
+    luogo,
+    competizione,
+    dataOra,
+    ...(sponsorNome && { sponsorNome }),
+    ...(sponsorLogo && { sponsorLogo })
+  }
+
+  // Per quarti e finale: aggiungi punteggi
+  if (tipo !== 'inizio') {
+    const qNums = { '1q':1, '2q':2, '3q':3, '4q':4 }
+    const parziali = []
+    const numQ = tipo === 'finale' ? 4 : (qNums[tipo] || 0)
+    for (let i = 1; i <= numQ; i++) {
+      const c = parseInt(document.getElementById('nt-q' + i + '-casa')?.value || '0') || 0
+      const v = parseInt(document.getElementById('nt-q' + i + '-virt')?.value || '0') || 0
+      parziali.push([c, v])
+    }
+    // Totale: somma parziali per finale, oppure solo il quarto per 1q-4q
+    const casaPts = tipo === 'finale'
+      ? (parseInt(document.getElementById('nt-fin-casa')?.value || '0') || 0)
+      : parziali.reduce((s, p) => s + p[0], 0)
+    const virtusPts = tipo === 'finale'
+      ? (parseInt(document.getElementById('nt-fin-virt')?.value || '0') || 0)
+      : parziali.reduce((s, p) => s + p[1], 0)
+    payload.casaPts   = casaPts
+    payload.virtusPts = virtusPts
+    payload.parziali  = parziali
+  }
+
+  try {
+    const resp = await fetch(WORKER_URL + '/email-trasferta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    const json = await resp.json()
+    if (!resp.ok || json.error) throw new Error(json.error || 'Errore invio')
+
+    // Aggiorna campo Supabase
+    const fieldMap = {
+      'inizio': 'notifica_inizio_inviata',
+      '1q':     'notifica_1q_inviata',
+      '2q':     'notifica_2q_inviata',
+      '3q':     'notifica_3q_inviata',
+      '4q':     'notifica_4q_inviata',
+      'finale': 'notifica_finale_inviata'
+    }
+    if (fieldMap[tipo]) {
+      await sbA.from('gare').update({ [fieldMap[tipo]]: true }).eq('id', garaCorrente.id)
+      garaCorrente[fieldMap[tipo]] = true
+    }
+
+    const ora = new Date().toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
+    const count = json.inviati || '?'
+    toast('📧 Inviata a ' + count + ' tifosi', 'success')
+
+    // Aggiorna UI bottone
+    if (btnEl) {
+      const labels = { inizio:'✅ Inizio inviato', '1q':'✅ 1° Q inviato', '2q':'✅ 2° Q inviato', '3q':'✅ 3° Q inviato', '4q':'✅ 4° Q inviato', finale:'✅ Finale inviato' }
+      btnEl.textContent = labels[tipo] || '✅ Inviato'
+      btnEl.disabled = true
+    }
+
+    // Stato visivo
+    if (tipo === 'inizio') {
+      const el = document.getElementById('nt-stato-inizio')
+      if (el) { el.style.display = 'block'; document.getElementById('nt-ts-inizio').textContent = ora }
+    } else if (tipo === 'finale') {
+      const el = document.getElementById('nt-stato-finale')
+      if (el) { el.style.display = 'block'; document.getElementById('nt-ts-finale').textContent = ora }
+    } else {
+      const el = document.getElementById('nt-stato-q')
+      if (el) { el.style.display = 'block'; document.getElementById('nt-ts-q').textContent = tipo.toUpperCase() + ' alle ' + ora }
+    }
+
+  } catch(err) {
+    toast('Errore: ' + err.message, 'error')
+    if (btnEl) {
+      const labels = { inizio:'🟢 Invia notifica inizio gara', '1q':'📊 Invia fine 1° quarto', '2q':'📊 Invia fine 2° quarto', '3q':'📊 Invia fine 3° quarto', '4q':'📊 Invia fine 4° quarto', finale:'🏁 Invia risultato finale' }
+      btnEl.textContent = labels[tipo] || 'Riprova'
+      btnEl.disabled = false
+    }
   }
 }
 
