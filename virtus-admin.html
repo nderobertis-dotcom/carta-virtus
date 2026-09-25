@@ -7231,26 +7231,17 @@ async function salvaCortesia(tifoso_id, auth_user_id) {
     if (e1) throw e1
     if (!updated || updated.length === 0) throw new Error('Nessuna riga aggiornata in tifosi (verifica ID)')
 
-    // 2) Aggiorna email in auth.users tramite sbAdmin (non bloccante)
-    let authWarn = ''
+    // 2) Aggiorna solo i metadati in auth.users (nome/cognome), NON l'email di accesso
+    //    L'email di accesso resta cortesiaN@virtusfanmolfetta.com (account di sistema)
     if (auth_user_id) {
-      const { error: e2 } = await sbAdmin.auth.admin.updateUserById(auth_user_id, {
-        email,
+      await sbAdmin.auth.admin.updateUserById(auth_user_id, {
         user_metadata: { nome, cognome: cogn, ruolo: 'tifoso' }
       })
-      if (e2) authWarn = ' (⚠️ accesso non aggiornato: ' + e2.message + ')'
+      // ignoriamo errori auth — il dato tifoso è già salvato
     }
 
     btn.textContent = '✓'
     btn.style.background = '#2e7d32'
-    if (authWarn) {
-      const td = btn.closest('tr').querySelector('td:last-child')
-      const warn = document.createElement('div')
-      warn.style.cssText = 'font-size:10px;color:#e65100;margin-top:2px'
-      warn.textContent = authWarn
-      td.appendChild(warn)
-      setTimeout(() => warn.remove(), 5000)
-    }
     setTimeout(() => { btn.disabled = false; btn.textContent = 'Salva'; btn.style.background = '' }, 2000)
   } catch(e) {
     alert('Errore salvataggio: ' + e.message)
