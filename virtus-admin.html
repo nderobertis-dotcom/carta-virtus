@@ -459,8 +459,17 @@ select.form-input:focus{border-color:var(--accent)}
         <!-- TAB LISTA TIFOSI -->
         <div id="tifosi-tab-lista">
         <div class="card-body">
+          <!-- Barra stampa massiva -->
+          <div id="stampa-bar" style="display:none;align-items:center;gap:10px;background:var(--accent-light,#e8f4fd);border:1px solid var(--accent,#1565c0);border-radius:8px;padding:8px 14px;margin-bottom:12px;flex-wrap:wrap">
+            <span id="stampa-count" style="font-weight:600;font-size:13px;color:var(--accent,#1565c0)">0 selezionati</span>
+            <button class="btn btn-primary btn-sm" onclick="stampaMassiva()" style="margin-left:4px">🖨️ Stampa selezionati</button>
+            <button class="btn btn-ghost btn-sm" onclick="deselectAll()">✕ Deseleziona tutti</button>
+          </div>
           <table>
-            <thead><tr><th>Nome</th><th>Email</th><th>Residenza</th><th>Sesso</th><th>Punti</th><th>Stato</th><th>Iscritto il</th><th></th></tr></thead>
+            <thead><tr>
+              <th style="width:32px"><input type="checkbox" id="chk-all" title="Seleziona tutti" onchange="toggleSelectAll(this.checked)" style="cursor:pointer;width:15px;height:15px"></th>
+              <th>Nome</th><th>Email</th><th>Residenza</th><th>Sesso</th><th>Punti</th><th>Stato</th><th>Iscritto il</th><th></th>
+            </tr></thead>
             <tbody id="tifosi-list"></tbody>
           </table>
         </div>
@@ -2467,6 +2476,130 @@ function stampaFanCard(dati) {
   win.document.write(html)
   win.document.close()
 }
+
+// Restituisce l'HTML della fan card come stringa (per stampa massiva)
+function stampaFanCardHTML(dati) {
+  const { nome, cognome, qr_code, piano, stagione, via, cap, citta, data_nascita, posto, posto_acc } = dati
+
+  const pianoBg = { Base:'#546E7A', Bronze:'#8D4925', Silver:'#455A64', Gold:'#B8860B' }[piano] || '#1A3A6B'
+  const pianoDesc = {
+    Base:   'Iscritto al programma fedeltà Virtus Fan Card',
+    Bronze: 'Iscritto al programma fedeltà Virtus Fan Card — Piano Bronze',
+    Silver: 'Iscritto al programma fedeltà Virtus Fan Card — Piano Silver con posto riservato',
+    Gold:   'Iscritto al programma fedeltà Virtus Fan Card — Piano Gold con posto riservato e accesso hospitality'
+  }[piano] || ''
+
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=0D2147&bgcolor=FFFFFF&data=' + encodeURIComponent(qr_code)
+  const LOGO = 'data:image/jpeg;base64,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'
+  const oggi = new Date().toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' })
+
+  return `<style>
+    .fc * { box-sizing:border-box; margin:0; padding:0 }
+    .fc {
+      font-family:'Segoe UI',Arial,sans-serif;
+      color:#111; background:#fff;
+      padding:40px 48px; font-size:13px;
+      line-height:1.6; max-width:700px; margin:0 auto;
+    }
+    .fc .intestazione {
+      display:flex; align-items:center;
+      justify-content:space-between;
+      border-bottom:3px solid #1A3A6B;
+      padding-bottom:16px; margin-bottom:28px
+    }
+    .fc .int-logo { width:64px;height:64px;border-radius:50%;object-fit:contain }
+    .fc .int-testo { flex:1;padding:0 16px }
+    .fc .int-nome-soc { font-size:15px;font-weight:800;color:#1A3A6B;letter-spacing:.04em }
+    .fc .int-indirizzo { font-size:11px;color:#546E7A;margin-top:3px }
+    .fc .int-data { text-align:right;font-size:11px;color:#546E7A }
+    .fc .titolo-doc {
+      background:#1A3A6B;color:#fff;
+      padding:14px 20px;border-radius:8px;
+      margin-bottom:28px;text-align:center
+    }
+    .fc .titolo-doc h1 { font-size:18px;font-weight:800;letter-spacing:.06em }
+    .fc .titolo-doc p { font-size:12px;opacity:.75;margin-top:4px }
+    .fc .contenuto { display:flex;gap:32px;align-items:flex-start;margin-bottom:28px }
+    .fc .dati { flex:1 }
+    .fc .st { font-size:10px;font-weight:700;color:#1A3A6B;text-transform:uppercase;
+              letter-spacing:.1em;border-left:3px solid #F57C00;
+              padding-left:8px;margin:20px 0 10px }
+    .fc table.info { width:100%;border-collapse:collapse }
+    .fc table.info tr td { padding:7px 0;border-bottom:1px solid #eee;font-size:13px }
+    .fc table.info tr td:first-child { color:#546E7A;width:42% }
+    .fc table.info tr td:last-child { font-weight:600 }
+    .fc .piano-badge {
+      display:inline-block; background:${pianoBg};color:#fff;
+      border-radius:4px;padding:3px 10px;
+      font-size:11px;font-weight:700;
+      text-transform:uppercase;letter-spacing:.08em
+    }
+    .fc .qr-box {
+      text-align:center; background:#F0F6FF;
+      border-radius:12px; padding:20px 16px;
+      border:1px solid #DDEEFF; min-width:180px
+    }
+    .fc .qr-box img { display:block;margin:0 auto 8px;border-radius:4px }
+    .fc .qr-code-txt { font-family:monospace;font-size:10px;color:#546E7A;letter-spacing:.1em;word-break:break-all }
+    .fc .qr-label { font-size:11px;font-weight:700;color:#1A3A6B;margin-bottom:8px }
+    .fc .avviso {
+      background:#FFF8E1;border:1px solid #FFE082;
+      border-radius:6px;padding:10px 14px;
+      font-size:11.5px;color:#795548;margin-bottom:20px
+    }
+    .fc .validita {
+      background:#E8F5E9;border:1px solid #A5D6A7;
+      border-radius:6px;padding:10px 14px;
+      font-size:12px;color:#2E7D32;margin-bottom:24px;font-weight:600
+    }
+    .fc .footer {
+      text-align:center;margin-top:32px;
+      font-size:10px;color:#9E9E9E;
+      border-top:1px solid #eee;padding-top:12px
+    }
+  </style>
+  <div class="fc">
+    <div class="intestazione">
+      <img class="int-logo" src="${LOGO}" alt="Virtus"/>
+      <div class="int-testo">
+        <div class="int-nome-soc">SSD POL. VIRTUS 2014 SRL</div>
+        <div class="int-indirizzo">Via Martiri di Via Fani · c/o PalaPoli · 70056 Molfetta (BA)<br>P.IVA 07659340728 · info@virtusmolfetta.com</div>
+      </div>
+      <div class="int-data">Emesso il: <strong>${oggi}</strong><br>Stagione: <strong>${stagione}</strong></div>
+    </div>
+    <div class="titolo-doc">
+      <h1>VIRTUS FAN CARD</h1>
+      <p>Tessera di iscrizione al programma fedeltà ufficiale · Stagione ${stagione}</p>
+    </div>
+    <div class="contenuto">
+      <div class="dati">
+        <div class="st">Dati Titolare</div>
+        <table class="info">
+          <tr><td>Nominativo</td><td>${nome} ${cognome || ''}</td></tr>
+          <tr><td>Piano</td><td><span class="piano-badge">${piano}</span></td></tr>
+          <tr><td>Stagione</td><td>${stagione}</td></tr>
+          ${posto ? `<tr><td>Posto riservato</td><td><strong>${posto}</strong></td></tr>` : ''}
+          ${posto_acc ? `<tr><td>Accompagnatore</td><td>${posto_acc}</td></tr>` : ''}
+          ${via || citta ? `<tr><td>Residenza</td><td>${[via, cap, citta].filter(Boolean).join(' · ')}</td></tr>` : ''}
+          ${data_nascita ? `<tr><td>Data di nascita</td><td>${data_nascita}</td></tr>` : ''}
+          <tr><td>Codice tessera</td><td style="font-family:monospace;font-size:12px">${qr_code}</td></tr>
+        </table>
+        <div class="st" style="margin-top:16px">Validità e utilizzo</div>
+        <div class="validita">✅ Documento valido per la stagione sportiva ${stagione}</div>
+        <p style="font-size:12px;color:#546E7A">${pianoDesc}. Il QR code riportato è personale e non cedibile.</p>
+      </div>
+      <div class="qr-box">
+        <div class="qr-label">QR Code personale</div>
+        <img src="${qrUrl}" width="180" height="180" alt="QR Code"/>
+        <div class="qr-code-txt">${qr_code}</div>
+        <div style="font-size:10px;color:#546E7A;margin-top:8px">Mostrare all'ingresso gare<br>e ai partner convenzionati</div>
+      </div>
+    </div>
+    <div class="avviso">⚠️ Documento personale e non cedibile. In caso di smarrimento contattare info@virtusmolfetta.com.</div>
+    <div class="footer">SSD Pol. Virtus 2014 Srl · Via Martiri di Via Fani, c/o PalaPoli · 70056 Molfetta (BA) · P.IVA 07659340728</div>
+  </div>`
+}
+
 
 async function stampaCardAdmin(tifoso_id) {
   const t = allTifosi.find(x => x.id === tifoso_id)
@@ -4495,7 +4628,8 @@ function renderTifosi(list) {
     const sesso = t.sesso === 'M' ? 'M' : t.sesso === 'F' ? 'F' : t.sesso || '&mdash;'
     const stato_badge = t.stato === 'attivo' ? 'green' : 'red'
     const data = new Date(t.creato_il).toLocaleDateString('it-IT')
-    return `<tr>
+    return `<tr id="trow-${t.id}">
+      <td style="text-align:center"><input type="checkbox" class="tifoso-chk" data-id="${t.id}" style="cursor:pointer;width:15px;height:15px" onchange="onTifosoChk()"></td>
       <td><strong>${t.nome} ${t.cognome}</strong><br><span class="qr-code" style="font-size:10px">${t.qr_code}</span></td>
       <td style="color:var(--muted);font-size:12px">${t.email}<br><span style="font-size:11px">${t.telefono||''}</span></td>
       <td style="font-size:11px;color:var(--muted)">${residenza}</td>
@@ -4510,6 +4644,99 @@ function renderTifosi(list) {
       </td>
     </tr>`
   }).join('')
+}
+
+function onTifosoChk() {
+  const checks = document.querySelectorAll('.tifoso-chk')
+  const sel = [...checks].filter(c => c.checked)
+  const bar = document.getElementById('stampa-bar')
+  const cnt = document.getElementById('stampa-count')
+  const all = document.getElementById('chk-all')
+  bar.style.display = sel.length > 0 ? 'flex' : 'none'
+  cnt.textContent = sel.length + ' selezionat' + (sel.length === 1 ? 'o' : 'i')
+  all.indeterminate = sel.length > 0 && sel.length < checks.length
+  all.checked = sel.length === checks.length && checks.length > 0
+}
+
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.tifoso-chk').forEach(c => c.checked = checked)
+  document.getElementById('chk-all').indeterminate = false
+  onTifosoChk()
+}
+
+function deselectAll() {
+  document.querySelectorAll('.tifoso-chk').forEach(c => c.checked = false)
+  document.getElementById('chk-all').checked = false
+  document.getElementById('chk-all').indeterminate = false
+  document.getElementById('stampa-bar').style.display = 'none'
+}
+
+async function stampaMassiva() {
+  const ids = [...document.querySelectorAll('.tifoso-chk:checked')].map(c => c.dataset.id)
+  if (!ids.length) return
+  const btn = document.querySelector('#stampa-bar .btn-primary')
+  btn.disabled = true
+  btn.textContent = '⏳ Preparazione…'
+
+  try {
+    // Carica membership per tutti gli ID selezionati
+    const { data: memberships } = await sbAdmin.from('membership')
+      .select('tifoso_id, piano:piano_id(nome)')
+      .in('tifoso_id', ids)
+      .eq('stato', 'attiva')
+    const pianoMap = {}
+    ;(memberships || []).forEach(m => { pianoMap[m.tifoso_id] = m.piano?.nome || 'Base' })
+
+    // Carica posti per tutti
+    const { data: postiAll } = await sbAdmin.from('posti')
+      .select('tifoso_id, tribuna, fila, numero, stato')
+      .in('tifoso_id', ids.map(id => allTifosi.find(t => t.id === id)?.auth_user_id).filter(Boolean))
+
+    const postoMap = {}
+    const postoAccMap = {}
+    ;(postiAll || []).forEach(p => {
+      if (p.stato === 'assegnato')     postoMap[p.tifoso_id]    = p
+      if (p.stato === 'accompagnatore') postoAccMap[p.tifoso_id] = p
+    })
+
+    // Genera HTML per ogni tifoso (riusa stampaFanCardHTML)
+    const pages = ids.map(id => {
+      const t = allTifosi.find(x => x.id === id)
+      if (!t) return ''
+      const piano = pianoMap[id] || 'Base'
+      const posto = postoMap[t.auth_user_id]
+      const postoAcc = postoAccMap[t.auth_user_id]
+      return stampaFanCardHTML({
+        nome: t.nome, cognome: t.cognome, qr_code: t.qr_code,
+        piano, stagione: '2026/2027',
+        via: t.via, cap: t.cap, citta: t.citta,
+        data_nascita: t.data_nascita,
+        posto: posto ? `${posto.tribuna} – Fila ${posto.fila} – N° ${posto.numero}` : null,
+        posto_acc: postoAcc ? `${postoAcc.tribuna} – Fila ${postoAcc.fila} – N° ${postoAcc.numero}` : null
+      })
+    }).filter(Boolean)
+
+    // Apri finestra unica con tutte le card separate da page-break
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Fan Card — stampa massiva</title>
+      <style>
+        @media print { .page-break { page-break-after: always; } }
+        body { margin: 0; padding: 0; }
+      </style>
+    </head><body>
+      ${pages.map((p, i) => `<div class="${i < pages.length - 1 ? 'page-break' : ''}">${p}</div>`).join('\n')}
+      <script>window.onload = function(){ window.print(); }<\/script>
+    </body></html>`
+
+    const win = window.open('', '_blank', 'width=900,height=1100')
+    if (!win) { alert('Abilita i popup per stampare.'); return }
+    win.document.open()
+    win.document.write(fullHtml)
+    win.document.close()
+  } finally {
+    btn.disabled = false
+    btn.textContent = '🖨️ Stampa selezionati'
+  }
 }
 
 
