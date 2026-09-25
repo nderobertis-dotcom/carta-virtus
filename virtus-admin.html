@@ -459,6 +459,13 @@ select.form-input:focus{border-color:var(--accent)}
         <!-- TAB LISTA TIFOSI -->
         <div id="tifosi-tab-lista">
         <div class="card-body">
+          <!-- Barra ricerca -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+            <input id="tifosi-search" type="text" placeholder="🔍 Cerca per cognome, telefono o email…"
+              oninput="filtraTifosi()"
+              style="flex:1;min-width:220px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text)">
+            <span id="tifosi-results" style="font-size:12px;color:var(--muted);white-space:nowrap"></span>
+          </div>
           <!-- Barra stampa massiva -->
           <div id="stampa-bar" style="display:none;align-items:center;gap:10px;background:var(--accent-light,#e8f4fd);border:1px solid var(--accent,#1565c0);border-radius:8px;padding:8px 14px;margin-bottom:12px;flex-wrap:wrap">
             <span id="stampa-count" style="font-weight:600;font-size:13px;color:var(--accent,#1565c0)">0 selezionati</span>
@@ -468,7 +475,14 @@ select.form-input:focus{border-color:var(--accent)}
           <table>
             <thead><tr>
               <th style="width:32px"><input type="checkbox" id="chk-all" title="Seleziona tutti" onchange="toggleSelectAll(this.checked)" style="cursor:pointer;width:15px;height:15px"></th>
-              <th>Nome</th><th>Email</th><th>Residenza</th><th>Sesso</th><th>Punti</th><th>Stato</th><th>Iscritto il</th><th></th>
+              <th class="th-sort" data-col="cognome" onclick="sortTifosi('cognome')" style="cursor:pointer;user-select:none">Nome <span id="sort-cognome"></span></th>
+              <th class="th-sort" data-col="email" onclick="sortTifosi('email')" style="cursor:pointer;user-select:none">Email <span id="sort-email"></span></th>
+              <th>Residenza</th>
+              <th class="th-sort" data-col="sesso" onclick="sortTifosi('sesso')" style="cursor:pointer;user-select:none">Sesso <span id="sort-sesso"></span></th>
+              <th class="th-sort" data-col="punti_saldo" onclick="sortTifosi('punti_saldo')" style="cursor:pointer;user-select:none">Punti <span id="sort-punti_saldo"></span></th>
+              <th class="th-sort" data-col="stato" onclick="sortTifosi('stato')" style="cursor:pointer;user-select:none">Stato <span id="sort-stato"></span></th>
+              <th class="th-sort" data-col="creato_il" onclick="sortTifosi('creato_il')" style="cursor:pointer;user-select:none">Iscritto il <span id="sort-creato_il">▼</span></th>
+              <th></th>
             </tr></thead>
             <tbody id="tifosi-list"></tbody>
           </table>
@@ -4614,7 +4628,7 @@ async function loadTifosi() {
   const { data } = await sbAdmin.from('tifosi').select('*').order('creato_il', { ascending: false })
   allTifosi = data || []
   document.getElementById('tifosi-count').textContent = `${allTifosi.length} tifosi`
-  renderTifosi(allTifosi)
+  filtraTifosi()
 }
 
 function renderTifosi(list) {
@@ -4644,6 +4658,48 @@ function renderTifosi(list) {
       </td>
     </tr>`
   }).join('')
+}
+
+// --- FILTRO E ORDINAMENTO TIFOSI ---
+let _sortCol = 'creato_il'
+let _sortDir = -1  // -1 = desc, 1 = asc
+
+function filtraTifosi() {
+  const q = (document.getElementById('tifosi-search')?.value || '').toLowerCase().trim()
+  const filtered = q
+    ? allTifosi.filter(t =>
+        (t.cognome || '').toLowerCase().includes(q) ||
+        (t.nome || '').toLowerCase().includes(q) ||
+        (t.email || '').toLowerCase().includes(q) ||
+        (t.telefono || '').toLowerCase().includes(q)
+      )
+    : allTifosi
+  const sorted = sortedList(filtered)
+  renderTifosi(sorted)
+  const res = document.getElementById('tifosi-results')
+  if (res) res.textContent = q ? `${sorted.length} risultat${sorted.length === 1 ? 'o' : 'i'}` : ''
+}
+
+function sortedList(list) {
+  return [...list].sort((a, b) => {
+    let va = a[_sortCol] ?? ''
+    let vb = b[_sortCol] ?? ''
+    if (_sortCol === 'punti_saldo') { va = Number(va); vb = Number(vb) }
+    else if (_sortCol === 'creato_il') { va = new Date(va); vb = new Date(vb) }
+    else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase() }
+    if (va < vb) return -1 * _sortDir
+    if (va > vb) return 1 * _sortDir
+    return 0
+  })
+}
+
+function sortTifosi(col) {
+  if (_sortCol === col) { _sortDir *= -1 } else { _sortCol = col; _sortDir = 1 }
+  // aggiorna indicatori
+  document.querySelectorAll('[id^="sort-"]').forEach(el => el.textContent = '')
+  const ind = document.getElementById('sort-' + col)
+  if (ind) ind.textContent = _sortDir === 1 ? ' ▲' : ' ▼'
+  filtraTifosi()
 }
 
 function onTifosoChk() {
