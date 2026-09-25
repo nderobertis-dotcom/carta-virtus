@@ -1198,6 +1198,22 @@ select.form-input:focus{border-color:var(--accent)}
           </table>
         </div>
       </div>
+      <!-- Assegnazione operatori → accessi per gara -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <div class="card-title">🚪 Assegnazione accessi per gara</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="acc-gara-sel" class="form-input" style="max-width:300px;font-size:13px" onchange="loadAccesciGara()">
+              <option value="">— Seleziona gara —</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadGarePerAccessi()">↻</button>
+          </div>
+        </div>
+        <div class="card-body" id="accessi-gara-body">
+          <div style="font-size:13px;color:var(--muted);padding:16px 0">Seleziona una gara per gestire l'assegnazione degli operatori agli accessi A–F.</div>
+        </div>
+      </div>
+
       <div class="card" id="op-scansioni-card" style="display:none">
         <div class="card-header">
           <div class="card-title" id="op-scansioni-title">Scansioni operatore</div>
@@ -5901,6 +5917,8 @@ async function loadOperatori() {
     </tr>`
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Nessun operatore registrato</td></tr>'
 
+  // Carica gare per la sezione accessi
+  await loadGarePerAccessi()
   // Carica anche gli operatori pending
   await loadPendingOperatori()
 }
@@ -5961,7 +5979,98 @@ function esportaScansioni() {
   URL.revokeObjectURL(url)
 }
 
-//  GARE 
+// ── ACCESSI GARA ──
+let _operatoriList = []  // cache operatori per select accessi
+
+async function loadGarePerAccessi() {
+  const { data: gare } = await sbAdmin.from('gare')
+    .select('id, titolo, data_ora')
+    .order('data_ora', { ascending: false })
+    .limit(20)
+  const sel = document.getElementById('acc-gara-sel')
+  if (!sel) return
+  const prev = sel.value
+  sel.innerHTML = '<option value="">— Seleziona gara —</option>' +
+    (gare || []).map(g => {
+      const d = new Date(g.data_ora).toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit' })
+      return `<option value="${g.id}">${d} · ${g.titolo}</option>`
+    }).join('')
+  if (prev) sel.value = prev
+  // Carica anche lista operatori per i select
+  const { data: ops } = await sbAdmin.from('operatori').select('email, nome, cognome')
+  _operatoriList = ops || []
+  if (sel.value) loadAccesciGara()
+}
+
+async function loadAccesciGara() {
+  const garaId = document.getElementById('acc-gara-sel')?.value
+  const body = document.getElementById('accessi-gara-body')
+  if (!body) return
+  if (!garaId) {
+    body.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:16px 0">Seleziona una gara per gestire l\'assegnazione degli operatori agli accessi A–F.</div>'
+    return
+  }
+
+  const { data: assegnazioni } = await sbAdmin.from('operatori_accessi_gara')
+    .select('accesso, operatore_email')
+    .eq('gara_id', garaId)
+
+  const mappa = {}  // accesso → email
+  ;(assegnazioni || []).forEach(a => { mappa[a.accesso] = a.operatore_email })
+
+  const accessi = ['A', 'B', 'C', 'D', 'E', 'F']
+  const optsHtml = '<option value="">— non assegnato —</option>' +
+    _operatoriList.map(op => `<option value="${op.email}">${op.email}${op.nome ? ' ('+op.nome+' '+(op.cognome||'')+')' : ''}</option>`).join('')
+
+  body.innerHTML = `
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
+      Assegna un operatore a ciascun accesso fisico del PalaPoli. L'operatore vedrà un avviso giallo se scansiona una card non prevista per il suo accesso.
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+      ${accessi.map(acc => `
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${acc}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Accesso ${acc}</div>
+            <select id="acc-op-${acc}" style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;background:var(--bg2);color:var(--text)" onchange="salvaAccessoGara('${acc}')">
+              ${optsHtml}
+            </select>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--muted)">Le modifiche vengono salvate automaticamente alla selezione.</div>
+  `
+
+  // Imposta valori correnti
+  accessi.forEach(acc => {
+    const sel = document.getElementById('acc-op-' + acc)
+    if (sel && mappa[acc]) sel.value = mappa[acc]
+  })
+}
+
+async function salvaAccessoGara(accesso) {
+  const garaId = document.getElementById('acc-gara-sel')?.value
+  const email  = document.getElementById('acc-op-' + accesso)?.value
+  if (!garaId) return
+
+  if (!email) {
+    // Rimuovi assegnazione
+    await sbAdmin.from('operatori_accessi_gara')
+      .delete()
+      .eq('gara_id', garaId)
+      .eq('accesso', accesso)
+    toast(`Accesso ${accesso}: assegnazione rimossa`, 'success')
+    return
+  }
+
+  const { error } = await sbAdmin.from('operatori_accessi_gara')
+    .upsert({ gara_id: garaId, operatore_email: email, accesso }, { onConflict: 'gara_id,operatore_email' })
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast(`Accesso ${accesso} → ${email}`, 'success')
+}
+
+//  GARE
 async function loadGare() {
   const { data, error } = await sbAdmin.from('gare')
     .select('*')
