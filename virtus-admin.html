@@ -4716,23 +4716,23 @@ async function stampaMassiva() {
       })
     }).filter(Boolean)
 
-    // Apri finestra unica con tutte le card separate da page-break
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
-      <title>Fan Card — stampa massiva</title>
-      <style>
-        @media print { .page-break { page-break-after: always; } }
-        body { margin: 0; padding: 0; }
-      </style>
-    </head><body>
-      ${pages.map((p, i) => `<div class="${i < pages.length - 1 ? 'page-break' : ''}">${p}</div>`).join('\n')}
-      <script>window.onload = function(){ window.print(); }<\/script>
-    </body></html>`
-
-    const win = window.open('', '_blank', 'width=900,height=1100')
-    if (!win) { alert('Abilita i popup per stampare.'); return }
-    win.document.open()
-    win.document.write(fullHtml)
-    win.document.close()
+    // Apri una finestra separata per ogni tifoso
+    let bloccati = 0
+    for (const pageHtml of pages) {
+      const singleHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
+        <title>Fan Card</title>
+        <style>body{margin:0;padding:0} @media print{.no-print{display:none}}</style>
+      </head><body>
+        ${pageHtml}
+        <script>window.onload=function(){window.print()}<\/script>
+      </body></html>`
+      const win = window.open('', '_blank', 'width=900,height=1100')
+      if (!win) { bloccati++; continue }
+      win.document.open()
+      win.document.write(singleHtml)
+      win.document.close()
+    }
+    if (bloccati > 0) alert(`${bloccati} finestra/e bloccata/e dal browser. Abilita i popup per questo sito.`)
   } finally {
     btn.disabled = false
     btn.textContent = '🖨️ Stampa selezionati'
