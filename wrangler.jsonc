@@ -1,0 +1,5 @@
+{
+  "name": "carta-virtus-auth",
+  "compatibility_date": "2026-09-26",
+  "main": "carta-virtus-auth-worker.js"
+}
