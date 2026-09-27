@@ -1466,6 +1466,113 @@ select.form-input:focus{border-color:var(--accent)}
       </div>
     </div>
 
+    <!-- SEZIONE COMUNICATI STAMPA -->
+    <div class="section" id="section-comunicati-stampa">
+
+      <!-- Tab bar -->
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px">
+        <button id="cs-tab-testate" onclick="switchComunicatiTab('testate',this)"
+          style="background:none;border:none;border-bottom:2px solid var(--accent);margin-bottom:-2px;
+                 padding:10px 20px;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif">
+          📋 Testate
+        </button>
+        <button id="cs-tab-nuovo" onclick="switchComunicatiTab('nuovo',this)"
+          style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;
+                 padding:10px 20px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+          ✉️ Nuovo Comunicato
+        </button>
+        <button id="cs-tab-storico" onclick="switchComunicatiTab('storico',this)"
+          style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;
+                 padding:10px 20px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+          📁 Storico
+        </button>
+      </div>
+
+      <!-- TAB: TESTATE -->
+      <div id="cs-pane-testate">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin:0">
+            Testate Giornalistiche
+          </h3>
+          <button class="btn btn-primary btn-sm" onclick="apriModalTestata()">+ Aggiungi testata</button>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>Testata</th>
+                  <th>Email</th>
+                  <th>Stato</th>
+                  <th style="text-align:right">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="cs-testate-body">
+                <tr><td colspan="4"><div class="empty"><div class="empty-icon">📰</div><p>Caricamento...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: NUOVO COMUNICATO -->
+      <div id="cs-pane-nuovo" style="display:none">
+        <div class="card" style="max-width:760px">
+          <div class="card-header">
+            <div class="card-title">Redigi comunicato stampa</div>
+          </div>
+          <div class="card-body" style="padding:24px">
+            <div class="form-group">
+              <label>Oggetto / Titolo *</label>
+              <input class="form-input" id="cs-titolo" placeholder="es. Virtus Molfetta – Comunicato post-partita gara 3"/>
+            </div>
+            <div class="form-group">
+              <label>Testo del comunicato *</label>
+              <textarea class="form-input" id="cs-testo" rows="14"
+                style="resize:vertical;font-size:13px;line-height:1.65"
+                placeholder="Scrivi qui il testo del comunicato. Puoi usare gli invii per formattare i paragrafi."></textarea>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:var(--muted)">
+              Il comunicato verrà inviato a tutte le testate attive.
+              <strong id="cs-count-testate" style="color:var(--accent)">—</strong> testate
+            </div>
+            <div id="cs-send-error" style="display:none;background:#fef2f2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button class="btn btn-ghost" onclick="resetComunicatoForm()">Cancella</button>
+              <button class="btn btn-primary" id="cs-btn-invia" onclick="inviaComunicato()">
+                Invia comunicato
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: STORICO -->
+      <div id="cs-pane-storico" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Comunicati inviati</div>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data invio</th>
+                  <th>Titolo</th>
+                  <th>Destinatari</th>
+                  <th>Inviato da</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cs-storico-body">
+                <tr><td colspan="5"><div class="empty"><div class="empty-icon">📁</div><p>Nessun comunicato inviato</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -8167,113 +8274,6 @@ document.addEventListener('DOMContentLoaded', function() {
   window.chiudiModalComunicatoTesto = chiudiModalComunicatoTesto;
 });
 </script>
-
-<!-- SECTION: COMUNICATI STAMPA -->
-<div class="section" id="section-comunicati-stampa">
-
-  <!-- Tab bar -->
-  <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px">
-    <button id="cs-tab-testate" onclick="switchComunicatiTab('testate',this)"
-      style="background:none;border:none;border-bottom:2px solid var(--accent);margin-bottom:-2px;
-             padding:10px 20px;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif">
-      📋 Testate
-    </button>
-    <button id="cs-tab-nuovo" onclick="switchComunicatiTab('nuovo',this)"
-      style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;
-             padding:10px 20px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
-      ✉️ Nuovo Comunicato
-    </button>
-    <button id="cs-tab-storico" onclick="switchComunicatiTab('storico',this)"
-      style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;
-             padding:10px 20px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
-      📁 Storico
-    </button>
-  </div>
-
-  <!-- TAB: TESTATE -->
-  <div id="cs-pane-testate">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h3 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin:0">
-        Testate Giornalistiche
-      </h3>
-      <button class="btn btn-primary btn-sm" onclick="apriModalTestata()">+ Aggiungi testata</button>
-    </div>
-    <div class="card">
-      <div class="card-body">
-        <table>
-          <thead>
-            <tr>
-              <th>Testata</th>
-              <th>Email</th>
-              <th>Stato</th>
-              <th style="text-align:right">Azioni</th>
-            </tr>
-          </thead>
-          <tbody id="cs-testate-body">
-            <tr><td colspan="4"><div class="empty"><div class="empty-icon">📰</div><p>Caricamento...</p></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB: NUOVO COMUNICATO -->
-  <div id="cs-pane-nuovo" style="display:none">
-    <div class="card" style="max-width:760px">
-      <div class="card-header">
-        <div class="card-title">Redigi comunicato stampa</div>
-      </div>
-      <div class="card-body" style="padding:24px">
-        <div class="form-group">
-          <label>Oggetto / Titolo *</label>
-          <input class="form-input" id="cs-titolo" placeholder="es. Virtus Molfetta – Comunicato post-partita gara 3"/>
-        </div>
-        <div class="form-group">
-          <label>Testo del comunicato *</label>
-          <textarea class="form-input" id="cs-testo" rows="14"
-            style="resize:vertical;font-size:13px;line-height:1.65"
-            placeholder="Scrivi qui il testo del comunicato. Puoi usare gli invii per formattare i paragrafi."></textarea>
-        </div>
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:var(--muted)">
-          Il comunicato verrà inviato a tutte le testate attive.
-          <span id="cs-count-testate" style="font-weight:600;color:var(--accent)">— testate</span>
-        </div>
-        <div id="cs-send-error" style="display:none;background:#fef2f2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px"></div>
-        <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button class="btn btn-ghost" onclick="resetComunicatoForm()">Cancella</button>
-          <button class="btn btn-primary" id="cs-btn-invia" onclick="inviaComunicato()">
-            Invia comunicato
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB: STORICO -->
-  <div id="cs-pane-storico" style="display:none">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Comunicati inviati</div>
-      </div>
-      <div class="card-body">
-        <table>
-          <thead>
-            <tr>
-              <th>Data invio</th>
-              <th>Titolo</th>
-              <th>Destinatari</th>
-              <th>Inviato da</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="cs-storico-body">
-            <tr><td colspan="4"><div class="empty"><div class="empty-icon">📁</div><p>Caricamento...</p></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- MODAL: Aggiungi/Modifica Testata -->
 <div class="modal-overlay" id="modal-testata">
