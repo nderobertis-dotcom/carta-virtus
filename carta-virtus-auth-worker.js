@@ -459,7 +459,9 @@ async function handleEmailTrasferta(request, env) {
   const html = buildEmailHtml({ tipo, avversario, luogo, competizione, casaPts, virtusPts, parziali, sponsorNome, sponsorLogo, dataOra })
 
   // Invia a tutti i tifosi (batch, max 50 per chiamata Resend)
-  const emails = tifosi.map(t => t.email).filter(Boolean)
+  // nderobertis@gmail.com riceve sempre una copia di verifica
+  const ADMIN_CC = 'nderobertis@gmail.com'
+  const emails = [...new Set([...tifosi.map(t => t.email).filter(Boolean), ADMIN_CC])]
   let inviati = 0, errori = []
 
   // Resend supporta to: array (max 50)

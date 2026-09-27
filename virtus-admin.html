@@ -2926,6 +2926,26 @@ async function loadMsReport() {
               '<td style="text-align:right">€ '+rateo+'</td>' +
             '</tr>'
           }).join('')}
+          ${(perPiano['Cortesia'] || 0) > 0 ? (() => {
+            const nCort = perPiano['Cortesia'] || 0
+            return '<tr style="color:var(--muted)">' +
+              '<td><strong>Cortesia</strong> <span style="font-size:10px;background:var(--bg3);border-radius:4px;padding:1px 6px;vertical-align:middle">gratuiti</span></td>' +
+              '<td style="text-align:center">'+nCort+'</td>' +
+              '<td style="text-align:right">€ 0.00</td>' +
+              '<td style="text-align:right">€ 0.00</td>' +
+              '<td style="text-align:right">€ 0.00</td>' +
+            '</tr>'
+          })() : ''}
+          ${(perPiano['Disability'] || 0) > 0 ? (() => {
+            const nDis = perPiano['Disability'] || 0
+            return '<tr style="color:var(--muted)">' +
+              '<td><strong>Disability</strong> <span style="font-size:10px;background:var(--bg3);border-radius:4px;padding:1px 6px;vertical-align:middle">gratuiti</span></td>' +
+              '<td style="text-align:center">'+nDis+'</td>' +
+              '<td style="text-align:right">€ 0.00</td>' +
+              '<td style="text-align:right">€ 0.00</td>' +
+              '<td style="text-align:right">€ 0.00</td>' +
+            '</tr>'
+          })() : ''}
           <tr style="font-weight:700;border-top:2px solid var(--border);background:var(--bg3)">
             <td>Totale</td>
             <td style="text-align:center">${Object.values(perPiano).reduce((a,b)=>a+b,0)}</td>
@@ -2935,6 +2955,9 @@ async function loadMsReport() {
           </tr>
         </tbody>
       </table>
+      ${((perPiano['Cortesia'] || 0) > 0 || (perPiano['Disability'] || 0) > 0) ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">
+        * Gli abbonamenti Cortesia e Disability sono gratuiti e non concorrono all'incasso. Il rateo/gara è calcolato solo sui piani a pagamento.
+      </div>` : ''}
     </div>
 
     <!-- TAGLIE MAGLIE -->
@@ -4477,7 +4500,13 @@ async function inviaNotificaEsterna(tipo) {
       const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/notify-trasferta', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ garaId, tipo: 'inizio', titolo, body })
+        body: JSON.stringify({
+          garaId, tipo: 'inizio', avversario: opp,
+          luogo: g?.luogo||'', competizione: g?.competizione||'',
+          dataOra: g?.data_ora||'',
+          sponsorNome: sponsor||null,
+          sponsorLogo: document.getElementById('ge-sponsor-logo')?.value.trim()||null
+        })
       })
       if (resp.ok) {
         toast('✅ Notifica Inizio Gara inviata', 'success')
@@ -4517,7 +4546,14 @@ async function inviaNotificaEsterna(tipo) {
     const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/notify-trasferta',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ garaId, tipo, titolo, body })
+      body: JSON.stringify({
+          garaId, tipo, avversario: opp,
+          luogo: g?.luogo||'', competizione: g?.competizione||'',
+          dataOra: g?.data_ora||'',
+          casaPts: ptsCasa||'0', virtusPts: ptsVirtus||'0',
+          sponsorNome: sponsor||null,
+          sponsorLogo: document.getElementById('ge-sponsor-logo')?.value.trim()||null
+        })
     })
     if(resp.ok){
       toast(`✅ Notifica ${labels[tipo]} inviata`,'success')
