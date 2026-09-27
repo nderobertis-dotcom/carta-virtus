@@ -4497,7 +4497,7 @@ async function inviaNotificaEsterna(tipo) {
 
     await sbAdmin.from('gare').update({ notifica_inizio_inviata: true }).eq('id', garaId)
     try {
-      const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/notify-trasferta', {
+      const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/email-trasferta', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -4543,7 +4543,7 @@ async function inviaNotificaEsterna(tipo) {
   await sbAdmin.from('gare').update({ [campoRis]:risultato, [campoInv]:true }).eq('id',garaId)
 
   try {
-    const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/notify-trasferta',{
+    const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev/email-trasferta',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
