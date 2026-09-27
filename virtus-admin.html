@@ -316,6 +316,11 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
       Operatori
     </div>
+    <div class="nav-section" id="nav-section-stampa">Ufficio Stampa</div>
+    <div class="nav-item" id="nav-comunicati" onclick="showSection('comunicati-stampa')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v2"/><path d="M4 22a2 2 0 01-2-2V9a1 1 0 011-1h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V22"/><path d="M14 4v4h4"/></svg>
+      Comunicati Stampa
+    </div>
     <div class="nav-section">Commerciale</div>
     <div class="nav-item" onclick="showSection('merchants')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -2310,18 +2315,35 @@ async function doLogin() {
   }
 
   const ruolo = data.user?.user_metadata?.ruolo
-  if (ruolo !== 'admin' && ruolo !== 'superadmin') {
+  const ruoliAmmessi = ['admin', 'superadmin', 'addetto_stampa']
+  if (!ruoliAmmessi.includes(ruolo)) {
     await sb.auth.signOut()
-    errEl.textContent = 'Account non autorizzato come amministratore'
+    errEl.textContent = 'Account non autorizzato'
     errEl.style.display = 'block'
     return
   }
 
+  currentUser = data.user
   document.getElementById('login-screen').style.display = 'none'
   const nomeDisplay = data.user?.user_metadata?.nome || email.split('@')[0]
   document.getElementById('user-email-display').textContent = nomeDisplay
   document.getElementById('user-avatar').textContent = nomeDisplay[0].toUpperCase()
-  initApp()
+
+  if (ruolo === 'addetto_stampa') {
+    // Nascondi tutto eccetto ufficio stampa
+    document.querySelectorAll('.nav-section').forEach(el => el.style.display = 'none')
+    document.querySelectorAll('.nav-item').forEach(el => el.style.display = 'none')
+    document.getElementById('nav-section-stampa').style.display = 'block'
+    document.getElementById('nav-comunicati').style.display = 'flex'
+    // Vai direttamente alla sezione comunicati
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
+    document.getElementById('section-comunicati-stampa').classList.add('active')
+    document.getElementById('nav-comunicati').classList.add('active')
+    document.getElementById('topbar-title').textContent = 'Comunicati Stampa'
+    loadComunicatiStampa()
+  } else {
+    initApp()
+  }
 }
 
 async function doLogout() {
@@ -4581,7 +4603,8 @@ function showSection(name) {
     dashboard:'Dashboard', tifosi:'Tifosi', partner:'Partner',
     cortesia:'Abbonamenti Cortesia',
     premi:'Catalogo premi', campagne:'Campagne', transazioni:'Transazioni', report:'Report',
-    merchants:'Merchant', 'fop-contratti':'Contratti FOP', 'fop-catalogo':'Catalogo FOP'
+    merchants:'Merchant', 'fop-contratti':'Contratti FOP', 'fop-catalogo':'Catalogo FOP',
+    'comunicati-stampa':'Comunicati Stampa'
   }
   document.getElementById('topbar-title').textContent = titles[name] || name
 
@@ -4610,6 +4633,7 @@ function showSection(name) {
   if (name === 'merchants')     loadMerchants()
   if (name === 'fop-contratti') loadFopContratti()
   if (name === 'fop-catalogo')  { loadFopProdotti(); loadFopPianta() }
+  if (name === 'comunicati-stampa') loadComunicatiStampa()
 }
 
 //  INIT 
@@ -7805,6 +7829,202 @@ function escHtml(str) {
 }
 // ────────────────────────────────────────────────────────────────────
 
+// ═══════════════════════════════════════════════════════════════════
+//  COMUNICATI STAMPA
+// ═══════════════════════════════════════════════════════════════════
+
+let _testate = [] // cache locale per la modale edit
+
+function switchComunicatiTab(tab, el) {
+  // Reset tab buttons
+  ;['testate','nuovo','storico'].forEach(t => {
+    const btn = document.getElementById('cs-tab-' + t)
+    if (btn) {
+      btn.style.borderBottomColor = 'transparent'
+      btn.style.color = 'var(--muted)'
+    }
+    const pane = document.getElementById('cs-pane-' + t)
+    if (pane) pane.style.display = 'none'
+  })
+  // Activate selected
+  el.style.borderBottomColor = 'var(--accent)'
+  el.style.color = 'var(--accent)'
+  document.getElementById('cs-pane-' + tab).style.display = 'block'
+  if (tab === 'testate') loadTestate()
+  if (tab === 'storico') loadStorico()
+  if (tab === 'nuovo') loadCountTestate()
+}
+
+async function loadComunicatiStampa() {
+  // Activate testate tab by default
+  const btn = document.getElementById('cs-tab-testate')
+  if (btn) switchComunicatiTab('testate', btn)
+  await loadCountTestate()
+}
+
+async function loadCountTestate() {
+  const { count } = await sb.from('testate').select('*', { count: 'exact', head: true }).eq('attiva', true)
+  const el = document.getElementById('cs-count-testate')
+  if (el) el.textContent = count || 0
+}
+
+async function loadTestate() {
+  const tbody = document.getElementById('cs-testate-body')
+  if (!tbody) return
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Caricamento…</td></tr>'
+  const { data, error } = await sb.from('testate').select('*').order('nome')
+  if (error || !data) { tbody.innerHTML = '<tr><td colspan="4">Errore caricamento</td></tr>'; return }
+  _testate = data
+  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Nessuna testata</td></tr>'; return }
+  tbody.innerHTML = data.map(t => `
+    <tr>
+      <td>${escHtml(t.nome)}</td>
+      <td>${escHtml(t.email)}</td>
+      <td><span class="badge ${t.attiva ? 'badge-green' : 'badge-gray'}">${t.attiva ? 'Attiva' : 'Disattiva'}</span></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-sm btn-ghost" onclick="apriModalTestata('${t.id}')">Modifica</button>
+        <button class="btn btn-sm ${t.attiva ? 'btn-ghost' : 'btn-primary'}" onclick="toggleTestata('${t.id}',${t.attiva})">${t.attiva ? 'Disattiva' : 'Attiva'}</button>
+        <button class="btn btn-sm btn-danger" onclick="eliminaTestata('${t.id}')">Elimina</button>
+      </td>
+    </tr>`).join('')
+}
+
+function apriModalTestata(id) {
+  const t = id ? _testate.find(x => x.id === id) : null
+  document.getElementById('modal-testata-title').textContent = t ? 'Modifica testata' : 'Aggiungi testata'
+  document.getElementById('testata-id').value = t ? t.id : ''
+  document.getElementById('testata-nome').value = t ? t.nome : ''
+  document.getElementById('testata-email').value = t ? t.email : ''
+  document.getElementById('testata-error').style.display = 'none'
+  openModal('modal-testata')
+}
+
+function chiudiModalTestata() {
+  document.getElementById('modal-testata').style.display = 'none'
+}
+
+async function salvaTestata() {
+  const id    = document.getElementById('testata-id').value
+  const nome  = document.getElementById('testata-nome').value.trim()
+  const email = document.getElementById('testata-email').value.trim()
+  const errEl = document.getElementById('testata-error')
+  if (!nome || !email) { errEl.textContent = 'Compila nome ed email'; errEl.style.display = 'block'; return }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { errEl.textContent = 'Email non valida'; errEl.style.display = 'block'; return }
+  errEl.style.display = 'none'
+
+  let err
+  if (id) {
+    const res = await sb.from('testate').update({ nome, email }).eq('id', id)
+    err = res.error
+  } else {
+    const res = await sb.from('testate').insert({ nome, email, attiva: true })
+    err = res.error
+  }
+  if (err) { errEl.textContent = 'Errore: ' + err.message; errEl.style.display = 'block'; return }
+  chiudiModalTestata()
+  toast(id ? 'Testata aggiornata' : 'Testata aggiunta', 'success')
+  loadTestate()
+  loadCountTestate()
+}
+
+async function toggleTestata(id, attiva) {
+  const { error } = await sb.from('testate').update({ attiva: !attiva }).eq('id', id)
+  if (error) { toast('Errore aggiornamento', 'error'); return }
+  toast(attiva ? 'Testata disattivata' : 'Testata attivata', 'success')
+  loadTestate()
+  loadCountTestate()
+}
+
+async function eliminaTestata(id) {
+  const t = _testate.find(x => x.id === id)
+  if (!confirm(`Eliminare "${t?.nome || 'questa testata'}"?`)) return
+  const { error } = await sb.from('testate').delete().eq('id', id)
+  if (error) { toast('Errore eliminazione', 'error'); return }
+  toast('Testata eliminata', 'success')
+  loadTestate()
+  loadCountTestate()
+}
+
+async function inviaComunicato() {
+  const titolo  = document.getElementById('cs-titolo').value.trim()
+  const testo   = document.getElementById('cs-testo').value.trim()
+  const errEl   = document.getElementById('cs-send-error')
+  const btn     = document.getElementById('cs-btn-invia')
+  errEl.style.display = 'none'
+
+  if (!titolo || !testo) {
+    errEl.textContent = 'Compila titolo e testo del comunicato'
+    errEl.style.display = 'block'
+    return
+  }
+
+  const mittente = currentUser?.email || 'admin'
+  btn.disabled = true
+  btn.textContent = 'Invio in corso…'
+
+  try {
+    const WORKER = 'https://carta-virtus-auth.nderobertis.workers.dev'
+    const res = await fetch(WORKER + '/email-comunicato', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titolo, testo, mittente })
+    })
+    const json = await res.json()
+    if (res.ok && json.ok) {
+      toast(`Comunicato inviato a ${json.inviati} testate`, 'success')
+      resetComunicatoForm()
+      loadCountTestate()
+    } else {
+      errEl.textContent = json.error || 'Errore durante l\'invio'
+      errEl.style.display = 'block'
+    }
+  } catch(e) {
+    errEl.textContent = 'Errore di rete: ' + e.message
+    errEl.style.display = 'block'
+  } finally {
+    btn.disabled = false
+    btn.textContent = 'Invia comunicato'
+  }
+}
+
+function resetComunicatoForm() {
+  document.getElementById('cs-titolo').value = ''
+  document.getElementById('cs-testo').value = ''
+  document.getElementById('cs-send-error').style.display = 'none'
+}
+
+async function loadStorico() {
+  const tbody = document.getElementById('cs-storico-body')
+  if (!tbody) return
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Caricamento…</td></tr>'
+  const { data, error } = await sb.from('comunicati').select('*').order('inviato_at', { ascending: false })
+  if (error || !data) { tbody.innerHTML = '<tr><td colspan="4">Errore caricamento</td></tr>'; return }
+  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Nessun comunicato inviato</td></tr>'; return }
+  tbody.innerHTML = data.map(c => {
+    const d = new Date(c.inviato_at)
+    const data_str = d.toLocaleDateString('it-IT') + ' ' + d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})
+    return `<tr>
+      <td style="white-space:nowrap">${data_str}</td>
+      <td>${escHtml(c.titolo)}</td>
+      <td style="text-align:center">${c.destinatari_count ?? '—'}</td>
+      <td>${escHtml(c.inviato_da || '—')}</td>
+      <td><button class="btn btn-sm btn-ghost" onclick="mostraTestoComunicato(${JSON.stringify(escHtml(c.titolo))}, ${JSON.stringify(escHtml(c.testo))})">Vedi</button></td>
+    </tr>`
+  }).join('')
+}
+
+function mostraTestoComunicato(titolo, testo) {
+  document.getElementById('modal-comunicato-testo-titolo').textContent = titolo
+  document.getElementById('modal-comunicato-testo-body').innerHTML = testo.replace(/\n/g, '<br>')
+  document.getElementById('modal-comunicato-testo').style.display = 'flex'
+}
+
+function chiudiModalComunicatoTesto() {
+  document.getElementById('modal-comunicato-testo').style.display = 'none'
+}
+
+// ════════════════════════════════════════════════════════════════════
+
 </script>
 
 <script>
@@ -7932,8 +8152,180 @@ document.addEventListener('DOMContentLoaded', function() {
   window.switchTifosiTab = switchTifosiTab;
   window.stampaSponsorQR = stampaSponsorQR;
   window.annullaConv = typeof annullaConv !== 'undefined' ? annullaConv : null;
+  // Comunicati Stampa
+  window.switchComunicatiTab = switchComunicatiTab;
+  window.loadTestate = loadTestate;
+  window.apriModalTestata = apriModalTestata;
+  window.chiudiModalTestata = chiudiModalTestata;
+  window.salvaTestata = salvaTestata;
+  window.toggleTestata = toggleTestata;
+  window.eliminaTestata = eliminaTestata;
+  window.inviaComunicato = inviaComunicato;
+  window.resetComunicatoForm = resetComunicatoForm;
+  window.loadStorico = loadStorico;
+  window.mostraTestoComunicato = mostraTestoComunicato;
+  window.chiudiModalComunicatoTesto = chiudiModalComunicatoTesto;
 });
 </script>
+
+<!-- SECTION: COMUNICATI STAMPA -->
+<div class="section" id="section-comunicati-stampa">
+
+  <!-- Tab bar -->
+  <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px">
+    <button id="cs-tab-testate" onclick="switchComunicatiTab('testate',this)"
+      style="background:none;border:none;border-bottom:2px solid var(--accent);margin-bottom:-2px;
+             padding:10px 20px;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif">
+      📋 Testate
+    </button>
+    <button id="cs-tab-nuovo" onclick="switchComunicatiTab('nuovo',this)"
+      style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;
+             padding:10px 20px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+      ✉️ Nuovo Comunicato
+    </button>
+    <button id="cs-tab-storico" onclick="switchComunicatiTab('storico',this)"
+      style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;
+             padding:10px 20px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+      📁 Storico
+    </button>
+  </div>
+
+  <!-- TAB: TESTATE -->
+  <div id="cs-pane-testate">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin:0">
+        Testate Giornalistiche
+      </h3>
+      <button class="btn btn-primary btn-sm" onclick="apriModalTestata()">+ Aggiungi testata</button>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Testata</th>
+              <th>Email</th>
+              <th>Stato</th>
+              <th style="text-align:right">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="cs-testate-body">
+            <tr><td colspan="4"><div class="empty"><div class="empty-icon">📰</div><p>Caricamento...</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: NUOVO COMUNICATO -->
+  <div id="cs-pane-nuovo" style="display:none">
+    <div class="card" style="max-width:760px">
+      <div class="card-header">
+        <div class="card-title">Redigi comunicato stampa</div>
+      </div>
+      <div class="card-body" style="padding:24px">
+        <div class="form-group">
+          <label>Oggetto / Titolo *</label>
+          <input class="form-input" id="cs-titolo" placeholder="es. Virtus Molfetta – Comunicato post-partita gara 3"/>
+        </div>
+        <div class="form-group">
+          <label>Testo del comunicato *</label>
+          <textarea class="form-input" id="cs-testo" rows="14"
+            style="resize:vertical;font-size:13px;line-height:1.65"
+            placeholder="Scrivi qui il testo del comunicato. Puoi usare gli invii per formattare i paragrafi."></textarea>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:var(--muted)">
+          Il comunicato verrà inviato a tutte le testate attive.
+          <span id="cs-count-testate" style="font-weight:600;color:var(--accent)">— testate</span>
+        </div>
+        <div id="cs-send-error" style="display:none;background:#fef2f2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="resetComunicatoForm()">Cancella</button>
+          <button class="btn btn-primary" id="cs-btn-invia" onclick="inviaComunicato()">
+            Invia comunicato
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: STORICO -->
+  <div id="cs-pane-storico" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Comunicati inviati</div>
+      </div>
+      <div class="card-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Data invio</th>
+              <th>Titolo</th>
+              <th>Destinatari</th>
+              <th>Inviato da</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="cs-storico-body">
+            <tr><td colspan="4"><div class="empty"><div class="empty-icon">📁</div><p>Caricamento...</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Aggiungi/Modifica Testata -->
+<div class="modal-overlay" id="modal-testata">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-testata-title">Aggiungi testata</div>
+      <button class="modal-close" onclick="closeModal('modal-testata')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="testata-id"/>
+      <div class="form-group">
+        <label>Nome testata *</label>
+        <input class="form-input" id="testata-nome" placeholder="es. La Gazzetta del Sud"/>
+      </div>
+      <div class="form-group">
+        <label>Email redazione *</label>
+        <input class="form-input" id="testata-email" type="email" placeholder="redazione@gazzettadelsud.it"/>
+      </div>
+      <div id="testata-error" style="display:none;background:#fef2f2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-testata')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaTestata()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Anteprima comunicato -->
+<div class="modal-overlay" id="modal-comunicato-preview">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div class="modal-title">Anteprima comunicato</div>
+      <button class="modal-close" onclick="closeModal('modal-comunicato-preview')">×</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <iframe id="preview-iframe" style="width:100%;height:400px;border:none;border-radius:0 0 14px 14px"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Testo comunicato storico -->
+<div class="modal-overlay" id="modal-comunicato-testo">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-comunicato-testo-titolo">Comunicato</div>
+      <button class="modal-close" onclick="closeModal('modal-comunicato-testo')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-comunicato-testo-body" style="font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap"></div>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: Nuovo/Modifica Merchant -->
 <div class="modal-overlay" id="modal-merchant">
