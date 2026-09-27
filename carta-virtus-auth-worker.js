@@ -481,7 +481,7 @@ async function handleEmailTrasferta(request, env) {
     })
     const result = await res.json()
     if (res.ok) inviati += chunk.length
-    else errori.push(result)
+    else { console.error('Resend error:', JSON.stringify(result)); errori.push(result) }
   }
 
   // Aggiorna flag su Supabase
