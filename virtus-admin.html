@@ -2827,20 +2827,46 @@ async function stampaCardAdmin(tifoso_id) {
     .limit(1).single()
   const piano = memb?.piano?.nome || 'Base'
 
-  // Recupera posto assegnato
-  const { data: postoT } = await sbAdmin.from('posti')
+  // Recupera tutti i posti assegnati al tifoso (per id diretto, funziona anche per VIP senza auth_user_id)
+  const lookupId = t.auth_user_id || tifoso_id
+  const { data: postiAssegnati } = await sbAdmin.from('posti')
     .select('tribuna, fila, numero')
-    .eq('tifoso_id', t.auth_user_id)
+    .eq('tifoso_id', lookupId)
     .eq('stato', 'assegnato')
-    .single()
 
   // Recupera posto accompagnatore
   const { data: postoAcc } = await sbAdmin.from('posti')
     .select('tribuna, fila, numero')
-    .eq('tifoso_id', t.auth_user_id)
+    .eq('tifoso_id', lookupId)
     .eq('stato', 'accompagnatore')
-    .single()
+    .maybeSingle()
 
+  const posti = postiAssegnati || []
+
+  // Se più posti: genera un PDF per ciascuno
+  if (posti.length > 1) {
+    for (const postoT of posti) {
+      stampaFanCard({
+        nome:     t.nome,
+        cognome:  t.cognome,
+        qr_code:  t.qr_code,
+        piano,
+        stagione: '2026/2027',
+        punti:    t.punti_saldo || 0,
+        posto: {
+          settore: postoT.tribuna === 'sud' ? 'Settore A' : 'Settore B',
+          fila:    postoT.fila,
+          numero:  postoT.numero
+        },
+        posto_accompagnatore: null,
+        accompagnatore: false,
+        anno_nascita_minore: null
+      })
+    }
+    return
+  }
+
+  const postoT = posti[0] || null
   stampaFanCard({
     nome:     t.nome,
     cognome:  t.cognome,
@@ -2891,6 +2917,22 @@ async function loadMsReport() {
   const { data: tifosi } = await sbAdmin.from('tifosi')
     .select('id, auth_user_id, nome, cognome, sesso, data_nascita, stato, creato_il, tipo')
     .eq('tipo', 'tifoso')
+
+  // Carica tifosi VIP (tipo='sponsor' con membership VIP attiva)
+  const { data: tifosiVip } = await sbAdmin.from('tifosi')
+    .select('id, nome, cognome, azienda, stato, creato_il')
+    .eq('tipo', 'sponsor')
+
+  // Carica membership VIP
+  const { data: membVip } = await sbAdmin.from('membership')
+    .select('tifoso_id, piano:piano_id(nome), stato')
+    .eq('stato', 'attiva')
+    .in('piano_id', await sbAdmin.from('membership_piani').select('id').eq('nome','VIP').then(r => (r.data||[]).map(x=>x.id)))
+
+  // Carica posti assegnati a VIP
+  const { data: postiVip } = await sbAdmin.from('posti')
+    .select('tifoso_id, tribuna, fila, numero')
+    .eq('stato', 'assegnato')
 
   // Carica membership con piano e metodo pagamento
   const { data: memberships } = await sbAdmin.from('membership')
@@ -3143,6 +3185,37 @@ async function loadMsReport() {
         ).join('')}
       </div>` : '<div style="color:var(--muted);font-size:13px">Nessun dato maglia ancora inserito</div>'}
     </div>
+
+    <!-- VIP -->
+    ${(() => {
+      const vipIds = new Set((membVip||[]).map(m=>m.tifoso_id))
+      const vipList = (tifosiVip||[]).filter(t => vipIds.has(t.id))
+      const postiPerVip = {}
+      ;(postiVip||[]).forEach(p => {
+        if (!postiPerVip[p.tifoso_id]) postiPerVip[p.tifoso_id] = []
+        postiPerVip[p.tifoso_id].push(`Trib. ${p.tribuna.charAt(0).toUpperCase()+p.tribuna.slice(1)} F${p.fila} N°${p.numero}`)
+      })
+      if (!vipList.length) return ''
+      return `
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:16px">⭐ Ospiti VIP (${vipList.length})</div>
+      <table class="table">
+        <thead><tr><th>Nome / Azienda</th><th>Posti assegnati</th><th>Stato</th></tr></thead>
+        <tbody>
+          ${vipList.map(t => {
+            const label = [t.cognome, t.nome].filter(Boolean).join(' ') || t.azienda || 'VIP Ospite'
+            const posti = postiPerVip[t.id] || []
+            return `<tr>
+              <td><strong>${label}</strong>${t.azienda && (t.cognome||t.nome) ? ' <span style="color:var(--muted);font-size:11px">· '+t.azienda+'</span>' : ''}</td>
+              <td style="font-size:12px">${posti.length ? posti.join(', ') : '<span style="color:var(--muted)">Nessun posto</span>'}</td>
+              <td><span class="badge badge-${t.stato==='attivo'?'green':'red'}">${t.stato}</span></td>
+            </tr>`
+          }).join('')}
+        </tbody>
+      </table>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">Totale posti VIP occupati: <strong>${Object.values(postiPerVip).reduce((s,a)=>s+a.length,0)}</strong></div>
+    </div>`
+    })()}
 
     <!-- PRESENZE -->
     <div class="card" style="margin-bottom:20px">
@@ -6815,6 +6888,7 @@ let _adminStatiPosti = {}
 let _adminPostoCorrente = null
 
 async function loadPosti() {
+  try {
   const { data, error } = await sbAdmin.from('posti').select('tribuna,fila,numero,stato,note_admin,tifoso_id')
   if (error) { toast('Errore caricamento posti: '+error.message,'error'); return }
 
@@ -6833,6 +6907,7 @@ async function loadPosti() {
 
   renderAdminMappa('sud')
   renderAdminMappa('nord')
+  } catch(e) { console.error('loadPosti error:', e); toast('Errore mappa posti: '+e.message,'error') }
 }
 
 function renderAdminMappa(tid) {
