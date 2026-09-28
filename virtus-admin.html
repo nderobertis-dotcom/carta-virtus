@@ -2827,17 +2827,16 @@ async function stampaCardAdmin(tifoso_id) {
     .limit(1).single()
   const piano = memb?.piano?.nome || 'Base'
 
-  // Recupera tutti i posti assegnati al tifoso (per id diretto, funziona anche per VIP senza auth_user_id)
-  const lookupId = t.auth_user_id || tifoso_id
+  // Recupera tutti i posti assegnati al tifoso (posti.tifoso_id = tifosi.id)
   const { data: postiAssegnati } = await sbAdmin.from('posti')
     .select('tribuna, fila, numero')
-    .eq('tifoso_id', lookupId)
+    .eq('tifoso_id', tifoso_id)
     .eq('stato', 'assegnato')
 
   // Recupera posto accompagnatore
   const { data: postoAcc } = await sbAdmin.from('posti')
     .select('tribuna, fila, numero')
-    .eq('tifoso_id', lookupId)
+    .eq('tifoso_id', tifoso_id)
     .eq('stato', 'accompagnatore')
     .maybeSingle()
 
@@ -5016,11 +5015,10 @@ async function loadDashboard() {
       .eq('stato','attiva').in('piano_id', pianiIds)
     const { data: postiAssegnati } = await sbAdmin.from('posti')
       .select('tifoso_id').in('stato',['assegnato','accompagnatore'])
-    // posti.tifoso_id contiene auth_user_id, non tifosi.id
+    // posti.tifoso_id ora contiene tifosi.id direttamente
     const conPosto = new Set((postiAssegnati||[]).map(p => p.tifoso_id))
     const senzaPosto = (membSenzaPosto||[]).filter(m => {
-      const authId = m.tifosi?.auth_user_id
-      return authId && !conPosto.has(authId)
+      return m.tifoso_id && !conPosto.has(m.tifoso_id)
     })
     const alertBox  = document.getElementById('alert-posti-mancanti')
     const alertList = document.getElementById('alert-posti-lista')
@@ -5183,7 +5181,7 @@ async function stampaMassiva() {
     // Carica posti per tutti
     const { data: postiAll } = await sbAdmin.from('posti')
       .select('tifoso_id, tribuna, fila, numero, stato')
-      .in('tifoso_id', ids.map(id => allTifosi.find(t => t.id === id)?.auth_user_id).filter(Boolean))
+      .in('tifoso_id', ids)
 
     const postoMap = {}
     const postoAccMap = {}
@@ -5197,8 +5195,8 @@ async function stampaMassiva() {
       const t = allTifosi.find(x => x.id === id)
       if (!t) return ''
       const piano = pianoMap[id] || 'Base'
-      const posto = postoMap[t.auth_user_id]
-      const postoAcc = postoAccMap[t.auth_user_id]
+      const posto = postoMap[t.id]
+      const postoAcc = postoAccMap[t.id]
       return stampaFanCardHTML({
         nome: t.nome, cognome: t.cognome, qr_code: t.qr_code,
         piano, stagione: '2026/2027',
