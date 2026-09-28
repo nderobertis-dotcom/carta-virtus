@@ -908,6 +908,7 @@ select.form-input:focus{border-color:var(--accent)}
               <option value="">— Seleziona tifoso —</option>
             </select>
             <div style="font-size:11px;color:var(--muted);margin-top:4px">Solo tifosi VIP con membership attiva e senza posto già assegnato.</div>
+            <button class="btn btn-ghost btn-sm" onclick="apriCreaVip()" style="margin-top:8px;width:100%">➕ Crea nuova membership VIP</button>
           </div>
 
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -915,6 +916,43 @@ select.form-input:focus{border-color:var(--accent)}
             <button class="btn btn-primary" onclick="assegnaPosto()" id="btn-assegna" style="display:none;background:#2e7d32">✅ Assegna al tifoso</button>
             <button class="btn btn-danger" onclick="setPosto('disponibile')" id="btn-libera">🔓 Libera</button>
             <button class="btn btn-ghost" onclick="chiudiAdminPostoModal()">Annulla</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Crea VIP -->
+      <div id="modal-crea-vip" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.75);z-index:10000;align-items:center;justify-content:center">
+        <div style="background:#fff;border-radius:16px;padding:24px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto">
+          <div style="font-size:16px;font-weight:700;color:var(--blu);margin-bottom:4px">⭐ Nuova membership VIP</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:20px">Tutti i campi anagrafici sono facoltativi</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="form-group" style="margin:0">
+              <label>Nome</label>
+              <input class="form-input" id="vip-nome" placeholder="(facoltativo)"/>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Cognome</label>
+              <input class="form-input" id="vip-cognome" placeholder="(facoltativo)"/>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label>Azienda / Sponsor</label>
+            <input class="form-input" id="vip-azienda" placeholder="(facoltativo)"/>
+          </div>
+
+          <!-- Selezione posti -->
+          <div style="font-size:12px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Posti da assegnare</div>
+          <div id="vip-posti-lista" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;min-height:36px;background:var(--bg);border-radius:8px;padding:10px">
+            <div style="font-size:12px;color:var(--muted)">Caricamento posti riservati...</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Seleziona uno o più posti riservati da assegnare a questo VIP.</div>
+
+          <div id="vip-error" style="display:none;background:#fff3f3;border:1px solid #ffcdd2;border-radius:8px;padding:10px;font-size:12px;color:#c62828;margin-bottom:12px"></div>
+
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-ghost" onclick="chiudiCreaVip()">Annulla</button>
+            <button class="btn btn-primary" onclick="salvaCreaVip()" style="background:#2e7d32">✅ Crea e assegna</button>
           </div>
         </div>
       </div>
@@ -6883,6 +6921,93 @@ function chiudiAdminPostoModal() {
   _adminPostoCorrente = null
 }
 
+function apriCreaVip() {
+  // Popola posti riservati disponibili (non ancora assegnati)
+  const lista = document.getElementById('vip-posti-lista')
+  const postiRiservati = Object.values(_adminStatiPosti).filter(p => p.stato === 'riservato')
+  if (!postiRiservati.length) {
+    lista.innerHTML = '<div style="font-size:12px;color:var(--muted)">Nessun posto riservato disponibile</div>'
+  } else {
+    lista.innerHTML = postiRiservati.map(p => {
+      const label = 'Trib. '+p.tribuna.charAt(0).toUpperCase()+p.tribuna.slice(1)+' · Fila '+p.fila+' · N°'+p.numero
+      return `<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer">
+        <input type="checkbox" data-tribuna="${p.tribuna}" data-fila="${p.fila}" data-numero="${p.numero}" style="accent-color:var(--accent)"/>
+        ${label}
+      </label>`
+    }).join('')
+  }
+  // Reset form
+  ;['vip-nome','vip-cognome','vip-azienda'].forEach(id => { const el=document.getElementById(id); if(el) el.value='' })
+  document.getElementById('vip-error').style.display = 'none'
+  document.getElementById('modal-crea-vip').style.display = 'flex'
+}
+
+function chiudiCreaVip() {
+  document.getElementById('modal-crea-vip').style.display = 'none'
+}
+
+async function salvaCreaVip() {
+  const nome    = document.getElementById('vip-nome').value.trim()
+  const cognome = document.getElementById('vip-cognome').value.trim()
+  const azienda = document.getElementById('vip-azienda').value.trim()
+
+  // Raccoglie posti selezionati
+  const checks = document.querySelectorAll('#vip-posti-lista input[type=checkbox]:checked')
+  const postiScelti = Array.from(checks).map(c => ({
+    tribuna: c.dataset.tribuna, fila: c.dataset.fila, numero: parseInt(c.dataset.numero)
+  }))
+
+  const errEl = document.getElementById('vip-error')
+  errEl.style.display = 'none'
+
+  const mostraErr = msg => { errEl.textContent = msg; errEl.style.display = '' }
+
+  // Crea tifoso con placeholder per campi obbligatori se vuoti
+  const nomeF    = nome    || (azienda ? azienda : 'VIP')
+  const cognomeF = cognome || (azienda ? '' : 'Ospite')
+  const emailF   = 'vip_' + Date.now() + '@virtus.local'
+  const qr       = 'VIP' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2,4).toUpperCase()
+
+  const { data: tifoso, error: tErr } = await sbAdmin.from('tifosi').insert({
+    nome: nomeF, cognome: cognomeF, email: emailF,
+    qr_code: qr, stato: 'attivo', tipo: 'vip',
+    azienda: azienda || null,
+    punti_saldo: 0, consenso_marketing: false, consenso_profiling: false
+  }).select('id').single()
+
+  if (tErr) { mostraErr('Errore creazione tifoso: '+tErr.message); return }
+
+  // Recupera piano VIP
+  const { data: pianiVip } = await sbAdmin.from('membership_piani').select('id').eq('nome','VIP')
+  const vipId = pianiVip?.[0]?.id
+  if (!vipId) { mostraErr('Piano VIP non trovato'); return }
+
+  // Crea membership VIP
+  const { error: mErr } = await sbAdmin.from('membership').insert({
+    tifoso_id: tifoso.id,
+    piano_id: vipId,
+    stato: 'attiva',
+    stagione: new Date().getFullYear() + '/' + (new Date().getFullYear()+1)
+  })
+  if (mErr) { mostraErr('Errore membership: '+mErr.message); return }
+
+  // Assegna posti selezionati
+  if (postiScelti.length) {
+    for (const p of postiScelti) {
+      const { error: pErr } = await sbAdmin.from('posti').update({
+        stato: 'assegnato', tifoso_id: tifoso.id, aggiornato_il: new Date().toISOString()
+      }).eq('tribuna', p.tribuna).eq('fila', p.fila).eq('numero', p.numero)
+      if (pErr) { mostraErr('Errore assegnazione posto: '+pErr.message); return }
+    }
+  }
+
+  const label = [nome, cognome, azienda].filter(Boolean).join(' ') || 'VIP Ospite'
+  toast(`✅ ${label} creato${postiScelti.length ? ' con '+postiScelti.length+' posto/i' : ''}`, 'success')
+  chiudiCreaVip()
+  chiudiAdminPostoModal()
+  loadPosti()
+}
+
 async function assegnaPosto() {
   if (!_adminPostoCorrente) return
 
@@ -8278,6 +8403,9 @@ document.addEventListener('DOMContentLoaded', function() {
   window.apriAdminPostoModal = apriAdminPostoModal;
   window.chiudiAdminPostoModal = chiudiAdminPostoModal;
   window.assegnaPosto = assegnaPosto;
+  window.apriCreaVip = apriCreaVip;
+  window.chiudiCreaVip = chiudiCreaVip;
+  window.salvaCreaVip = salvaCreaVip;
   window.resetOpzione = resetOpzione;
   window.setPosto = setPosto;
   window.loadMerchants = loadMerchants;
