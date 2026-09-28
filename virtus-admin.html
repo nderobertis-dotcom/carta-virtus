@@ -6970,7 +6970,7 @@ async function salvaCreaVip() {
 
   const { data: tifoso, error: tErr } = await sbAdmin.from('tifosi').insert({
     nome: nomeF, cognome: cognomeF, email: emailF,
-    qr_code: qr, stato: 'attivo', tipo: 'vip',
+    qr_code: qr, stato: 'attivo', tipo: 'sponsor',
     azienda: azienda || null,
     punti_saldo: 0, consenso_marketing: false, consenso_profiling: false
   }).select('id').single()
