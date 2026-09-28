@@ -3024,6 +3024,8 @@ async function loadMsReport() {
     canali[canale] += prezzo
     canaliN[canale]++
   })
+  // I VIP (ospiti) non hanno pagamento — li aggiungiamo ad "Altro" come conteggio
+  canaliN['altro'] += nFanCardVipReport
   // Rateo per gara (quota Fan Card / gare totali in calendario)
   const totalGareCalendario = (gare||[]).length
   const rateoFanCardPerGara = totalGareCalendario ? totIncassoFanCard / totalGareCalendario : 0
@@ -3116,7 +3118,7 @@ async function loadMsReport() {
           }).join('')}
           <tr style="font-weight:700;border-top:2px solid var(--border);background:var(--bg3)">
             <td>TOTALE</td>
-            <td style="text-align:center">${(memberships||[]).length}</td>
+            <td style="text-align:center">${(memberships||[]).length + nFanCardVipReport}</td>
             <td style="text-align:right">€ ${totIncassoFanCard.toFixed(2)}</td>
             <td style="text-align:right">100%</td>
           </tr>
