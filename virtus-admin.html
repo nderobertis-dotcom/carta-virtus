@@ -6886,94 +6886,24 @@ function chiudiAdminPostoModal() {
 async function assegnaPosto() {
   if (!_adminPostoCorrente) return
 
-  const nome    = document.getElementById('sponsor-nome')?.value.trim() || ''
-  const cognome = document.getElementById('sponsor-cognome')?.value.trim() || ''
-  const azienda = document.getElementById('sponsor-azienda')?.value.trim() || ''
-  const email   = document.getElementById('sponsor-email')?.value.trim() || ''
-  const note    = document.getElementById('sponsor-note')?.value.trim() || ''
-
-  if (!nome && !azienda) { toast('Inserisci almeno nome o azienda', 'error'); return }
-  if (nome && !cognome)  { toast('Inserisci anche il cognome', 'error'); return }
+  const tifoso_id = document.getElementById('admin-posto-tifoso').value
+  if (!tifoso_id) { toast('Seleziona un tifoso', 'error'); return }
 
   const { tribuna, fila, numero } = _adminPostoCorrente
 
-  // Recupera id del posto
-  const { data: posto } = await sbAdmin.from('posti')
-    .select('id').eq('tribuna', tribuna).eq('fila', fila).eq('numero', numero).single()
-  if (!posto) { toast('Posto non trovato', 'error'); return }
-
-  // Genera QR code univoco
-  const qr = 'SPO' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2,4).toUpperCase()
-
-  // Inserisce record sponsor
-  const { error: spErr } = await sbAdmin.from('sponsor_posti').insert({
-    posto_id: posto.id,
-    nome: nome || null,
-    cognome: cognome || null,
-    azienda: azienda || null,
-    email: email || null,
-    qr_code: qr,
-    note: note || null
-  })
-  if (spErr) { toast('Errore: '+spErr.message, 'error'); return }
-
-  // Aggiorna stato posto a occupato
+  // Aggiorna stato posto ad assegnato con tifoso_id
   const { error } = await sbAdmin.from('posti')
     .update({
-      stato: 'occupato',
-      note_admin: (azienda ? azienda+' — ' : '') + (nome ? nome+' '+cognome : ''),
+      stato: 'assegnato',
+      tifoso_id: tifoso_id,
       aggiornato_il: new Date().toISOString()
     })
     .eq('tribuna', tribuna).eq('fila', fila).eq('numero', numero)
-  if (error) { toast('Errore aggiornamento posto: '+error.message, 'error'); return }
+  if (error) { toast('Errore: '+error.message, 'error'); return }
 
   toast('✅ Posto assegnato con successo', 'success')
-
-  const nomeCognome = nome ? nome+' '+cognome : azienda
-  const postoLabel = 'Tribuna '+tribuna.charAt(0).toUpperCase()+tribuna.slice(1)+' — Fila '+fila+' Posto '+numero
-
   chiudiAdminPostoModal()
   loadPosti()
-  mostraQRSponsor(qr, nome, cognome, azienda, tribuna, fila, numero)
-
-  // Invia email se presente
-  if (email) {
-    const qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=1A3A6B&data=' + encodeURIComponent(qr)
-    const htmlTifoso = `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto">
-      <div style="background:#1A3A6B;padding:24px;text-align:center;border-radius:12px 12px 0 0">
-        <h1 style="color:#fff;margin:0;font-size:22px">VIRTUS FAN CARD</h1>
-        <p style="color:#F57C00;margin:4px 0 0;font-size:13px">Accesso Sponsor / Ospite</p>
-      </div>
-      <div style="background:#fff;padding:24px;border:1px solid #e0e0e0;border-top:none">
-        <p>Gentile <strong>${nomeCognome}</strong>,</p>
-        <p>di seguito il tuo QR code personale per accedere alle gare casalinghe della <strong>Nuova Virtus Basket Molfetta</strong>.</p>
-        <div style="text-align:center;margin:24px 0">
-          <img src="${qrImageUrl}" width="180" height="180" alt="QR Code"/>
-        </div>
-        <div style="background:#f0f6ff;border-radius:8px;padding:16px;text-align:center">
-          <div style="font-size:18px;font-weight:700;color:#1A3A6B">${azienda || nomeCognome}</div>
-          <div style="font-size:14px;color:#555;margin-top:4px">${nomeCognome}</div>
-          <div style="font-size:13px;color:#F57C00;margin-top:8px;font-weight:600">${postoLabel}</div>
-          <div style="font-family:monospace;font-size:12px;color:#999;margin-top:6px;letter-spacing:2px">${qr}</div>
-        </div>
-        <p style="font-size:12px;color:#999;margin-top:20px">Mostra questo QR code all'operatore all'ingresso. Non condividerlo con altri.</p>
-      </div>
-      <div style="background:#f8f9fa;padding:16px;text-align:center;font-size:11px;color:#9E9E9E;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 12px 12px">
-        SSD Pol. Virtus 2014 Srl · Via Martiri di Via Fani, c/o PalaPoli · 70056 Molfetta (BA)
-      </div>
-    </div>`
-
-    emailjs.send('service_56o6ajc', 'template_382bqdi', {
-      to_email:     email,
-      subject:      'Il tuo accesso — ' + postoLabel,
-      reply_to:     'marketing@virtusmolfetta.com',
-      message_html: htmlTifoso
-    }, 'vAwWF1wWz1OelPU0q').then(() => {
-      toast('📧 Email con QR inviata a '+email, 'success')
-    }).catch(err => {
-      toast('Email non inviata: '+(err.text||err.message), 'error')
-    })
-  }
 }
 
 function svuotaFormSponsor() {
