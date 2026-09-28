@@ -2953,11 +2953,11 @@ async function loadMsReport() {
 
   if (!tifosi) { el.innerHTML = '<div style="color:var(--rosso);padding:20px">Errore caricamento dati</div>'; return }
 
-  //  CALCOLI 
-  // tot include i posti VIP (ogni posto = 1 persona)
-  const nFanCardVipReport = (tifosiVip||[]).reduce((acc, vip) => {
-    return acc + (postiVip||[]).filter(p => p.tifoso_id === vip.id).length
-  }, 0)
+  //  CALCOLI
+  // nFanCardVipReport = posti VIP assegnati (ogni posto = 1 persona fisica)
+  const nFanCardVipReport = (postiVip||[]).filter(p =>
+    (tifosiVip||[]).some(v => v.id === p.tifoso_id)
+  ).length
   const tot = tifosi.length + nFanCardVipReport
   const uomini = tifosi.filter(t => t.sesso === 'M').length
   const donne  = tifosi.filter(t => t.sesso === 'F').length
@@ -3353,7 +3353,7 @@ async function stampaReportDirettivo() {
     .select('id,titolo,avversario,data_ora,biglietti_venduti,accrediti_concessi,incasso_eur')
     .order('data_ora')
   const { data: tifosi } = await sbAdmin.from('tifosi').select('id,auth_user_id,nome,cognome,sesso,data_nascita,stato').eq('tipo','tifoso')
-  // Conta posti VIP come Fan Card aggiuntive
+  // Conta posti VIP assegnati (ogni posto = 1 persona fisica)
   const { data: vipIdsSt } = await sbAdmin.from('tifosi').select('id').eq('tipo','sponsor')
   const vipIdListSt = (vipIdsSt||[]).map(x=>x.id)
   let nFanCardVip = 0
@@ -5025,7 +5025,7 @@ async function loadDashboard() {
   // Conta tifosi normali (tipo='tifoso') separatamente dai VIP
   const { count: nTifosiNormali } = await sbAdmin.from('tifosi')
     .select('*', { count: 'exact', head: true }).eq('tipo', 'tifoso').eq('stato', 'attivo')
-  // Conta posti VIP assegnati (ogni posto = 1 persona)
+  // Conta posti VIP assegnati (ogni posto = 1 persona fisica)
   const { data: vipIds } = await sbAdmin.from('tifosi').select('id').eq('tipo', 'sponsor')
   const vipIdList = (vipIds||[]).map(x => x.id)
   let nVipPosti = 0
