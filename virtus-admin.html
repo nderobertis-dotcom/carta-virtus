@@ -7094,13 +7094,20 @@ async function salvaCreaVip() {
   if (!vipId) { mostraErr('Piano VIP non trovato'); return }
 
   // Crea membership VIP
-  const { error: mErr } = await sbAdmin.from('membership').insert({
+  const { data: membCreata, error: mErr } = await sbAdmin.from('membership').insert({
     tifoso_id: tifoso.id,
     piano_id: vipId,
-    stato: 'attiva',
-    stagione: new Date().getFullYear() + '/' + (new Date().getFullYear()+1)
-  })
-  if (mErr) { mostraErr('Errore membership: '+mErr.message); return }
+    stato: 'attiva'
+  }).select('id').single()
+  if (mErr) {
+    console.error('Errore membership VIP:', mErr)
+    mostraErr('Errore membership: ' + mErr.message + ' (code: ' + mErr.code + ')')
+    return
+  }
+  if (!membCreata) {
+    mostraErr('Membership non creata (nessun dato restituito)')
+    return
+  }
 
   // Assegna posti selezionati
   if (postiScelti.length) {
