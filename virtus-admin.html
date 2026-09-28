@@ -3505,7 +3505,8 @@ function renderMaglieSciarpe() {
           : '<span style="color:var(--muted);font-size:12px">—</span>'
         }
       </td>
-      <td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        ${isMaglie ? `<button class="btn btn-ghost btn-sm" onclick="apriModificaMaglia('${m.id}')">✏️ Modifica</button>` : ''}
         ${consegnata
           ? `<button class="btn btn-ghost btn-sm" onclick="flagConsegna('${m.id}','${isMaglie ? 'maglia' : 'sciarpa'}',false)">↩ Annulla</button>`
           : `<button class="btn btn-primary btn-sm" onclick="flagConsegna('${m.id}','${isMaglie ? 'maglia' : 'sciarpa'}',true)">✅ Consegnata</button>`
@@ -3513,6 +3514,59 @@ function renderMaglieSciarpe() {
       </td>
     </tr>`
   }).join('')
+}
+
+function apriModificaMaglia(membId) {
+  const m = _msData.find(x => x.id === membId)
+  if (!m) return
+  document.getElementById('mm-memb-id').value = membId
+  const nome = m.tifoso ? m.tifoso.nome + ' ' + m.tifoso.cognome : '—'
+  document.getElementById('mm-tifoso-nome').textContent = nome
+  document.getElementById('mm-taglia').value = m.maglia_taglia || ''
+  document.getElementById('mm-cognome').value = m.maglia_cognome || ''
+  document.getElementById('mm-numero').value = m.maglia_numero || ''
+  document.getElementById('mm-error').style.display = 'none'
+  openModal('modal-modifica-maglia')
+}
+
+async function salvaModificaMaglia() {
+  const membId = document.getElementById('mm-memb-id').value
+  const taglia = document.getElementById('mm-taglia').value
+  const cognome = document.getElementById('mm-cognome').value.trim().toUpperCase()
+  const numero = document.getElementById('mm-numero').value
+  const errEl = document.getElementById('mm-error')
+  errEl.style.display = 'none'
+
+  if (!taglia) {
+    errEl.textContent = 'Seleziona una taglia'
+    errEl.style.display = 'block'
+    return
+  }
+
+  const payload = {
+    maglia_taglia: taglia,
+    maglia_cognome: cognome || null,
+    maglia_numero: numero ? parseInt(numero) : null
+  }
+
+  const { error } = await sbAdmin.from('membership').update(payload).eq('id', membId)
+  if (error) {
+    errEl.textContent = 'Errore: ' + error.message
+    errEl.style.display = 'block'
+    return
+  }
+
+  // Aggiorna cache locale
+  const m = _msData.find(x => x.id === membId)
+  if (m) {
+    m.maglia_taglia = payload.maglia_taglia
+    m.maglia_cognome = payload.maglia_cognome
+    m.maglia_numero = payload.maglia_numero
+  }
+
+  closeModal('modal-modifica-maglia')
+  toast('✅ Scelta maglia aggiornata', 'success')
+  renderMaglieSciarpe()
 }
 
 async function flagConsegna(membId, tipo, consegnata) {
@@ -8211,6 +8265,8 @@ document.addEventListener('DOMContentLoaded', function() {
   window.stampaReportDirettivo = stampaReportDirettivo;
   window.apriEditBiglietteria = apriEditBiglietteria;
   window.salvaBiglietteria = salvaBiglietteria;
+  window.apriModificaMaglia = apriModificaMaglia;
+  window.salvaModificaMaglia = salvaModificaMaglia;
   window.flagConsegna = flagConsegna;
   window.loadPosti = loadPosti;
   window.apriAdminPostoModal = apriAdminPostoModal;
@@ -8323,6 +8379,54 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     <div class="modal-body">
       <div id="modal-comunicato-testo-body" style="font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Modifica scelta maglia -->
+<div class="modal-overlay" id="modal-modifica-maglia">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Modifica scelta maglia</div>
+      <button class="modal-close" onclick="closeModal('modal-modifica-maglia')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mm-memb-id"/>
+      <div class="form-group">
+        <label>Tifoso</label>
+        <div id="mm-tifoso-nome" style="font-weight:600;color:var(--text);padding:6px 0"></div>
+      </div>
+      <div class="form-group">
+        <label>Taglia</label>
+        <select class="form-input" id="mm-taglia">
+          <option value="">— nessuna —</option>
+          <option value="4anni">4 anni</option>
+          <option value="6anni">6 anni</option>
+          <option value="8anni">8 anni</option>
+          <option value="10anni">10 anni</option>
+          <option value="12anni">12 anni</option>
+          <option value="14anni">14 anni</option>
+          <option value="XS">XS</option>
+          <option value="S">S</option>
+          <option value="M">M</option>
+          <option value="L">L</option>
+          <option value="XL">XL</option>
+          <option value="XXL">XXL</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Cognome sulla maglia</label>
+        <input class="form-input" id="mm-cognome" placeholder="es. ROSSI" style="text-transform:uppercase"/>
+      </div>
+      <div class="form-group">
+        <label>Numero</label>
+        <input class="form-input" id="mm-numero" type="number" min="1" max="99" placeholder="es. 7"/>
+      </div>
+      <div id="mm-error" style="display:none;background:#fdecea;color:#c62828;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-modifica-maglia')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaModificaMaglia()">Salva modifiche</button>
     </div>
   </div>
 </div>
