@@ -2825,7 +2825,8 @@ async function stampaCardAdmin(tifoso_id) {
     .eq('stato', 'attiva')
     .order('creato_il', { ascending: false })
     .limit(1).single()
-  const piano = memb?.piano?.nome || 'Base'
+  // Per tifosi VIP (tipo='sponsor') mostra il nome azienda invece del piano
+  const piano = t.tipo === 'sponsor' ? (t.azienda || 'VIP') : (memb?.piano?.nome || 'Base')
 
   // Recupera tutti i posti assegnati al tifoso (posti.tifoso_id = tifosi.id)
   const { data: postiAssegnati } = await sbAdmin.from('posti')
@@ -2842,26 +2843,28 @@ async function stampaCardAdmin(tifoso_id) {
 
   const posti = postiAssegnati || []
 
-  // Se più posti: genera un PDF per ciascuno
+  // Se più posti: genera un PDF per ciascuno con delay per evitare blocco popup
   if (posti.length > 1) {
-    for (const postoT of posti) {
-      stampaFanCard({
-        nome:     t.nome,
-        cognome:  t.cognome,
-        qr_code:  t.qr_code,
-        piano,
-        stagione: '2026/2027',
-        punti:    t.punti_saldo || 0,
-        posto: {
-          settore: postoT.tribuna === 'sud' ? 'Settore A' : 'Settore B',
-          fila:    postoT.fila,
-          numero:  postoT.numero
-        },
-        posto_accompagnatore: null,
-        accompagnatore: false,
-        anno_nascita_minore: null
-      })
-    }
+    posti.forEach((postoT, idx) => {
+      setTimeout(() => {
+        stampaFanCard({
+          nome:     t.nome,
+          cognome:  t.cognome,
+          qr_code:  t.qr_code,
+          piano,
+          stagione: '2026/2027',
+          punti:    t.punti_saldo || 0,
+          posto: {
+            settore: postoT.tribuna === 'sud' ? 'Settore A' : 'Settore B',
+            fila:    postoT.fila,
+            numero:  postoT.numero
+          },
+          posto_accompagnatore: null,
+          accompagnatore: false,
+          anno_nascita_minore: null
+        })
+      }, idx * 800)  // 800ms tra un PDF e l'altro
+    })
     return
   }
 
@@ -2951,7 +2954,11 @@ async function loadMsReport() {
   if (!tifosi) { el.innerHTML = '<div style="color:var(--rosso);padding:20px">Errore caricamento dati</div>'; return }
 
   //  CALCOLI 
-  const tot = tifosi.length
+  // tot include i posti VIP (ogni posto = 1 persona)
+  const nFanCardVipReport = (tifosiVip||[]).reduce((acc, vip) => {
+    return acc + (postiVip||[]).filter(p => p.tifoso_id === vip.id).length
+  }, 0)
+  const tot = tifosi.length + nFanCardVipReport
   const uomini = tifosi.filter(t => t.sesso === 'M').length
   const donne  = tifosi.filter(t => t.sesso === 'F').length
   const senzaSesso = tot - uomini - donne
@@ -3335,6 +3342,14 @@ async function stampaReportDirettivo() {
     .select('id,titolo,avversario,data_ora,biglietti_venduti,accrediti_concessi,incasso_eur')
     .order('data_ora')
   const { data: tifosi } = await sbAdmin.from('tifosi').select('id,auth_user_id,nome,cognome,sesso,data_nascita,stato').eq('tipo','tifoso')
+  // Conta posti VIP come Fan Card aggiuntive
+  const { data: vipIdsSt } = await sbAdmin.from('tifosi').select('id').eq('tipo','sponsor')
+  const vipIdListSt = (vipIdsSt||[]).map(x=>x.id)
+  let nFanCardVip = 0
+  if (vipIdListSt.length > 0) {
+    const { data: pvip } = await sbAdmin.from('posti').select('tifoso_id').eq('stato','assegnato').in('tifoso_id', vipIdListSt)
+    nFanCardVip = (pvip||[]).length
+  }
   const { data: memberships } = await sbAdmin.from('membership').select('tifoso_id,piano:piano_id(nome),stato').eq('stato','attiva')
   const { data: ingressi } = await sbAdmin.from('ingressi_gare').select('tifoso_id,gara_id,piano_nome')
 
@@ -3362,7 +3377,7 @@ async function stampaReportDirettivo() {
   const contesto = `
 Stagione sportiva 2026/2027 - Nuova Virtus Basket Molfetta (PalaPoli)
 
-TIFOSI ISCRITTI: ${tifosi?.length||0} (Base:${perPiano.Base||0}, Bronze:${perPiano.Bronze||0}, Silver:${perPiano.Silver||0}, Gold:${perPiano.Gold||0})
+TIFOSI ISCRITTI: ${(tifosi?.length||0)+nFanCardVip} (Base:${perPiano.Base||0}, Bronze:${perPiano.Bronze||0}, Silver:${perPiano.Silver||0}, Gold:${perPiano.Gold||0}, VIP:${nFanCardVip})
 
 GARE DISPUTATE: ${gareDisputate.length} su ${(gare||[]).length} in calendario
 
@@ -3449,7 +3464,7 @@ GARE RIMANENTI: ${gareDaDisputare.length}
 
   <div class="titolo-sezione">Riepilogo Tifosi</div>
   <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-val">${tifosi?.length||0}</div><div class="kpi-label">Fan Card emesse</div></div>
+    <div class="kpi"><div class="kpi-val">${(tifosi?.length||0)+nFanCardVip}</div><div class="kpi-label">Fan Card emesse</div></div>
     <div class="kpi"><div class="kpi-val">${perPiano.Silver||0}</div><div class="kpi-label">Silver</div></div>
     <div class="kpi"><div class="kpi-val">${perPiano.Gold||0}</div><div class="kpi-label">Gold</div></div>
     <div class="kpi"><div class="kpi-val">${(perPiano.Base||0)+(perPiano.Bronze||0)}</div><div class="kpi-label">Base + Bronze</div></div>
@@ -4996,7 +5011,19 @@ async function loadDashboard() {
       sbAdmin.from('membership').select('*', { count: 'exact', head: true }).eq('stato', 'in_attesa')
     ])
 
-  document.getElementById('stat-tifosi').textContent = nTifosi ?? '0'
+  // Conta tifosi normali (tipo='tifoso') separatamente dai VIP
+  const { count: nTifosiNormali } = await sbAdmin.from('tifosi')
+    .select('*', { count: 'exact', head: true }).eq('tipo', 'tifoso').eq('stato', 'attivo')
+  // Conta posti VIP assegnati (ogni posto = 1 persona)
+  const { data: vipIds } = await sbAdmin.from('tifosi').select('id').eq('tipo', 'sponsor')
+  const vipIdList = (vipIds||[]).map(x => x.id)
+  let nVipPosti = 0
+  if (vipIdList.length > 0) {
+    const { data: postiVipCount } = await sbAdmin.from('posti')
+      .select('tifoso_id').eq('stato', 'assegnato').in('tifoso_id', vipIdList)
+    nVipPosti = (postiVipCount||[]).length
+  }
+  document.getElementById('stat-tifosi').textContent = (nTifosiNormali ?? 0) + nVipPosti
   document.getElementById('stat-partner').textContent = nPartner ?? '0'
   document.getElementById('stat-coupon').textContent = nCoupon ?? '0'
   const elAttesa = document.getElementById('stat-attesa'); if(elAttesa) elAttesa.textContent = nAttesa ?? '0'
