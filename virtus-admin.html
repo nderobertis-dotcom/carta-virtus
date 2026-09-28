@@ -2936,10 +2936,11 @@ async function loadMsReport() {
     .select('tifoso_id, tribuna, fila, numero')
     .eq('stato', 'assegnato')
 
-  // Carica membership con piano e metodo pagamento
-  const { data: memberships } = await sbAdmin.from('membership')
+  // Carica membership con piano e metodo pagamento (escludi VIP — contati tramite posti)
+  const { data: membershipsAll } = await sbAdmin.from('membership')
     .select('tifoso_id, piano:piano_id(nome), stato, maglia_taglia, maglia_cognome, maglia_numero, valida_dal, metodo_pagamento')
     .eq('stato', 'attiva')
+  const memberships = (membershipsAll||[]).filter(m => m.piano?.nome !== 'VIP')
 
   // Carica ingressi per presenze
   const { data: ingressi } = await sbAdmin.from('ingressi_gare')
