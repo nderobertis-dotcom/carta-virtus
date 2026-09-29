@@ -5239,8 +5239,8 @@ async function stampaMassiva() {
       // Nome file: cortesiaXX per Cortesia, cognome-nome per gli altri
       const isCortesia = piano === 'Cortesia' && t.nome === 'Cortesia'
       const titolo = isCortesia
-        ? `cortesia${t.cognome}`
-        : `${(t.cognome||'').toLowerCase().replace(/\s+/g,'-')}-${(t.nome||'').toLowerCase().replace(/\s+/g,'-')}`
+        ? `FanCardCortesia${t.cognome}`
+        : `FanCard-${(t.cognome||'').replace(/\s+/g,'-')}-${(t.nome||'').replace(/\s+/g,'-')}`
       return {
         titolo,
         html: stampaFanCardHTML({
