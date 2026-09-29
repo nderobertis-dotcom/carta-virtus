@@ -5244,7 +5244,7 @@ async function stampaMassiva() {
       return {
         titolo,
         html: stampaFanCardHTML({
-          nome: t.nome, cognome: t.cognome, qr_code: t.qr_code,
+          nome: t.nome, cognome: isCortesia ? '' : t.cognome, qr_code: t.qr_code,
           piano, stagione: '2026/2027',
           via: t.via, cap: t.cap, citta: t.citta,
           data_nascita: t.data_nascita,
