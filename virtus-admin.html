@@ -5246,26 +5246,35 @@ async function stampaMassiva() {
       })
     }).filter(Boolean)
 
-    // Apri una finestra separata per ogni tifoso
-    let bloccati = 0
-    for (const pageHtml of pages) {
-      const singleHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
-        <title>Fan Card</title>
-        <style>body{margin:0;padding:0} @media print{.no-print{display:none}}</style>
-      </head><body>
-        ${pageHtml}
-        <script>window.onload=function(){window.print()}<\/script>
-      </body></html>`
-      const win = window.open('', '_blank', 'width=900,height=1100')
-      if (!win) { bloccati++; continue }
-      win.document.open()
-      win.document.write(singleHtml)
-      win.document.close()
-    }
-    if (bloccati > 0) alert(`${bloccati} finestra/e bloccata/e dal browser. Abilita i popup per questo sito.`)
-  } finally {
+    // Apri una finestra per ogni tifoso con delay per evitare blocco popup
+    btn.textContent = `⏳ Stampa 1 di ${pages.length}…`
+    pages.forEach((pageHtml, idx) => {
+      setTimeout(() => {
+        const singleHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
+          <title>Fan Card</title>
+          <style>body{margin:0;padding:0} @media print{.no-print{display:none}}</style>
+        </head><body>
+          ${pageHtml}
+          <script>window.onload=function(){window.print()}<\/script>
+        </body></html>`
+        const win = window.open('', '_blank', 'width=900,height=1100')
+        if (win) {
+          win.document.open()
+          win.document.write(singleHtml)
+          win.document.close()
+        }
+        if (idx < pages.length - 1) {
+          btn.textContent = `⏳ Stampa ${idx + 2} di ${pages.length}…`
+        } else {
+          btn.disabled = false
+          btn.textContent = '🖨️ Stampa selezionati'
+        }
+      }, idx * 800)
+    })
+  } catch(e) {
     btn.disabled = false
     btn.textContent = '🖨️ Stampa selezionati'
+    alert('Errore: ' + e.message)
   }
 }
 
