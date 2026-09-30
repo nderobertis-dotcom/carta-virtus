@@ -2034,12 +2034,13 @@ select.form-input:focus{border-color:var(--accent)}
 
       <!-- DATI MAGLIA (Silver e Gold) -->
       <div id="fc-maglia-box" style="grid-column:1/-1;display:none;background:#fff8f0;border:1.5px solid #ffe0b2;border-radius:10px;padding:14px">
-        <div style="font-size:11px;font-weight:700;color:var(--arancio);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">🏀 Dati maglia di gara</div>
+        <div style="font-size:11px;font-weight:700;color:var(--arancio);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">🏀 Dati maglia di gara</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Facoltativi — possono essere definiti successivamente</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
           <div class="form-group">
-            <label>Taglia *</label>
+            <label>Taglia</label>
             <select class="form-input" id="fc-maglia-taglia" onchange="toggleFcTagliaAnni(this.value)">
-              <option value="">Seleziona</option>
+              <option value="">Non ancora definita</option>
               <option value="S/M">S/M</option>
               <option value="L/XL">L/XL</option>
               <option value="bambino">Anni _____ (bambino)</option>
@@ -2047,11 +2048,11 @@ select.form-input:focus{border-color:var(--accent)}
             <input class="form-input" id="fc-maglia-anni" type="number" min="2" max="16" placeholder="Età bambino" style="display:none;margin-top:6px"/>
           </div>
           <div class="form-group">
-            <label>Cognome sulla maglia *</label>
+            <label>Cognome sulla maglia</label>
             <input class="form-input" id="fc-maglia-cognome" placeholder="es. ROSSI" style="text-transform:uppercase"/>
           </div>
           <div class="form-group">
-            <label>Numero *</label>
+            <label>Numero</label>
             <input class="form-input" id="fc-maglia-numero" type="number" min="1" max="99" placeholder="es. 10"/>
           </div>
         </div>
@@ -7518,9 +7519,8 @@ async function emettiFantCard() {
     magliaTaglia = tagliaVal === 'bambino' ? ('Anni ' + (tagliaAnni || '?')) : tagliaVal
     magliaCognome = document.getElementById('fc-maglia-cognome').value.toUpperCase().trim()
     magliaNumero = parseInt(document.getElementById('fc-maglia-numero').value) || null
-    if (!magliaTaglia || !magliaCognome || !magliaNumero) {
-      toast('Compila tutti i dati della maglia', 'error'); return
-    }
+    // Dati maglia facoltativi: se taglia non selezionata, si azzera tutto
+    if (!magliaTaglia) { magliaTaglia = null; magliaCognome = null; magliaNumero = null }
   }
 
   // Azienda (solo VIP)
