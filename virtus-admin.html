@@ -6366,8 +6366,8 @@ let currentOpScansioni = []
 
 async function loadOperatori() {
   // Carica utenti con ruolo operatore o operatore_pending via admin API
-  // Usiamo la view operatori che abbiamo creato
-  const { data: ops, error } = await sbAdmin.from('operatori').select('*')
+  // Usa RPC SECURITY DEFINER per leggere auth.users senza permission denied
+  const { data: ops, error } = await sbAdmin.rpc('get_operatori')
 
   if (error) {
     // Fallback: usa auth.users direttamente non è possibile via REST
@@ -6408,7 +6408,10 @@ async function loadPendingOperatori() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'list_pending_operators' })
     })
-    if (resp.ok) pending = await resp.json()
+    if (resp.ok) {
+      const json = await resp.json()
+      if (Array.isArray(json)) pending = json
+    }
   } catch(e) { /* ignora errori di rete */ }
 
   const container = document.getElementById('pending-operatori-container')
@@ -6510,6 +6513,10 @@ async function creaOperatore() {
     closeModal('modal-nuovo-operatore')
     // Reset form
     ;['nop-nome','nop-cognome','nop-email','nop-password'].forEach(id => document.getElementById(id).value = '')
+    // Inserisce subito in public.operatori così appare nella lista
+    await sbAdmin.from('operatori').upsert({
+      email, nome, cognome, created_at: new Date().toISOString()
+    }, { onConflict: 'email' })
     await loadOperatori()
   } catch(e) {
     errEl.textContent = 'Errore di rete: ' + e.message
