@@ -1375,9 +1375,15 @@ select.form-input:focus{border-color:var(--accent)}
             <div style="font-size:11px;color:var(--muted);margin-top:5px;font-family:'DM Mono',monospace" id="acc-count-text"></div>
           </div>
           <div id="acc-form-ospite" style="display:none">
-            <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:5px">Nome e cognome ospite</label>
-            <div style="display:flex;gap:8px">
-              <input type="text" id="acc-ospite-nome" placeholder="es. Lucia Verdi" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none" onkeydown="if(event.key==='Enter')accAddAccredito()"/>
+            <div style="display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:end">
+              <div>
+                <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:5px">Nome e cognome ospite</label>
+                <input type="text" id="acc-ospite-nome" placeholder="es. Lucia Verdi" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none" onkeydown="if(event.key==='Enter')accAddAccredito()"/>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:5px">N. ingressi</label>
+                <input type="number" id="acc-ospite-ingressi" min="1" max="10" value="1" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none"/>
+              </div>
               <button class="btn btn-primary btn-sm" onclick="accAddAccredito()">+ Aggiungi ospite</button>
             </div>
           </div>
@@ -8903,7 +8909,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     const avente = accDb.aventi.find(a => a.id === aid);
     if (!avente) { if (infoEl) infoEl.style.display = 'none'; return; }
-    const usati = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid).length;
+    const usati = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid).reduce((s,a) => s + (a.ingressi||1), 0);
     const perc  = Math.round((usati / avente.max) * 100);
     const meter = document.getElementById('acc-meter');
     if (meter) {
@@ -8931,21 +8937,24 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!listaEl) return;
     const list = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid);
     if (!list.length) { listaEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">Nessun ospite inserito</div>'; return; }
-    listaEl.innerHTML = '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Ospiti inseriti ('+list.length+')</div>' +
-      '<table><tbody>' + list.map((a,i) => `<tr><td style="color:var(--muted);font-size:12px;font-family:'DM Mono',monospace;width:30px">${String(i+1).padStart(2,'0')}</td><td style="font-weight:500">${a.ospite}</td><td><button class="btn btn-sm btn-danger" onclick="accDeleteAccredito('${a.id}')">Rimuovi</button></td></tr>`).join('') + '</tbody></table>';
+    const totIngressi = list.reduce((s,a) => s + (a.ingressi||1), 0);
+    listaEl.innerHTML = '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Ospiti inseriti ('+list.length+') · '+totIngressi+' ingressi totali</div>' +
+      '<table><thead><tr><th></th><th>Ospite</th><th>Ingressi</th><th></th></tr></thead><tbody>' + list.map((a,i) => `<tr><td style="color:var(--muted);font-size:12px;font-family:'DM Mono',monospace;width:30px">${String(i+1).padStart(2,'0')}</td><td style="font-weight:500">${a.ospite}</td><td style="font-family:'DM Mono',monospace;font-size:13px">${a.ingressi||1}</td><td><button class="btn btn-sm btn-danger" onclick="accDeleteAccredito('${a.id}')">Rimuovi</button></td></tr>`).join('') + '</tbody></table>';
   }
 
   window.accAddAccredito = function() {
-    const pid    = document.getElementById('acc-sel-partita')?.value;
-    const aid    = document.getElementById('acc-sel-avente')?.value;
-    const ospite = document.getElementById('acc-ospite-nome')?.value.trim();
+    const pid      = document.getElementById('acc-sel-partita')?.value;
+    const aid      = document.getElementById('acc-sel-avente')?.value;
+    const ospite   = document.getElementById('acc-ospite-nome')?.value.trim();
+    const ingressi = parseInt(document.getElementById('acc-ospite-ingressi')?.value) || 1;
     if (!pid || !aid || !ospite) { toast('Seleziona partita, avente diritto e inserisci il nome ospite', 'error'); return; }
     const avente = accDb.aventi.find(a => a.id === aid);
-    const usati  = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid).length;
-    if (usati >= avente.max) { toast('Limite accrediti raggiunto', 'error'); return; }
-    accDb.accrediti.push({ id: accUid(), partitaId: pid, aventeId: aid, ospite, ts: Date.now() });
+    const usati  = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid).reduce((s,a) => s + (a.ingressi||1), 0);
+    if (usati + ingressi > avente.max) { toast(`Limite superato: disponibili ${avente.max - usati} su ${avente.max}`, 'error'); return; }
+    accDb.accrediti.push({ id: accUid(), partitaId: pid, aventeId: aid, ospite, ingressi, ts: Date.now() });
     accSave();
     document.getElementById('acc-ospite-nome').value = '';
+    document.getElementById('acc-ospite-ingressi').value = '1';
     document.getElementById('acc-ospite-nome').focus();
     const alertEl = document.getElementById('acc-alert-msg');
     if (alertEl) { alertEl.innerHTML = '<div style="background:rgba(20,184,166,.1);color:#14b8a6;border:1px solid rgba(20,184,166,.3);border-radius:8px;padding:9px 14px;font-size:13px">✓ Accredito aggiunto con successo.</div>'; setTimeout(()=>{ alertEl.innerHTML=''; }, 2000); }
@@ -8966,15 +8975,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!pid) { if (statsEl) statsEl.style.display='none'; if (listaEl) listaEl.innerHTML=''; return; }
     const partita = accDb.partite.find(p => p.id === pid);
     const accs    = accDb.accrediti.filter(a => a.partitaId === pid);
-    const ritirati = accs.filter(a => a.ritirato).length;
-    const aventiConAcc = [...new Set(accs.map(a => a.aventeId))].length;
+    const totIngressi   = accs.reduce((s,a) => s + (a.ingressi||1), 0);
+    const ingrRitirati  = accs.filter(a => a.ritirato).reduce((s,a) => s + (a.ingressi||1), 0);
+    const aventiConAcc  = [...new Set(accs.map(a => a.aventeId))].length;
 
     if (statsEl) {
       statsEl.style.display = 'block';
       statsEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
-        <div class="stat-card"><div class="stat-label">Ospiti totali</div><div class="stat-value">${accs.length}</div></div>
-        <div class="stat-card" style="border-color:rgba(20,184,166,.3)"><div class="stat-label">Ritirati</div><div class="stat-value" style="color:var(--teal)">${ritirati}</div></div>
-        <div class="stat-card" style="border-color:rgba(245,158,11,.3)"><div class="stat-label">Da ritirare</div><div class="stat-value" style="color:var(--gold)">${accs.length - ritirati}</div></div>
+        <div class="stat-card"><div class="stat-label">Ingressi totali</div><div class="stat-value">${totIngressi}</div></div>
+        <div class="stat-card" style="border-color:rgba(20,184,166,.3)"><div class="stat-label">Ritirati</div><div class="stat-value" style="color:var(--teal)">${ingrRitirati}</div></div>
+        <div class="stat-card" style="border-color:rgba(245,158,11,.3)"><div class="stat-label">Da ritirare</div><div class="stat-value" style="color:var(--gold)">${totIngressi - ingrRitirati}</div></div>
         <div class="stat-card"><div class="stat-label">Aventi diritto</div><div class="stat-value">${aventiConAcc}</div></div>
       </div>`;
     }
@@ -8989,13 +8999,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (listaEl) listaEl.innerHTML = `
       <div style="font-size:11px;color:var(--muted);margin-bottom:12px;font-family:'DM Mono',monospace">${accFmtDataOra(partita?.data)} · vs ${partita?.avversario} · ordine alfabetico</div>
       <table>
-        <thead><tr><th></th><th>Ospite</th><th>Invitante</th><th>Stato</th></tr></thead>
+        <thead><tr><th></th><th>Ospite</th><th>Ingressi</th><th>Invitante</th><th>Stato</th></tr></thead>
         <tbody>
           ${sorted.map(a => `<tr style="${a.ritirato ? 'background:rgba(20,184,166,.07)' : ''}">
             <td><div onclick="accToggleRitiro('${a.id}')" style="width:20px;height:20px;border:1.5px solid ${a.ritirato ? '#14b8a6' : 'var(--border)'};border-radius:5px;background:${a.ritirato ? '#14b8a6' : 'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer">
               ${a.ritirato ? '<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
             </div></td>
             <td style="font-weight:500${a.ritirato ? ';text-decoration:line-through;color:var(--muted)' : ''}">${a.ospite}</td>
+            <td style="font-family:'DM Mono',monospace;font-size:13px;text-align:center">${a.ingressi||1}</td>
             <td style="font-size:12px;color:var(--muted)">${a.avente.nome}</td>
             <td>${a.ritirato ? '<span class="badge badge-green">Ritirato</span>' : '<span class="badge badge-gray">In attesa</span>'}</td>
           </tr>`).join('')}
@@ -9030,8 +9041,8 @@ document.addEventListener('DOMContentLoaded', function() {
       <h2>Virtus Basket Molfetta — Lista Cancello</h2>
       <p>${accFmtDataOra(partita?.data)} · vs ${partita?.avversario} · ${sorted.length} ospiti</p>
       <table>
-        <thead><tr><th>✓</th><th>N°</th><th>Ospite</th><th>Invitante</th></tr></thead>
-        <tbody>${sorted.map((a,i) => `<tr><td><span class="check"></span></td><td>${String(i+1).padStart(2,'0')}</td><td>${a.ospite}</td><td>${a.avente.nome}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>✓</th><th>N°</th><th>Ospite</th><th>Ingressi</th><th>Invitante</th></tr></thead>
+        <tbody>${sorted.map((a,i) => `<tr><td><span class="check"></span></td><td>${String(i+1).padStart(2,'0')}</td><td>${a.ospite}</td><td style="text-align:center">${a.ingressi||1}</td><td>${a.avente.nome}</td></tr>`).join('')}</tbody>
       </table>
     </body></html>`);
     win.document.close();
