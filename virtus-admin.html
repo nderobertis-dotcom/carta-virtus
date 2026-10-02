@@ -1302,26 +1302,14 @@ select.form-input:focus{border-color:var(--accent)}
         </div>
       </div>
 
-      <!-- PARTITE -->
+      <!-- PARTITE (da Supabase) -->
       <div class="card" id="acc-card-partite">
         <div class="card-header">
-          <div class="card-title">Partite</div>
+          <div class="card-title">Partite in calendario</div>
+          <button class="btn btn-ghost btn-sm" onclick="accLoadPartite()">↻ Aggiorna</button>
         </div>
         <div class="card-body" style="padding:16px">
-          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin-bottom:14px">
-            <div>
-              <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:5px">Data</label>
-              <input type="date" id="acc-p-data" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none"/>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:5px">Avversario</label>
-              <input type="text" id="acc-p-avversario" placeholder="es. Bari Basket" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none"/>
-            </div>
-            <div style="display:flex;align-items:flex-end">
-              <button class="btn btn-primary btn-sm" onclick="accAddPartita()">+ Aggiungi</button>
-            </div>
-          </div>
-          <div id="acc-lista-partite"></div>
+          <div id="acc-lista-partite"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Caricamento...</div></div>
         </div>
       </div>
 
@@ -8791,45 +8779,56 @@ document.addEventListener('DOMContentLoaded', function() {
   let accDb = { partite: [], aventi: [], accrediti: [], squadName: 'Virtus Basket Molfetta' };
 
   function accLoad() {
-    try { const s = localStorage.getItem('virtus_accrediti_omaggio'); if (s) accDb = JSON.parse(s); } catch(e) {}
+    try { const s = localStorage.getItem('virtus_accrediti_omaggio'); if (s) { const parsed = JSON.parse(s); accDb.aventi = parsed.aventi || []; accDb.accrediti = parsed.accrediti || []; } } catch(e) {}
   }
-  function accSave() { try { localStorage.setItem('virtus_accrediti_omaggio', JSON.stringify(accDb)); } catch(e) {} }
+  function accSave() { try { localStorage.setItem('virtus_accrediti_omaggio', JSON.stringify({ aventi: accDb.aventi, accrediti: accDb.accrediti })); } catch(e) {} }
   function accUid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
-  function accFmtData(d) { if (!d) return ''; const [y,m,g] = d.split('-'); return `${g}/${m}/${y}`; }
+  function accFmtDataOra(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Rome' });
+  }
 
-  function accInit() {
+  async function accInit() {
     accLoad();
-    accRenderPartite();
+    await accLoadPartite();
     accRenderAventi();
     accPopulateSelects();
   }
 
-  // PARTITE
-  window.accAddPartita = function() {
-    const data = document.getElementById('acc-p-data').value;
-    const avv  = document.getElementById('acc-p-avversario').value.trim();
-    if (!data || !avv) { toast('Inserisci data e avversario', 'error'); return; }
-    accDb.partite.push({ id: accUid(), data, avversario: avv });
-    accSave(); accRenderPartite(); accPopulateSelects();
-    document.getElementById('acc-p-avversario').value = '';
-  };
-
-  window.accDeletePartita = function(id) {
-    if (!confirm('Eliminare la partita? Verranno eliminati anche tutti gli accrediti associati.')) return;
-    accDb.partite  = accDb.partite.filter(p => p.id !== id);
-    accDb.accrediti = accDb.accrediti.filter(a => a.partitaId !== id);
-    accSave(); accRenderPartite(); accPopulateSelects();
+  // PARTITE da Supabase
+  window.accLoadPartite = async function() {
+    const el = document.getElementById('acc-lista-partite');
+    if (el) el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">Caricamento...</div>';
+    const { data, error } = await sbAdmin.from('gare')
+      .select('id,titolo,avversario,data_ora')
+      .ilike('luogo', '%palap%')
+      .order('data_ora', { ascending: true });
+    if (error) { if (el) el.innerHTML = '<div style="color:#ef4444;padding:12px">Errore: ' + error.message + '</div>'; return; }
+    accDb.partite = (data || []).map(g => ({
+      id: g.id,
+      data: g.data_ora,
+      avversario: g.avversario || g.titolo
+    }));
+    accRenderPartite();
+    accPopulateSelects();
   };
 
   function accRenderPartite() {
     const el = document.getElementById('acc-lista-partite');
     if (!el) return;
-    const sorted = [...accDb.partite].sort((a,b) => a.data.localeCompare(b.data));
-    if (!sorted.length) { el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Nessuna partita inserita</div>'; return; }
-    el.innerHTML = '<table><thead><tr><th>Data</th><th>Avversario</th><th>Accrediti</th><th></th></tr></thead><tbody>' +
-      sorted.map(p => {
-        const nacc = accDb.accrediti.filter(a => a.partitaId === p.id).length;
-        return `<tr><td style="font-family:'DM Mono',monospace;font-size:12px">${accFmtData(p.data)}</td><td style="font-weight:500">vs ${p.avversario}</td><td>${nacc}</td><td><button class="btn btn-sm btn-danger" onclick="accDeletePartita('${p.id}')">Elimina</button></td></tr>`;
+    if (!accDb.partite.length) { el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Nessuna gara interna in calendario</div>'; return; }
+    const ora = new Date();
+    el.innerHTML = '<table><thead><tr><th>Data</th><th>Avversario</th><th>Accrediti</th><th>Stato</th></tr></thead><tbody>' +
+      accDb.partite.map(p => {
+        const nacc    = accDb.accrediti.filter(a => a.partitaId === p.id).length;
+        const passata = new Date(p.data) < ora;
+        return `<tr>
+          <td style="font-family:'DM Mono',monospace;font-size:12px">${accFmtDataOra(p.data)}</td>
+          <td style="font-weight:500">vs ${p.avversario}</td>
+          <td style="font-family:'DM Mono',monospace">${nacc}</td>
+          <td><span class="badge ${passata ? 'badge-gray' : 'badge-green'}">${passata ? 'Conclusa' : 'In programma'}</span></td>
+        </tr>`;
       }).join('') + '</tbody></table>';
   }
 
@@ -8871,7 +8870,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function accUpdatePartitaSelects() {
     const opts = '<option value="">— seleziona partita —</option>' +
       [...accDb.partite].sort((a,b) => b.data.localeCompare(a.data))
-        .map(p => `<option value="${p.id}">${accFmtData(p.data)} — vs ${p.avversario}</option>`).join('');
+        .map(p => `<option value="${p.id}">${accFmtDataOra(p.data)} — vs ${p.avversario}</option>`).join('');
     ['acc-sel-partita','acc-cancello-partita'].forEach(id => {
       const el = document.getElementById(id); if (el) el.innerHTML = opts;
     });
@@ -8988,7 +8987,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .sort((a,b) => a.ospite.localeCompare(b.ospite, 'it'));
 
     if (listaEl) listaEl.innerHTML = `
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;font-family:'DM Mono',monospace">${accFmtData(partita?.data)} · vs ${partita?.avversario} · ordine alfabetico</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;font-family:'DM Mono',monospace">${accFmtDataOra(partita?.data)} · vs ${partita?.avversario} · ordine alfabetico</div>
       <table>
         <thead><tr><th></th><th>Ospite</th><th>Invitante</th><th>Stato</th></tr></thead>
         <tbody>
@@ -9029,7 +9028,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .check{width:16px;height:16px;border:1px solid #000;display:inline-block;vertical-align:middle}
     </style></head><body>
       <h2>Virtus Basket Molfetta — Lista Cancello</h2>
-      <p>${accFmtData(partita?.data)} · vs ${partita?.avversario} · ${sorted.length} ospiti</p>
+      <p>${accFmtDataOra(partita?.data)} · vs ${partita?.avversario} · ${sorted.length} ospiti</p>
       <table>
         <thead><tr><th>✓</th><th>N°</th><th>Ospite</th><th>Invitante</th></tr></thead>
         <tbody>${sorted.map((a,i) => `<tr><td><span class="check"></span></td><td>${String(i+1).padStart(2,'0')}</td><td>${a.ospite}</td><td>${a.avente.nome}</td></tr>`).join('')}</tbody>
