@@ -6863,13 +6863,22 @@ async function loadGare() {
       <td style="font-size:12px;color:var(--muted)">${g.luogo}</td>
       <td style="font-size:12px;color:var(--muted)">${g.stagione}</td>
       <td><span class="badge ${badgeCol}">${stato}</span></td>
-      <td style="display:flex;gap:4px">
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" data-id="${g.id}" data-titolo="${g.titolo}" onclick="loadIngressi(this.dataset.id, this.dataset.titolo)">Ingressi</button>
+        <button class="btn btn-ghost btn-sm" onclick='toggleGaraAttiva("${g.id}", ${!!g.attiva})' title="${g.attiva ? 'Scanner attivo — clicca per disattivare' : 'Scanner non attivo — clicca per attivare'}" style="min-width:90px">${g.attiva ? '🟢 Attiva' : '⚫ Non attiva'}</button>
         <button class="btn btn-ghost btn-sm" onclick='apriModificaGara(${JSON.stringify(g)})'>✏️</button>
         <button class="btn btn-danger btn-sm" onclick='confermaEliminaGara("${g.id}","${g.titolo.replace(/"/g,"&quot;")}")'>🗑️</button>
       </td>
     </tr>`
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessuna gara</td></tr>'
+}
+
+async function toggleGaraAttiva(id, attivaCorrente) {
+  const nuovoValore = !attivaCorrente
+  const { error } = await sbAdmin.from('gare').update({ attiva: nuovoValore }).eq('id', id)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast(nuovoValore ? '🟢 Scanner attivato per questa gara' : '⚫ Scanner disattivato', nuovoValore ? 'success' : 'info')
+  loadGare()
 }
 
 function apriModificaGara(g) {
