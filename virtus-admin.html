@@ -687,13 +687,14 @@ select.form-input:focus{border-color:var(--accent)}
             <th>Tifoso</th>
             <th>Piano</th>
             <th id="ms-col-detail">Taglia</th>
-            <th>Cognome su maglia</th>
-            <th>Numero</th>
+            <th id="ms-col-cognome">Cognome su maglia</th>
+            <th id="ms-col-numero">Numero</th>
             <th id="ms-col-inprod">In produzione</th>
+            <th id="ms-col-stato-sc" style="display:none">Stato</th>
             <th>Consegnata</th>
             <th></th>
           </tr></thead>
-          <tbody id="ms-list"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Seleziona una categoria</td></tr></tbody>
+          <tbody id="ms-list"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Seleziona una categoria</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -3034,6 +3035,12 @@ function switchMaglieTab(tab, btn) {
   document.getElementById('ms-col-detail').textContent = tab === 'maglie' ? 'Taglia' : 'Inclusa nel piano'
   const thProd = document.getElementById('ms-col-inprod')
   if (thProd) thProd.style.display = tab === 'maglie' ? '' : 'none'
+  const thCognome = document.getElementById('ms-col-cognome')
+  if (thCognome) thCognome.style.display = tab === 'maglie' ? '' : 'none'
+  const thNumero = document.getElementById('ms-col-numero')
+  if (thNumero) thNumero.style.display = tab === 'maglie' ? '' : 'none'
+  const thStato = document.getElementById('ms-col-stato-sc')
+  if (thStato) thStato.style.display = tab === 'sciarpe' ? '' : 'none'
   const btnAgg = document.getElementById('ms-btn-aggiungi')
   if (btnAgg) btnAgg.style.display = tab === 'maglie' ? '' : 'none'
   renderMaglieSciarpe()
@@ -3702,7 +3709,7 @@ async function salvaBiglietteria() {
 
 async function loadMaglieSciarpe() {
   const { data, error } = await sbAdmin.from('membership')
-    .select('id, maglia_taglia, maglia_cognome, maglia_numero, maglia_in_produzione, maglia_consegnata, maglia_consegnata_il, sciarpa_inclusa, sciarpa_consegnata, sciarpa_consegnata_il, piano:piano_id(nome), tifoso:tifoso_id(id, nome, cognome)')
+    .select('id, maglia_taglia, maglia_cognome, maglia_numero, maglia_in_produzione, maglia_consegnata, maglia_consegnata_il, sciarpa_inclusa, sciarpa_consegnata, sciarpa_consegnata_il, sciarpa_stato, piano:piano_id(nome), tifoso:tifoso_id(id, nome, cognome)')
     .not('stato', 'eq', 'annullata')
     .order('creato_il', { ascending: false })
   if (error) { toast('Errore caricamento: ' + error.message, 'error'); return }
@@ -3757,7 +3764,7 @@ function renderMaglieSciarpe() {
     : _msData.filter(m => m.sciarpa_inclusa)
 
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Nessun elemento trovato</td></tr>'
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Nessun elemento trovato</td></tr>'
     return
   }
 
@@ -3770,20 +3777,31 @@ function renderMaglieSciarpe() {
     const dataConsegna = consegnataIl ? new Date(consegnataIl).toLocaleDateString('it-IT') : ''
     const inProd = isMaglie && m.maglia_in_produzione
 
+    const statoSciarpa = m.sciarpa_stato || 'da_produrre'
+    const statoLabel = { da_produrre: '🔵 Da produrre', in_produzione: '🟠 In produzione', pronta: '🟢 Pronta' }
+    const statoColor = { da_produrre: '#2196F3', in_produzione: '#FF9800', pronta: '#4CAF50' }
     return `<tr${inProd ? ' style="background:rgba(255,152,0,0.06)"' : ''}>
       <td><strong>${nome}</strong></td>
       <td><span class="badge badge-amber">${piano}</span></td>
       <td>${dettaglio}</td>
-      <td style="font-size:12px">${isMaglie ? (m.maglia_cognome || '—') : '—'}</td>
-      <td style="font-size:12px;text-align:center">${isMaglie ? (m.maglia_numero || '—') : '—'}</td>
+      ${isMaglie ? `<td style="font-size:12px">${m.maglia_cognome || '—'}</td>` : ''}
+      ${isMaglie ? `<td style="font-size:12px;text-align:center">${m.maglia_numero || '—'}</td>` : ''}
       <td style="text-align:center">
         ${isMaglie
           ? (inProd
               ? `<button class="btn btn-ghost btn-sm" style="color:#e65100;font-size:12px" onclick="toggleInProduzione('${m.id}',false)" title="Rimuovi flag produzione">🏭 Sì</button>`
               : `<button class="btn btn-ghost btn-sm" style="font-size:12px;color:var(--muted)" onclick="toggleInProduzione('${m.id}',true)" title="Segna in produzione">— No</button>`)
-          : '<span style="color:var(--muted);font-size:12px">—</span>'
+          : ''
         }
       </td>
+      ${!isMaglie ? `<td>
+        <select style="font-size:12px;padding:4px 8px;border-radius:6px;border:1.5px solid ${statoColor[statoSciarpa]};color:${statoColor[statoSciarpa]};background:var(--surface);font-weight:600;cursor:pointer"
+          onchange="aggiornaSciarpaStato('${m.id}', this.value)">
+          <option value="da_produrre"${statoSciarpa==='da_produrre'?' selected':''}>🔵 Da produrre</option>
+          <option value="in_produzione"${statoSciarpa==='in_produzione'?' selected':''}>🟠 In produzione</option>
+          <option value="pronta"${statoSciarpa==='pronta'?' selected':''}>🟢 Pronta</option>
+        </select>
+      </td>` : ''}
       <td style="text-align:center">
         ${consegnata
           ? `<span style="color:#4CAF50;font-size:13px">✅ ${dataConsegna}</span>`
@@ -3808,6 +3826,16 @@ async function toggleInProduzione(membId, valore) {
   const m = _msData.find(x => x.id === membId)
   if (m) m.maglia_in_produzione = valore
   toast(valore ? '🏭 Maglia segnata in produzione' : 'Flag produzione rimosso', 'success')
+  renderMaglieSciarpe()
+}
+
+async function aggiornaSciarpaStato(membId, stato) {
+  const { error } = await sbAdmin.from('membership').update({ sciarpa_stato: stato }).eq('id', membId)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  const m = _msData.find(x => x.id === membId)
+  if (m) m.sciarpa_stato = stato
+  const label = { da_produrre: '🔵 Da produrre', in_produzione: '🟠 In produzione', pronta: '🟢 Pronta' }
+  toast('Sciarpa: ' + (label[stato] || stato), 'success')
   renderMaglieSciarpe()
 }
 
@@ -8676,6 +8704,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.esportaIngressi = esportaIngressi;
   window.loadMaglieSciarpe = loadMaglieSciarpe;
   window.switchMaglieTab = switchMaglieTab;
+  window.aggiornaSciarpaStato = aggiornaSciarpaStato;
   window.loadMsReport = loadMsReport;
   window.loadGvRegolamento = loadGvRegolamento;
   window.salvaGvRegolamento = salvaGvRegolamento;
