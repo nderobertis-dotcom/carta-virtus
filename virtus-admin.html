@@ -3705,7 +3705,7 @@ async function loadMaglieSciarpe() {
   _msData = data || []
 
   // Sciarpe incluse solo per piani con benefit (no Base, no Cortesia, no Disability)
-  const pianiSenzaSciarpa = ['Base', 'Cortesia', 'Disability']
+  const pianiSenzaSciarpa = ['Base', 'Cortesia', 'Disability', 'VIP']
   _msData.forEach(m => {
     if (!m.sciarpa_inclusa && m.piano?.nome && !pianiSenzaSciarpa.includes(m.piano.nome)) {
       m.sciarpa_inclusa = true
