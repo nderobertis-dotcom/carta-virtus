@@ -8976,15 +8976,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const partita = accDb.partite.find(p => p.id === pid);
     const accs    = accDb.accrediti.filter(a => a.partitaId === pid);
     const totIngressi   = accs.reduce((s,a) => s + (a.ingressi||1), 0);
-    const ingrRitirati  = accs.filter(a => a.ritirato).reduce((s,a) => s + (a.ingressi||1), 0);
+    const ingrRitirati  = accs.reduce((s,a) => s + (a.ingressi_ritirati||0), 0);
     const aventiConAcc  = [...new Set(accs.map(a => a.aventeId))].length;
 
     if (statsEl) {
       statsEl.style.display = 'block';
       statsEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
         <div class="stat-card"><div class="stat-label">Ingressi totali</div><div class="stat-value">${totIngressi}</div></div>
-        <div class="stat-card" style="border-color:rgba(20,184,166,.3)"><div class="stat-label">Ritirati</div><div class="stat-value" style="color:var(--teal)">${ingrRitirati}</div></div>
-        <div class="stat-card" style="border-color:rgba(245,158,11,.3)"><div class="stat-label">Da ritirare</div><div class="stat-value" style="color:var(--gold)">${totIngressi - ingrRitirati}</div></div>
+        <div class="stat-card" style="border-color:rgba(20,184,166,.3)"><div class="stat-label">Emessi</div><div class="stat-value" style="color:var(--teal)">${ingrRitirati}</div></div>
+        <div class="stat-card" style="border-color:rgba(245,158,11,.3)"><div class="stat-label">Residui</div><div class="stat-value" style="color:var(--gold)">${totIngressi - ingrRitirati}</div></div>
         <div class="stat-card"><div class="stat-label">Aventi diritto</div><div class="stat-value">${aventiConAcc}</div></div>
       </div>`;
     }
@@ -8999,24 +8999,47 @@ document.addEventListener('DOMContentLoaded', function() {
     if (listaEl) listaEl.innerHTML = `
       <div style="font-size:11px;color:var(--muted);margin-bottom:12px;font-family:'DM Mono',monospace">${accFmtDataOra(partita?.data)} · vs ${partita?.avversario} · ordine alfabetico</div>
       <table>
-        <thead><tr><th></th><th>Ospite</th><th>Ingressi</th><th>Invitante</th><th>Stato</th></tr></thead>
+        <thead><tr><th>Ospite</th><th>Invitante</th><th style="text-align:center">Diritto</th><th style="text-align:center">Ritirati</th><th style="text-align:center">Residui</th><th>Emetti</th></tr></thead>
         <tbody>
-          ${sorted.map(a => `<tr style="${a.ritirato ? 'background:rgba(20,184,166,.07)' : ''}">
-            <td><div onclick="accToggleRitiro('${a.id}')" style="width:20px;height:20px;border:1.5px solid ${a.ritirato ? '#14b8a6' : 'var(--border)'};border-radius:5px;background:${a.ritirato ? '#14b8a6' : 'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer">
-              ${a.ritirato ? '<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
-            </div></td>
-            <td style="font-weight:500${a.ritirato ? ';text-decoration:line-through;color:var(--muted)' : ''}">${a.ospite}</td>
-            <td style="font-family:'DM Mono',monospace;font-size:13px;text-align:center">${a.ingressi||1}</td>
-            <td style="font-size:12px;color:var(--muted)">${a.avente.nome}</td>
-            <td>${a.ritirato ? '<span class="badge badge-green">Ritirato</span>' : '<span class="badge badge-gray">In attesa</span>'}</td>
-          </tr>`).join('')}
+          ${sorted.map(a => {
+            const diritto  = a.ingressi || 1;
+            const ritirati = a.ingressi_ritirati || 0;
+            const residui  = diritto - ritirati;
+            const tuttoRit = residui <= 0;
+            const rowBg    = tuttoRit ? 'background:rgba(20,184,166,.07)' : ritirati > 0 ? 'background:rgba(245,158,11,.05)' : '';
+            return `<tr style="${rowBg}">
+              <td style="font-weight:500">${a.ospite}</td>
+              <td style="font-size:12px;color:var(--muted)">${a.avente.nome}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:13px;text-align:center">${diritto}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:13px;text-align:center;color:${ritirati>0?'#14b8a6':'var(--muted)'}">${ritirati}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:13px;text-align:center;color:${residui>0?'var(--gold)':'var(--muted)'}">${residui}</td>
+              <td>
+                ${tuttoRit
+                  ? '<span class="badge badge-green">Completato</span>'
+                  : `<div style="display:flex;align-items:center;gap:6px">
+                      <input type="number" id="ing-${a.id}" min="1" max="${residui}" value="${residui}" style="width:54px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none"/>
+                      <button class="btn btn-primary btn-sm" onclick="accEmetti('${a.id}')">✓ Emetti</button>
+                    </div>`}
+              </td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>`;
   };
 
-  window.accToggleRitiro = function(id) {
+  window.accEmetti = function(id) {
     const acc = accDb.accrediti.find(a => a.id === id);
-    if (acc) { acc.ritirato = !acc.ritirato; accSave(); accRenderCancello(); }
+    if (!acc) return;
+    const diritto  = acc.ingressi || 1;
+    const ritirati = acc.ingressi_ritirati || 0;
+    const residui  = diritto - ritirati;
+    const input    = document.getElementById('ing-' + id);
+    const quanti   = parseInt(input?.value) || 1;
+    if (quanti < 1 || quanti > residui) { toast(`Valore non valido: max ${residui} disponibili`, 'error'); return; }
+    acc.ingressi_ritirati = ritirati + quanti;
+    accSave();
+    accRenderCancello();
+    toast(`✓ ${quanti} ingress${quanti===1?'o':'i'} emess${quanti===1?'o':'i'} per ${acc.ospite}`, 'success');
   };
 
   window.accStampaLista = function() {
@@ -9041,8 +9064,11 @@ document.addEventListener('DOMContentLoaded', function() {
       <h2>Virtus Basket Molfetta — Lista Cancello</h2>
       <p>${accFmtDataOra(partita?.data)} · vs ${partita?.avversario} · ${sorted.length} ospiti</p>
       <table>
-        <thead><tr><th>✓</th><th>N°</th><th>Ospite</th><th>Ingressi</th><th>Invitante</th></tr></thead>
-        <tbody>${sorted.map((a,i) => `<tr><td><span class="check"></span></td><td>${String(i+1).padStart(2,'0')}</td><td>${a.ospite}</td><td style="text-align:center">${a.ingressi||1}</td><td>${a.avente.nome}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>N°</th><th>Ospite</th><th>Invitante</th><th style="text-align:center">Diritto</th><th style="text-align:center">Emessi</th><th style="text-align:center">Residui</th></tr></thead>
+        <tbody>${sorted.map((a,i) => {
+          const dir = a.ingressi||1; const rit = a.ingressi_ritirati||0; const res = dir-rit;
+          return `<tr><td>${String(i+1).padStart(2,'0')}</td><td>${a.ospite}</td><td>${a.avente.nome}</td><td style="text-align:center">${dir}</td><td style="text-align:center">${rit}</td><td style="text-align:center">${res}</td></tr>`;
+        }).join('')}</tbody>
       </table>
     </body></html>`);
     win.document.close();
