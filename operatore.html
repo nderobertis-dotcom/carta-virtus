@@ -381,6 +381,20 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
     </div>
 
+    <!-- Banner accesso operatore -->
+    <div id="banner-accesso-operatore" style="display:none;margin:16px 16px 0;border-radius:14px;overflow:hidden">
+      <div id="banner-acc-bg" style="padding:14px 18px;display:flex;align-items:center;gap:14px">
+        <div style="width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span style="font-size:22px;font-weight:900;color:#fff;font-family:'Barlow Condensed',sans-serif" id="banner-op-icona">🚪</span>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px" id="banner-op-titolo">Cancello assegnato</div>
+          <div style="font-size:20px;font-weight:800;color:#fff;font-family:'Barlow Condensed',sans-serif;line-height:1.1" id="banner-op-cancello">—</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px" id="banner-op-card">—</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Contatori -->
     <div class="counter-card">
       <div class="counter-item">
@@ -389,19 +403,19 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
       <div class="counter-item">
         <div class="counter-value" style="color:var(--blu2)" id="cnt-base">0</div>
-        <div class="counter-label">Base</div>
+        <div class="counter-label">Fan Card Base</div>
       </div>
       <div class="counter-item">
         <div class="counter-value" style="color:var(--arancio)" id="cnt-pro">0</div>
-        <div class="counter-label">Pro</div>
+        <div class="counter-label">Fan Card Pro</div>
       </div>
       <div class="counter-item">
         <div class="counter-value" style="color:#6a1b9a" id="cnt-premium">0</div>
-        <div class="counter-label">Premium</div>
+        <div class="counter-label">Fan Card Premium</div>
       </div>
       <div class="counter-item">
         <div class="counter-value" style="color:#1565c0" id="cnt-disability">0</div>
-        <div class="counter-label">♿ Disability</div>
+        <div class="counter-label">Disability Card</div>
       </div>
     </div>
 
@@ -478,6 +492,7 @@ let cameraStream = null
 let scanInterval = null
 let countdownInterval = null
 let currentOperatoreEmail = null
+let currentOperatoreRuolo = null
 let accessoOperatore = null   // Accesso A-F assegnato per la gara corrente
 
 
@@ -504,6 +519,7 @@ async function doLogin() {
     if (!['operatore', 'admin'].includes(ruolo)) throw new Error('Accesso riservato agli operatori gare')
 
     currentOperatoreEmail = json.user.email
+    currentOperatoreRuolo = ruolo
     document.getElementById('op-chip').textContent = json.user.email.split('@')[0]
     document.getElementById('login-screen').style.display = 'none'
     document.getElementById('app').style.display = 'flex'
@@ -550,6 +566,10 @@ async function initApp() {
   document.getElementById('no-gara-msg').style.display = 'none'
 
   // Carica l'accesso assegnato a questo operatore per la gara
+  const isAdmin = currentOperatoreEmail === 'admin' ||
+                  currentOperatoreEmail === 'operatore@cartavirtus.it' ||
+                  currentOperatoreRuolo === 'admin'
+
   if (currentOperatoreEmail) {
     const { data: assegn } = await sbA.from('operatori_accessi_gara')
       .select('accesso')
@@ -557,22 +577,44 @@ async function initApp() {
       .eq('operatore_email', currentOperatoreEmail)
       .single()
     accessoOperatore = assegn?.accesso || null
+
     // Badge nell'header
     const badgeAcc = document.getElementById('badge-accesso')
     if (badgeAcc) {
-      badgeAcc.textContent = accessoOperatore ? 'Accesso ' + accessoOperatore : ''
-      badgeAcc.style.display = accessoOperatore ? 'inline-block' : 'none'
+      badgeAcc.textContent = isAdmin ? 'TUTTI GLI ACCESSI' : (accessoOperatore ? 'Cancello ' + accessoOperatore : '')
+      badgeAcc.style.display = (isAdmin || accessoOperatore) ? 'inline-block' : 'none'
+      if (isAdmin) badgeAcc.style.background = '#1b5e20'
     }
-    // Banner grande accesso assegnato
-    const bannerAcc = document.getElementById('banner-accesso-assegnato')
-    if (bannerAcc) {
-      if (accessoOperatore) {
-        document.getElementById('banner-acc-lettera').textContent = accessoOperatore
-        document.getElementById('banner-acc-label').textContent = 'Ingresso ' + accessoOperatore
-        bannerAcc.style.display = 'block'
+
+    // Banner operatore con cancello e card autorizzate
+    const bannerOp = document.getElementById('banner-accesso-operatore')
+    if (bannerOp) {
+      const bg = document.getElementById('banner-acc-bg')
+      const icona = document.getElementById('banner-op-icona')
+      const titolo = document.getElementById('banner-op-titolo')
+      const cancello = document.getElementById('banner-op-cancello')
+      const card = document.getElementById('banner-op-card')
+
+      if (isAdmin) {
+        bg.style.background = 'linear-gradient(135deg,#1b5e20,#2e7d32)'
+        icona.textContent = '🔑'
+        titolo.textContent = 'Accesso completo'
+        cancello.textContent = 'Tutti gli accessi'
+        card.textContent = 'Fan Card Base · Fan Card Pro · Fan Card Premium · Disability Card · Sponsor'
+      } else if (accessoOperatore) {
+        bg.style.background = 'linear-gradient(135deg,#bf360c,#e65100)'
+        icona.textContent = '🚪'
+        titolo.textContent = 'Cancello assegnato per questa gara'
+        cancello.textContent = 'Cancello ' + accessoOperatore
+        card.textContent = 'Fan Card Base · Fan Card Pro · Fan Card Premium · Disability Card'
       } else {
-        bannerAcc.style.display = 'none'
+        bg.style.background = 'linear-gradient(135deg,#37474f,#546e7a)'
+        icona.textContent = '⚠️'
+        titolo.textContent = 'Nessun cancello assegnato'
+        cancello.textContent = 'Contatta l\'amministratore'
+        card.textContent = 'Verifica con l\'admin prima di procedere'
       }
+      bannerOp.style.display = 'block'
     }
   }
 
