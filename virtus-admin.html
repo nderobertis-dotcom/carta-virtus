@@ -6389,6 +6389,7 @@ async function loadOperatori() {
       <td style="font-size:11px;color:var(--muted)">${lastLogin}</td>
       <td>
         <button class="btn btn-ghost btn-sm" data-email="${op.email}" data-nome="${op.email}" onclick="loadScansioni(this.dataset.email)">Scansioni</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--rosso)" onclick="resetPasswordOperatore('${op.email}')">🔑 Reset pwd</button>
       </td>
     </tr>`
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Nessun operatore registrato</td></tr>'
@@ -6554,6 +6555,34 @@ async function loadScansioni(email) {
   document.getElementById('op-scansioni-card').scrollIntoView({ behavior: 'smooth' })
 }
 
+async function resetPasswordOperatore(email) {
+  const nuovaPwd = prompt(`Nuova password per ${email}:\n(minimo 8 caratteri)`)
+  if (!nuovaPwd) return
+  if (nuovaPwd.length < 8) { toast('Password troppo corta (min. 8 caratteri)', 'error'); return }
+
+  // Trova l'utente via RPC per ottenere l'id, poi aggiorna tramite Admin API
+  const { data: ops } = await sbAdmin.rpc('get_operatori')
+  const op = (Array.isArray(ops) ? ops : []).find(o => o.email === email)
+  if (!op) { toast('Operatore non trovato', 'error'); return }
+
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${op.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_SERVICE,
+        'Authorization': 'Bearer ' + SUPABASE_SERVICE
+      },
+      body: JSON.stringify({ password: nuovaPwd })
+    })
+    const data = await resp.json()
+    if (!resp.ok || data.error) { toast('Errore reset: ' + (data.error || data.msg || resp.status), 'error'); return }
+    toast(`Password di ${email} aggiornata con successo`, 'success')
+  } catch(e) {
+    toast('Errore di rete: ' + e.message, 'error')
+  }
+}
+
 function esportaScansioni() {
   if (!currentOpScansioni.length) { toast('Nessun dato da esportare', 'error'); return }
   let csv = 'Gara,Tifoso,Piano,Ora\n'
@@ -6587,9 +6616,9 @@ async function loadGarePerAccessi() {
       return `<option value="${g.id}">${d} · ${g.titolo}</option>`
     }).join('')
   if (prev) sel.value = prev
-  // Carica anche lista operatori per i select
-  const { data: ops } = await sbAdmin.from('operatori').select('email, nome, cognome')
-  _operatoriList = ops || []
+  // Carica anche lista operatori per i select (usa RPC per evitare permission denied)
+  const { data: ops } = await sbAdmin.rpc('get_operatori')
+  _operatoriList = Array.isArray(ops) ? ops : []
   if (sel.value) loadAccesciGara()
 }
 
@@ -6606,26 +6635,35 @@ async function loadAccesciGara() {
     .select('accesso, operatore_email')
     .eq('gara_id', garaId)
 
-  const mappa = {}  // accesso → email
-  ;(assegnazioni || []).forEach(a => { mappa[a.accesso] = a.operatore_email })
+  // mappa: accesso → [email1, email2, email3]
+  const mappa = {}
+  ;(assegnazioni || []).forEach(a => {
+    if (!mappa[a.accesso]) mappa[a.accesso] = []
+    mappa[a.accesso].push(a.operatore_email)
+  })
 
   const accessi = ['A', 'B', 'C', 'D', 'E', 'F']
-  const optsHtml = '<option value="">— non assegnato —</option>' +
-    _operatoriList.map(op => `<option value="${op.email}">${op.email}${op.nome ? ' ('+op.nome+' '+(op.cognome||'')+')' : ''}</option>`).join('')
+  const baseOpts = '<option value="">— non assegnato —</option>' +
+    _operatoriList.map(op => `<option value="${op.email}">${op.nome ? op.nome+' '+op.cognome+' · ' : ''}${op.email}</option>`).join('')
 
   body.innerHTML = `
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
-      Assegna un operatore a ciascun accesso fisico del PalaPoli. L'operatore vedrà un avviso giallo se scansiona una card non prevista per il suo accesso.
+      Assegna fino a 3 operatori per accesso. L'operatore vedrà un avviso se scansiona una card non prevista per il suo accesso.
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
       ${accessi.map(acc => `
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${acc}</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">${acc}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Accesso ${acc}</div>
-            <select id="acc-op-${acc}" style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;background:var(--bg2);color:var(--text)" onchange="salvaAccessoGara('${acc}')">
-              ${optsHtml}
-            </select>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Accesso ${acc}</div>
+            ${[1,2,3].map(slot => `
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <span style="font-size:10px;color:var(--muted);min-width:16px">${slot}.</span>
+                <select id="acc-op-${acc}-${slot}" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;background:var(--bg2);color:var(--text)" onchange="salvaAccessoGara('${acc}')">
+                  ${baseOpts}
+                </select>
+              </div>
+            `).join('')}
           </div>
         </div>
       `).join('')}
@@ -6635,30 +6673,41 @@ async function loadAccesciGara() {
 
   // Imposta valori correnti
   accessi.forEach(acc => {
-    const sel = document.getElementById('acc-op-' + acc)
-    if (sel && mappa[acc]) sel.value = mappa[acc]
+    const emails = mappa[acc] || []
+    ;[1,2,3].forEach((slot, i) => {
+      const sel = document.getElementById(`acc-op-${acc}-${slot}`)
+      if (sel && emails[i]) sel.value = emails[i]
+    })
   })
 }
 
 async function salvaAccessoGara(accesso) {
   const garaId = document.getElementById('acc-gara-sel')?.value
-  const email  = document.getElementById('acc-op-' + accesso)?.value
   if (!garaId) return
 
-  if (!email) {
-    // Rimuovi assegnazione
-    await sbAdmin.from('operatori_accessi_gara')
-      .delete()
-      .eq('gara_id', garaId)
-      .eq('accesso', accesso)
-    toast(`Accesso ${accesso}: assegnazione rimossa`, 'success')
+  // Raccoglie i 3 slot (senza duplicati e senza vuoti)
+  const nuoveEmail = []
+  ;[1,2,3].forEach(slot => {
+    const v = document.getElementById(`acc-op-${accesso}-${slot}`)?.value
+    if (v && !nuoveEmail.includes(v)) nuoveEmail.push(v)
+  })
+
+  // Cancella tutte le assegnazioni attuali per questo accesso+gara
+  await sbAdmin.from('operatori_accessi_gara')
+    .delete()
+    .eq('gara_id', garaId)
+    .eq('accesso', accesso)
+
+  if (!nuoveEmail.length) {
+    toast(`Accesso ${accesso}: operatori rimossi`, 'success')
     return
   }
 
-  const { error } = await sbAdmin.from('operatori_accessi_gara')
-    .upsert({ gara_id: garaId, operatore_email: email, accesso }, { onConflict: 'gara_id,operatore_email' })
+  // Re-inserisce i nuovi
+  const rows = nuoveEmail.map(email => ({ gara_id: garaId, operatore_email: email, accesso }))
+  const { error } = await sbAdmin.from('operatori_accessi_gara').insert(rows)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
-  toast(`Accesso ${accesso} → ${email}`, 'success')
+  toast(`Accesso ${accesso} → ${nuoveEmail.join(', ')}`, 'success')
 }
 
 //  GARE
@@ -8577,6 +8626,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.approvaContratto = approvaContratto;
   window.annullaContratto = annullaContratto;
   window.loadOperatori = loadOperatori;
+  window.resetPasswordOperatore = resetPasswordOperatore;
   window.attivaOperatore = attivaOperatore;
   window.creaOperatore = creaOperatore;
   window.generaPasswordOp = generaPasswordOp;
