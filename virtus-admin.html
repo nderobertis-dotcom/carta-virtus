@@ -673,6 +673,7 @@ select.form-input:focus{border-color:var(--accent)}
           <button class="btn btn-ghost btn-sm" id="ms-tab-maglie" onclick="switchMaglieTab('maglie',this)">👕 Maglie</button>
           <button class="btn btn-ghost btn-sm" id="ms-tab-sciarpe" onclick="switchMaglieTab('sciarpe',this)">🧣 Sciarpe</button>
           <button class="btn btn-ghost btn-sm" id="ms-btn-aggiungi" onclick="apriAggiuntaMaglia()" style="display:none">➕ Aggiungi</button>
+          <button class="btn btn-ghost btn-sm" id="ms-btn-export-sc" onclick="esportaSciarpeInProduzione()" style="display:none">📋 Da produrre</button>
           <button class="btn btn-primary btn-sm" onclick="loadMaglieSciarpe()">↻ Aggiorna</button>
         </div>
       </div>
@@ -3043,6 +3044,8 @@ function switchMaglieTab(tab, btn) {
   if (thStato) thStato.style.display = tab === 'sciarpe' ? '' : 'none'
   const btnAgg = document.getElementById('ms-btn-aggiungi')
   if (btnAgg) btnAgg.style.display = tab === 'maglie' ? '' : 'none'
+  const btnExpSc = document.getElementById('ms-btn-export-sc')
+  if (btnExpSc) btnExpSc.style.display = tab === 'sciarpe' ? '' : 'none'
   renderMaglieSciarpe()
 }
 
@@ -3837,6 +3840,59 @@ async function aggiornaSciarpaStato(membId, stato) {
   const label = { da_produrre: '🔵 Da produrre', in_produzione: '🟠 In produzione', pronta: '🟢 Pronta' }
   toast('Sciarpa: ' + (label[stato] || stato), 'success')
   renderMaglieSciarpe()
+}
+
+function esportaSciarpeInProduzione() {
+  const daProdurre = _msData.filter(m => m.sciarpa_inclusa && (!m.sciarpa_stato || m.sciarpa_stato === 'da_produrre'))
+  if (!daProdurre.length) { toast('Nessuna sciarpa da produrre', 'info'); return }
+
+  // Mostra pannello overlay con lista
+  const righe = daProdurre.map((m, i) => {
+    const nome = m.tifoso ? m.tifoso.nome + ' ' + m.tifoso.cognome : '—'
+    const piano = m.piano?.nome || '—'
+    return `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border)">${i+1}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600">${nome}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border)"><span class="badge badge-amber">${piano}</span></td>
+    </tr>`
+  }).join('')
+
+  const html = `
+    <div id="overlay-sc-export" onclick="if(event.target===this)this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px">
+      <div style="background:var(--surface);border-radius:16px;max-width:520px;width:100%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.3)">
+        <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:700;font-size:16px">🔵 Sciarpe da produrre</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px">${daProdurre.length} nominativo${daProdurre.length!==1?'i':''}</div>
+          </div>
+          <button onclick="document.getElementById('overlay-sc-export').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+        </div>
+        <div style="overflow-y:auto;flex:1">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:var(--bg)">
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--muted)">#</th>
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--muted)">Nominativo</th>
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--muted)">Piano</th>
+            </tr></thead>
+            <tbody>${righe}</tbody>
+          </table>
+        </div>
+        <div style="padding:16px 24px;border-top:1px solid var(--border)">
+          <button onclick="copiaSciarpeClipboard()" class="btn btn-primary btn-sm" style="width:100%">📋 Copia lista negli appunti</button>
+        </div>
+      </div>
+    </div>`
+  document.body.insertAdjacentHTML('beforeend', html)
+}
+
+function copiaSciarpeClipboard() {
+  const daProdurre = _msData.filter(m => m.sciarpa_inclusa && (!m.sciarpa_stato || m.sciarpa_stato === 'da_produrre'))
+  const testo = daProdurre.map((m, i) => {
+    const nome = m.tifoso ? m.tifoso.nome + ' ' + m.tifoso.cognome : '—'
+    const piano = m.piano?.nome || '—'
+    return `${i+1}. ${nome} (${piano})`
+  }).join('\n')
+  navigator.clipboard.writeText(testo).then(() => toast('✅ Lista copiata negli appunti', 'success'))
 }
 
 async function apriAggiuntaMaglia() {
@@ -8705,6 +8761,8 @@ document.addEventListener('DOMContentLoaded', function() {
   window.loadMaglieSciarpe = loadMaglieSciarpe;
   window.switchMaglieTab = switchMaglieTab;
   window.aggiornaSciarpaStato = aggiornaSciarpaStato;
+  window.esportaSciarpeInProduzione = esportaSciarpeInProduzione;
+  window.copiaSciarpeClipboard = copiaSciarpeClipboard;
   window.loadMsReport = loadMsReport;
   window.loadGvRegolamento = loadGvRegolamento;
   window.salvaGvRegolamento = salvaGvRegolamento;
