@@ -3704,9 +3704,10 @@ async function loadMaglieSciarpe() {
   if (error) { toast('Errore caricamento: ' + error.message, 'error'); return }
   _msData = data || []
 
-  // Sciarpe incluse per tutti i piani non Base
+  // Sciarpe incluse solo per piani con benefit (no Base, no Cortesia, no Disability)
+  const pianiSenzaSciarpa = ['Base', 'Cortesia', 'Disability']
   _msData.forEach(m => {
-    if (!m.sciarpa_inclusa && m.piano?.nome && m.piano.nome !== 'Base') {
+    if (!m.sciarpa_inclusa && m.piano?.nome && !pianiSenzaSciarpa.includes(m.piano.nome)) {
       m.sciarpa_inclusa = true
     }
   })
