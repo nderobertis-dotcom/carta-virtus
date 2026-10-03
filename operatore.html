@@ -390,7 +390,10 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
         <div style="flex:1">
           <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px" id="banner-op-titolo">Cancello assegnato</div>
           <div style="font-size:20px;font-weight:800;color:#fff;font-family:'Barlow Condensed',sans-serif;line-height:1.1" id="banner-op-cancello">—</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px" id="banner-op-card">—</div>
+          <div style="margin-top:8px" id="banner-op-card-wrap">
+            <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px">Card abilitate</div>
+            <div id="banner-op-card" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -506,6 +509,7 @@ let countdownInterval = null
 let currentOperatoreEmail = null
 let currentOperatoreRuolo = null
 let accessoOperatore = null   // Accesso A-F assegnato per la gara corrente
+let pianiAbilitati   = null   // Array piani abilitati per questo operatore (null = tutti)
 
 
 // ── LOGIN ──
@@ -584,11 +588,14 @@ async function initApp() {
 
   if (currentOperatoreEmail) {
     const { data: assegn } = await sbA.from('operatori_accessi_gara')
-      .select('accesso')
+      .select('accesso, piani_abilitati')
       .eq('gara_id', garaCorrente.id)
       .eq('operatore_email', currentOperatoreEmail)
       .single()
     accessoOperatore = assegn?.accesso || null
+    // Admin e operatore@cartavirtus.it vedono tutte le card
+    const isSuper = isAdmin || currentOperatoreEmail === 'operatore@cartavirtus.it'
+    pianiAbilitati = isSuper ? null : (assegn?.piani_abilitati?.length ? assegn.piani_abilitati : null)
 
     // Badge nell'header
     const badgeAcc = document.getElementById('badge-accesso')
@@ -605,26 +612,33 @@ async function initApp() {
       const icona = document.getElementById('banner-op-icona')
       const titolo = document.getElementById('banner-op-titolo')
       const cancello = document.getElementById('banner-op-cancello')
-      const card = document.getElementById('banner-op-card')
+      const cardWrap = document.getElementById('banner-op-card')
+      const TUTTI = ['Base','Bronze','Silver','Gold','Sponsor','VIP','Cortesia','Disability']
 
-      if (isAdmin) {
+      function renderChipsPiani(lista) {
+        return (lista || TUTTI).map(p =>
+          `<span style="font-size:13px;font-weight:700;background:rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:4px 11px;white-space:nowrap">${p}</span>`
+        ).join('')
+      }
+
+      if (isAdmin || currentOperatoreEmail === 'operatore@cartavirtus.it') {
         bg.style.background = 'linear-gradient(135deg,#1b5e20,#2e7d32)'
         icona.textContent = '🔑'
         titolo.textContent = 'Accesso completo'
         cancello.textContent = 'Tutti gli accessi'
-        card.textContent = 'Base · Bronze · Silver · Gold · Sponsor/VIP · Cortesia · Disability'
+        cardWrap.innerHTML = renderChipsPiani(null)
       } else if (accessoOperatore) {
         bg.style.background = 'linear-gradient(135deg,#bf360c,#e65100)'
         icona.textContent = '🚪'
         titolo.textContent = 'Cancello assegnato per questa gara'
         cancello.textContent = 'Cancello ' + accessoOperatore
-        card.textContent = 'Base · Bronze · Silver · Gold · Sponsor/VIP · Cortesia · Disability'
+        cardWrap.innerHTML = renderChipsPiani(pianiAbilitati)
       } else {
         bg.style.background = 'linear-gradient(135deg,#37474f,#546e7a)'
         icona.textContent = '⚠️'
         titolo.textContent = 'Nessun cancello assegnato'
         cancello.textContent = 'Contatta l\'amministratore'
-        card.textContent = 'Verifica con l\'admin prima di procedere'
+        document.getElementById('banner-op-card-wrap').style.display = 'none'
       }
       bannerOp.style.display = 'block'
     }
@@ -821,6 +835,14 @@ async function verificaIngresso(qr) {
     const ora_ingresso = new Date(giaEntrato.registrato_il).toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
     mostraRisultato('warn', '⚠️', 'Già entrato',
       tifoso.nome + ' ' + tifoso.cognome + ' ha già effettuato l\'ingresso alle ' + ora_ingresso + '.',
+      pianoNome)
+    return
+  }
+
+  // ── Controlla piano abilitato per questo operatore ──
+  if (!pianoAbilitato(pianoNome)) {
+    mostraRisultato('warn', '🚫', 'Card non abilitata',
+      `Questo cancello non è abilitato alla scansione della card <strong>${pianoNome}</strong>. Indirizza il tifoso all\'accesso corretto.`,
       pianoNome)
     return
   }
@@ -1048,6 +1070,11 @@ function aggiornaUI(data) {
   }).join('')
 }
 
+function pianoAbilitato(piano) {
+  if (!pianiAbilitati) return true  // null = tutti
+  return pianiAbilitati.some(p => p.toLowerCase() === piano?.toLowerCase())
+}
+
 function aggiornaContatori(data) {
   document.getElementById('cnt-totale').textContent    = data.length
   document.getElementById('cnt-base').textContent      = data.filter(i => i.piano_nome === 'Base').length
@@ -1057,6 +1084,17 @@ function aggiornaContatori(data) {
   document.getElementById('cnt-sponsor').textContent   = data.filter(i => i.piano_nome === 'Sponsor' || i.piano_nome === 'VIP').length
   document.getElementById('cnt-cortesia').textContent  = data.filter(i => i.piano_nome === 'Cortesia').length
   document.getElementById('cnt-disability').textContent= data.filter(i => i.piano_nome?.toLowerCase() === 'disability').length
+
+  // Nascondi contatori non abilitati per questo operatore
+  const mapCnt = {
+    'cnt-base': ['Base'], 'cnt-bronze': ['Bronze'], 'cnt-silver': ['Silver'],
+    'cnt-gold': ['Gold'], 'cnt-sponsor': ['Sponsor','VIP'],
+    'cnt-cortesia': ['Cortesia'], 'cnt-disability': ['Disability']
+  }
+  Object.entries(mapCnt).forEach(([id, piani]) => {
+    const el = document.getElementById(id)?.closest('.counter-item')
+    if (el) el.style.opacity = (!pianiAbilitati || piani.some(p => pianiAbilitati.includes(p))) ? '1' : '0.25'
+  })
 }
 
 // ── REALTIME ──

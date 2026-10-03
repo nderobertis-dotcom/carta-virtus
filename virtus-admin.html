@@ -6963,25 +6963,28 @@ async function loadAccesciGara() {
   }
 
   const { data: assegnazioni } = await sbAdmin.from('operatori_accessi_gara')
-    .select('accesso, operatore_email')
+    .select('accesso, operatore_email, piani_abilitati')
     .eq('gara_id', garaId)
 
-  // mappa: accesso → [email1, email2, email3]
+  // mappa: accesso → { emails: [], piani: [] }
   const mappa = {}
   ;(assegnazioni || []).forEach(a => {
-    if (!mappa[a.accesso]) mappa[a.accesso] = []
-    mappa[a.accesso].push(a.operatore_email)
+    if (!mappa[a.accesso]) mappa[a.accesso] = { emails: [], piani: [] }
+    if (a.operatore_email) mappa[a.accesso].emails.push(a.operatore_email)
+    if (a.piani_abilitati?.length) mappa[a.accesso].piani = a.piani_abilitati
   })
 
   const accessi = ['A', 'B', 'C', 'D', 'E', 'F']
   const baseOpts = '<option value="">— non assegnato —</option>' +
     _operatoriList.map(op => `<option value="${op.email}">${op.nome ? op.nome+' '+op.cognome+' · ' : ''}${op.email}</option>`).join('')
 
+  const TUTTI_PIANI = ['Base','Bronze','Silver','Gold','Sponsor','VIP','Cortesia','Disability']
+
   body.innerHTML = `
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
-      Assegna fino a 3 operatori per accesso. L'operatore vedrà un avviso se scansiona una card non prevista per il suo accesso.
+      Assegna fino a 3 operatori per accesso e seleziona le card che possono scansionare.
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">
       ${accessi.map(acc => `
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px">
           <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">${acc}</div>
@@ -6995,19 +6998,34 @@ async function loadAccesciGara() {
                 </select>
               </div>
             `).join('')}
+            <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Card abilitate</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                ${TUTTI_PIANI.map(p => `
+                  <label style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;cursor:pointer;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:3px 8px">
+                    <input type="checkbox" id="acc-piano-${acc}-${p}" value="${p}" onchange="salvaAccessoGara('${acc}')" style="margin:0;accent-color:var(--accent)">
+                    ${p}
+                  </label>
+                `).join('')}
+              </div>
+            </div>
           </div>
         </div>
       `).join('')}
     </div>
-    <div style="margin-top:12px;font-size:11px;color:var(--muted)">Le modifiche vengono salvate automaticamente alla selezione.</div>
+    <div style="margin-top:12px;font-size:11px;color:var(--muted)">Le modifiche vengono salvate automaticamente.</div>
   `
 
   // Imposta valori correnti
   accessi.forEach(acc => {
-    const emails = mappa[acc] || []
+    const dati = mappa[acc] || { emails: [], piani: [] }
     ;[1,2,3].forEach((slot, i) => {
       const sel = document.getElementById(`acc-op-${acc}-${slot}`)
-      if (sel && emails[i]) sel.value = emails[i]
+      if (sel && dati.emails[i]) sel.value = dati.emails[i]
+    })
+    TUTTI_PIANI.forEach(p => {
+      const cb = document.getElementById(`acc-piano-${acc}-${p}`)
+      if (cb && dati.piani.includes(p)) cb.checked = true
     })
   })
 }
@@ -7023,6 +7041,10 @@ async function salvaAccessoGara(accesso) {
     if (v && !nuoveEmail.includes(v)) nuoveEmail.push(v)
   })
 
+  // Raccoglie i piani abilitati per questo accesso
+  const TUTTI_PIANI = ['Base','Bronze','Silver','Gold','Sponsor','VIP','Cortesia','Disability']
+  const pianiAbilitati = TUTTI_PIANI.filter(p => document.getElementById(`acc-piano-${accesso}-${p}`)?.checked)
+
   // Cancella tutte le assegnazioni attuali per questo accesso+gara
   await sbAdmin.from('operatori_accessi_gara')
     .delete()
@@ -7034,8 +7056,8 @@ async function salvaAccessoGara(accesso) {
     return
   }
 
-  // Re-inserisce i nuovi
-  const rows = nuoveEmail.map(email => ({ gara_id: garaId, operatore_email: email, accesso }))
+  // Re-inserisce i nuovi (stessi piani per tutti gli slot dello stesso cancello)
+  const rows = nuoveEmail.map(email => ({ gara_id: garaId, operatore_email: email, accesso, piani_abilitati: pianiAbilitati }))
   const { error } = await sbAdmin.from('operatori_accessi_gara').insert(rows)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast(`Accesso ${accesso} → ${nuoveEmail.join(', ')}`, 'success')
