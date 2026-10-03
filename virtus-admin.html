@@ -2209,7 +2209,7 @@ select.form-input:focus{border-color:var(--accent)}
       <button class="modal-close" onclick="closeModal('modal-ingressi')">×</button>
     </div>
     <div class="modal-body">
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
         <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px">
           <div class="pts" style="font-size:22px" id="ing-totale">0</div>
           <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Totale</div>
@@ -2232,23 +2232,15 @@ select.form-input:focus{border-color:var(--accent)}
         </div>
         <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px">
           <div style="font-size:22px;font-weight:700;color:#F57C00" id="ing-sponsor">0</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Sponsor</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Sponsor / VIP</div>
         </div>
         <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px">
           <div style="font-size:22px;font-weight:700;color:#00897b" id="ing-cortesia">0</div>
           <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Cortesia</div>
         </div>
         <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px">
-          <div style="font-size:22px;font-weight:700;color:#6a1b9a" id="ing-vip">0</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">VIP</div>
-        </div>
-        <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px">
           <div style="font-size:22px;font-weight:700;color:#1565c0" id="ing-disability">0</div>
           <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Disability</div>
-        </div>
-        <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px">
-          <div style="font-size:22px;font-weight:700;color:#558b2f" id="ing-omaggio">0</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase">Omaggio</div>
         </div>
       </div>
       <table>
@@ -7263,11 +7255,9 @@ async function aggiornaIngressi(garaId) {
   document.getElementById('ing-bronze').textContent    = list.filter(i => i.piano_nome === 'Bronze').length
   document.getElementById('ing-pro').textContent       = list.filter(i => i.piano_nome === 'Silver').length
   document.getElementById('ing-premium').textContent   = list.filter(i => i.piano_nome === 'Gold').length
-  document.getElementById('ing-sponsor').textContent   = list.filter(i => i.piano_nome === 'Sponsor').length
+  document.getElementById('ing-sponsor').textContent   = list.filter(i => i.piano_nome === 'Sponsor' || i.piano_nome === 'VIP').length
   document.getElementById('ing-cortesia').textContent  = list.filter(i => i.piano_nome === 'Cortesia').length
-  document.getElementById('ing-vip').textContent       = list.filter(i => i.piano_nome === 'VIP').length
   document.getElementById('ing-disability').textContent= list.filter(i => i.piano_nome === 'Disability').length
-  document.getElementById('ing-omaggio').textContent   = list.filter(i => i.piano_nome === 'Omaggio').length
 
   const badgeMap = { Base:'badge-teal', Pro:'badge-amber', Premium:'badge-purple' }
   document.getElementById('ingressi-list').innerHTML = list.map(ing => {
