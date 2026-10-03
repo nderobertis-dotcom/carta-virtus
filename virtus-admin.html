@@ -3262,10 +3262,17 @@ async function loadMsReport() {
   const membMap = {}
   ;(memberships || []).forEach(m => { membMap[m.tifoso_id] = m })
   const perPiano = {}
+  const tifosiPerPiano = {}
   ;(memberships || []).forEach(m => {
     const p = m.piano?.nome || 'N/D'
     perPiano[p] = (perPiano[p] || 0) + 1
+    if (!tifosiPerPiano[p]) tifosiPerPiano[p] = []
+    // trova il tifoso corrispondente
+    const tif = tifosi.find(t => t.id === m.tifoso_id)
+    if (tif) tifosiPerPiano[p].push(tif.cognome + ' ' + tif.nome)
   })
+  // Salva la mappa globale per uso nei toggle
+  window._tifosiPerPiano = tifosiPerPiano
 
   // Taglie maglie
   const taglie = {}
@@ -3422,48 +3429,30 @@ async function loadMsReport() {
           <th style="text-align:right">Rateo/gara (${totalGareCalendario} gare)</th>
         </tr></thead>
         <tbody>
-          ${['Base','Bronze','Silver','Gold'].map(p => {
-            const n = perPiano[p] || 0
-            const pr = prezziPiani[p]
-            const inc = incassoFanCard[p]
-            const rateo = totalGareCalendario ? (inc/totalGareCalendario).toFixed(2) : '—'
-            return '<tr>' +
-              '<td><strong>'+p+'</strong></td>' +
-              '<td style="text-align:center">'+n+'</td>' +
-              '<td style="text-align:right">€ '+pr.toFixed(2)+'</td>' +
-              '<td style="text-align:right">€ '+inc.toFixed(2)+'</td>' +
-              '<td style="text-align:right">€ '+rateo+'</td>' +
-            '</tr>'
+          ${[
+            {p:'Base', pr:prezziPiani['Base'], clickable:true},
+            {p:'Bronze', pr:prezziPiani['Bronze'], clickable:true},
+            {p:'Silver', pr:prezziPiani['Silver'], clickable:true},
+            {p:'Gold', pr:prezziPiani['Gold'], clickable:true},
+            ...(nFanCardVipReport > 0 ? [{p:'VIP', pr:0, label:'VIP', badge:'ospiti', muted:true, clickable:false}] : []),
+            ...((perPiano['Cortesia']||0) > 0 ? [{p:'Cortesia', pr:0, badge:'gratuiti', muted:true, clickable:true}] : []),
+            ...((perPiano['Disability']||0) > 0 ? [{p:'Disability', pr:0, badge:'gratuiti', muted:true, clickable:true}] : []),
+          ].map(({p, pr, badge, muted, clickable}) => {
+            const n = p === 'VIP' ? nFanCardVipReport : (perPiano[p] || 0)
+            const inc = (prezziPiani[p]||0) * n
+            const rateo = totalGareCalendario && inc ? (inc/totalGareCalendario).toFixed(2) : '—'
+            const rowStyle = muted ? 'color:var(--muted)' : ''
+            const cursor = clickable && n > 0 ? 'cursor:pointer' : ''
+            const chevron = clickable && n > 0 ? ' <span style="font-size:11px;color:var(--accent)">▶</span>' : ''
+            const trAttrs = clickable && n > 0 ? `onclick="togglePianoTifosi('${p}',this)" title="Clicca per vedere i tifosi"` : ''
+            return `<tr style="${rowStyle};${cursor};transition:background .15s" ${trAttrs}>` +
+              `<td><strong>${p}</strong>${badge ? ` <span style="font-size:10px;background:var(--bg3);border-radius:4px;padding:1px 6px;vertical-align:middle">${badge}</span>` : ''}${chevron}</td>` +
+              `<td style="text-align:center">${n}</td>` +
+              `<td style="text-align:right">${pr ? '€ '+pr.toFixed(2) : '—'}</td>` +
+              `<td style="text-align:right">${inc ? '€ '+inc.toFixed(2) : '—'}</td>` +
+              `<td style="text-align:right">${rateo !== '—' ? '€ '+rateo : '—'}</td>` +
+            `</tr>`
           }).join('')}
-          ${nFanCardVipReport > 0 ? (() => {
-            return '<tr style="color:var(--muted)">' +
-              '<td><strong>VIP</strong> <span style="font-size:10px;background:var(--bg3);border-radius:4px;padding:1px 6px;vertical-align:middle">ospiti</span></td>' +
-              '<td style="text-align:center">'+nFanCardVipReport+'</td>' +
-              '<td style="text-align:right">—</td>' +
-              '<td style="text-align:right">—</td>' +
-              '<td style="text-align:right">—</td>' +
-            '</tr>'
-          })() : ''}
-          ${(perPiano['Cortesia'] || 0) > 0 ? (() => {
-            const nCort = perPiano['Cortesia'] || 0
-            return '<tr style="color:var(--muted)">' +
-              '<td><strong>Cortesia</strong> <span style="font-size:10px;background:var(--bg3);border-radius:4px;padding:1px 6px;vertical-align:middle">gratuiti</span></td>' +
-              '<td style="text-align:center">'+nCort+'</td>' +
-              '<td style="text-align:right">€ 0.00</td>' +
-              '<td style="text-align:right">€ 0.00</td>' +
-              '<td style="text-align:right">€ 0.00</td>' +
-            '</tr>'
-          })() : ''}
-          ${(perPiano['Disability'] || 0) > 0 ? (() => {
-            const nDis = perPiano['Disability'] || 0
-            return '<tr style="color:var(--muted)">' +
-              '<td><strong>Disability</strong> <span style="font-size:10px;background:var(--bg3);border-radius:4px;padding:1px 6px;vertical-align:middle">gratuiti</span></td>' +
-              '<td style="text-align:center">'+nDis+'</td>' +
-              '<td style="text-align:right">€ 0.00</td>' +
-              '<td style="text-align:right">€ 0.00</td>' +
-              '<td style="text-align:right">€ 0.00</td>' +
-            '</tr>'
-          })() : ''}
           <tr style="font-weight:700;border-top:2px solid var(--border);background:var(--bg3)">
             <td>Totale</td>
             <td style="text-align:center">${Object.values(perPiano).reduce((a,b)=>a+b,0) + nFanCardVipReport}</td>
@@ -3489,36 +3478,6 @@ async function loadMsReport() {
       </div>` : '<div style="color:var(--muted);font-size:13px">Nessun dato maglia ancora inserito</div>'}
     </div>
 
-    <!-- VIP -->
-    ${(() => {
-      const vipIds = new Set((membVip||[]).map(m=>m.tifoso_id))
-      const vipList = (tifosiVip||[]).filter(t => vipIds.has(t.id))
-      const postiPerVip = {}
-      ;(postiVip||[]).forEach(p => {
-        if (!postiPerVip[p.tifoso_id]) postiPerVip[p.tifoso_id] = []
-        postiPerVip[p.tifoso_id].push(`Trib. ${p.tribuna.charAt(0).toUpperCase()+p.tribuna.slice(1)} F${p.fila} N°${p.numero}`)
-      })
-      if (!vipList.length) return ''
-      return `
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-title" style="margin-bottom:16px">⭐ Ospiti VIP (${vipList.length})</div>
-      <table class="table">
-        <thead><tr><th>Nome / Azienda</th><th>Posti assegnati</th><th>Stato</th></tr></thead>
-        <tbody>
-          ${vipList.map(t => {
-            const label = [t.cognome, t.nome].filter(Boolean).join(' ') || t.azienda || 'VIP Ospite'
-            const posti = postiPerVip[t.id] || []
-            return `<tr>
-              <td><strong>${label}</strong>${t.azienda && (t.cognome||t.nome) ? ' <span style="color:var(--muted);font-size:11px">· '+t.azienda+'</span>' : ''}</td>
-              <td style="font-size:12px">${posti.length ? posti.join(', ') : '<span style="color:var(--muted)">Nessun posto</span>'}</td>
-              <td><span class="badge badge-${t.stato==='attivo'?'green':'red'}">${t.stato}</span></td>
-            </tr>`
-          }).join('')}
-        </tbody>
-      </table>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px">Totale posti VIP occupati: <strong>${Object.values(postiPerVip).reduce((s,a)=>s+a.length,0)}</strong></div>
-    </div>`
-    })()}
 
     <!-- PRESENZE -->
     <div class="card" style="margin-bottom:20px">
@@ -8925,6 +8884,30 @@ document.addEventListener('DOMContentLoaded', function() {
   window.esportaSciarpeInProduzione = esportaSciarpeInProduzione;
   window.copiaSciarpeClipboard = copiaSciarpeClipboard;
   window.loadMsReport = loadMsReport;
+
+  window.togglePianoTifosi = function(piano, tr) {
+    const existingDetail = tr.nextElementSibling
+    if (existingDetail && existingDetail.dataset.pianoDetail) {
+      existingDetail.remove()
+      tr.querySelector('span[style*="color:var(--accent)"]').textContent = '▶'
+      return
+    }
+    const lista = (window._tifosiPerPiano || {})[piano] || []
+    if (!lista.length) return
+    tr.querySelector('span[style*="color:var(--accent)"]').textContent = '▼'
+    const detail = document.createElement('tr')
+    detail.dataset.pianoDetail = '1'
+    detail.style.background = 'var(--bg3)'
+    detail.innerHTML = `<td colspan="5" style="padding:12px 16px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+        Tifosi ${piano} (${lista.length})
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${lista.sort().map(n => `<span style="background:#fff;border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:12px">${n}</span>`).join('')}
+      </div>
+    </td>`
+    tr.after(detail)
+  }
   window.loadGvRegolamento = loadGvRegolamento;
   window.salvaGvRegolamento = salvaGvRegolamento;
   window.apriModGvPremio = apriModGvPremio;
