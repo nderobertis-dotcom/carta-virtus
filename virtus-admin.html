@@ -8885,11 +8885,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // ─── ACCREDITI OMAGGIO ───────────────────────────────────────────────────
   let accDb = { partite: [], aventi: [], accrediti: [], squadName: 'Virtus Basket Molfetta' };
 
-  function accLoad() {
-    try { const s = localStorage.getItem('virtus_accrediti_omaggio'); if (s) { const parsed = JSON.parse(s); accDb.aventi = parsed.aventi || []; accDb.accrediti = parsed.accrediti || []; } } catch(e) {}
-  }
-  function accSave() { try { localStorage.setItem('virtus_accrediti_omaggio', JSON.stringify({ aventi: accDb.aventi, accrediti: accDb.accrediti })); } catch(e) {} }
-  function accUid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
   function accFmtDataOra(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -8897,10 +8892,19 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function accInit() {
-    accLoad();
-    await accLoadPartite();
+    await Promise.all([accLoadAventi(), accLoadAccrediti(), accLoadPartite()]);
     accRenderAventi();
     accPopulateSelects();
+  }
+
+  async function accLoadAventi() {
+    const { data } = await sbAdmin.from('accrediti_aventi_diritto').select('*').order('cognome');
+    accDb.aventi = (data || []).map(r => ({ id: r.id, nome: r.nome + ' ' + r.cognome, ruolo: r.ruolo, max: r.max_accrediti, _nome: r.nome, _cognome: r.cognome }));
+  }
+
+  async function accLoadAccrediti() {
+    const { data } = await sbAdmin.from('accrediti_omaggio').select('*').order('created_at');
+    accDb.accrediti = (data || []).map(r => ({ id: r.id, partitaId: r.partita_id, aventeId: r.avente_id, ospite: r.ospite, affiliazione: r.affiliazione, ingressi: r.ingressi, ingressi_ritirati: r.ingressi_ritirati || 0 }));
   }
 
   // PARTITE da Supabase
@@ -8940,21 +8944,29 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // AVENTI DIRITTO
-  window.accAddAvente = function() {
-    const nome  = document.getElementById('acc-a-nome').value.trim();
+  window.accAddAvente = async function() {
+    const nomeCompleto = document.getElementById('acc-a-nome').value.trim();
     const ruolo = document.getElementById('acc-a-ruolo').value;
     const max   = parseInt(document.getElementById('acc-a-max').value) || 2;
-    if (!nome) { toast('Inserisci nome e cognome', 'error'); return; }
-    accDb.aventi.push({ id: accUid(), nome, ruolo, max });
-    accSave(); accRenderAventi(); accUpdateAventeSelect();
+    if (!nomeCompleto) { toast('Inserisci nome e cognome', 'error'); return; }
+    const parts = nomeCompleto.split(' ');
+    const nome = parts[0] || nomeCompleto;
+    const cognome = parts.slice(1).join(' ') || '';
+    const { data, error } = await sbAdmin.from('accrediti_aventi_diritto').insert({ nome, cognome, ruolo, max_accrediti: max }).select().single();
+    if (error) { toast('Errore salvataggio: ' + error.message, 'error'); return; }
+    accDb.aventi.push({ id: data.id, nome: data.nome + ' ' + data.cognome, ruolo: data.ruolo, max: data.max_accrediti, _nome: data.nome, _cognome: data.cognome });
+    accRenderAventi(); accUpdateAventeSelect();
     document.getElementById('acc-a-nome').value = '';
+    toast('Avente diritto aggiunto', 'success');
   };
 
-  window.accDeleteAvente = function(id) {
+  window.accDeleteAvente = async function(id) {
     if (!confirm('Eliminare avente diritto? Verranno eliminati anche i suoi accrediti.')) return;
+    const { error } = await sbAdmin.from('accrediti_aventi_diritto').delete().eq('id', id);
+    if (error) { toast('Errore eliminazione: ' + error.message, 'error'); return; }
     accDb.aventi    = accDb.aventi.filter(a => a.id !== id);
     accDb.accrediti = accDb.accrediti.filter(a => a.aventeId !== id);
-    accSave(); accRenderAventi(); accUpdateAventeSelect();
+    accRenderAventi(); accUpdateAventeSelect();
   };
 
   function accRenderAventi() {
@@ -9043,7 +9055,7 @@ document.addEventListener('DOMContentLoaded', function() {
       '<table><thead><tr><th></th><th>Ospite</th><th>Affiliazione</th><th>Ingressi</th><th></th></tr></thead><tbody>' + list.map((a,i) => `<tr><td style="color:var(--muted);font-size:12px;font-family:'DM Mono',monospace;width:30px">${String(i+1).padStart(2,'0')}</td><td style="font-weight:500">${a.ospite}</td><td style="font-size:12px;color:var(--muted)">${a.affiliazione||'—'}</td><td style="font-family:'DM Mono',monospace;font-size:13px">${a.ingressi||1}</td><td><button class="btn btn-sm btn-danger" onclick="accDeleteAccredito('${a.id}')">Rimuovi</button></td></tr>`).join('') + '</tbody></table>';
   }
 
-  window.accAddAccredito = function() {
+  window.accAddAccredito = async function() {
     const pid      = document.getElementById('acc-sel-partita')?.value;
     const aid      = document.getElementById('acc-sel-avente')?.value;
     const ospite       = document.getElementById('acc-ospite-nome')?.value.trim();
@@ -9053,8 +9065,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const avente = accDb.aventi.find(a => a.id === aid);
     const usati  = accDb.accrediti.filter(a => a.partitaId===pid && a.aventeId===aid).reduce((s,a) => s + (a.ingressi||1), 0);
     if (usati + ingressi > avente.max) { toast(`Limite superato: disponibili ${avente.max - usati} su ${avente.max}`, 'error'); return; }
-    accDb.accrediti.push({ id: accUid(), partitaId: pid, aventeId: aid, ospite, affiliazione, ingressi, ts: Date.now() });
-    accSave();
+    const partita = accDb.partite.find(p => p.id === pid);
+    const partita_label = partita ? `${accFmtDataOra(partita.data)} vs ${partita.avversario}` : '';
+    const { data, error } = await sbAdmin.from('accrediti_omaggio').insert({ avente_id: aid, partita_id: pid, partita_label, ospite, affiliazione, ingressi, ingressi_ritirati: 0 }).select().single();
+    if (error) { toast('Errore salvataggio: ' + error.message, 'error'); return; }
+    accDb.accrediti.push({ id: data.id, partitaId: pid, aventeId: aid, ospite, affiliazione, ingressi, ingressi_ritirati: 0 });
     document.getElementById('acc-ospite-nome').value = '';
     document.getElementById('acc-ospite-affiliazione').value = '';
     document.getElementById('acc-ospite-ingressi').value = '1';
@@ -9064,10 +9079,12 @@ document.addEventListener('DOMContentLoaded', function() {
     accUpdateAventeInfo();
   };
 
-  window.accDeleteAccredito = function(id) {
+  window.accDeleteAccredito = async function(id) {
     if (!confirm('Rimuovere questo accredito?')) return;
+    const { error } = await sbAdmin.from('accrediti_omaggio').delete().eq('id', id);
+    if (error) { toast('Errore eliminazione: ' + error.message, 'error'); return; }
     accDb.accrediti = accDb.accrediti.filter(a => a.id !== id);
-    accSave(); accUpdateAventeInfo();
+    accUpdateAventeInfo();
   };
 
   // LISTA CANCELLO
@@ -9131,7 +9148,7 @@ document.addEventListener('DOMContentLoaded', function() {
       </table>`;
   };
 
-  window.accEmetti = function(id) {
+  window.accEmetti = async function(id) {
     const acc = accDb.accrediti.find(a => a.id === id);
     if (!acc) return;
     const diritto  = acc.ingressi || 1;
@@ -9140,8 +9157,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const input    = document.getElementById('ing-' + id);
     const quanti   = parseInt(input?.value) || 1;
     if (quanti < 1 || quanti > residui) { toast(`Valore non valido: max ${residui} disponibili`, 'error'); return; }
-    acc.ingressi_ritirati = ritirati + quanti;
-    accSave();
+    const nuovi_ritirati = ritirati + quanti;
+    const { error } = await sbAdmin.from('accrediti_omaggio').update({ ingressi_ritirati: nuovi_ritirati }).eq('id', id);
+    if (error) { toast('Errore salvataggio: ' + error.message, 'error'); return; }
+    acc.ingressi_ritirati = nuovi_ritirati;
     accRenderCancello();
     toast(`✓ ${quanti} ingress${quanti===1?'o':'i'} emess${quanti===1?'o':'i'} per ${acc.ospite}`, 'success');
   };
