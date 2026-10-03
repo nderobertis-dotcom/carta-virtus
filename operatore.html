@@ -399,23 +399,35 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
     <div class="counter-card">
       <div class="counter-item">
         <div class="counter-value" id="cnt-totale">0</div>
-        <div class="counter-label">Totale ingressi</div>
+        <div class="counter-label">Totale</div>
       </div>
       <div class="counter-item">
-        <div class="counter-value" style="color:var(--blu2)" id="cnt-base">0</div>
-        <div class="counter-label">Fan Card Base</div>
+        <div class="counter-value" style="color:var(--muted)" id="cnt-base">0</div>
+        <div class="counter-label">Base</div>
       </div>
       <div class="counter-item">
-        <div class="counter-value" style="color:var(--arancio)" id="cnt-pro">0</div>
-        <div class="counter-label">Fan Card Pro</div>
+        <div class="counter-value" style="color:var(--blu2)" id="cnt-bronze">0</div>
+        <div class="counter-label">Bronze</div>
       </div>
       <div class="counter-item">
-        <div class="counter-value" style="color:#6a1b9a" id="cnt-premium">0</div>
-        <div class="counter-label">Fan Card Premium</div>
+        <div class="counter-value" style="color:var(--arancio)" id="cnt-silver">0</div>
+        <div class="counter-label">Silver</div>
+      </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:#e65100" id="cnt-gold">0</div>
+        <div class="counter-label">Gold</div>
+      </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:#F57C00" id="cnt-sponsor">0</div>
+        <div class="counter-label">Sponsor / VIP</div>
+      </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:#00897b" id="cnt-cortesia">0</div>
+        <div class="counter-label">Cortesia</div>
       </div>
       <div class="counter-item">
         <div class="counter-value" style="color:#1565c0" id="cnt-disability">0</div>
-        <div class="counter-label">Disability Card</div>
+        <div class="counter-label">Disability</div>
       </div>
     </div>
 
@@ -600,13 +612,13 @@ async function initApp() {
         icona.textContent = '🔑'
         titolo.textContent = 'Accesso completo'
         cancello.textContent = 'Tutti gli accessi'
-        card.textContent = 'Fan Card Base · Fan Card Pro · Fan Card Premium · Disability Card · Sponsor'
+        card.textContent = 'Base · Bronze · Silver · Gold · Sponsor/VIP · Cortesia · Disability'
       } else if (accessoOperatore) {
         bg.style.background = 'linear-gradient(135deg,#bf360c,#e65100)'
         icona.textContent = '🚪'
         titolo.textContent = 'Cancello assegnato per questa gara'
         cancello.textContent = 'Cancello ' + accessoOperatore
-        card.textContent = 'Fan Card Base · Fan Card Pro · Fan Card Premium · Disability Card'
+        card.textContent = 'Base · Bronze · Silver · Gold · Sponsor/VIP · Cortesia · Disability'
       } else {
         bg.style.background = 'linear-gradient(135deg,#37474f,#546e7a)'
         icona.textContent = '⚠️'
@@ -1024,7 +1036,7 @@ function aggiornaUI(data) {
     return
   }
   list.innerHTML = data.map(ing => {
-    const chipClass = ing.piano_nome === 'Premium' ? 'chip-premium' : ing.piano_nome === 'Pro' ? 'chip-pro' : 'chip-base'
+    const chipClass = ing.piano_nome === 'Gold' ? 'chip-premium' : (ing.piano_nome === 'Silver' || ing.piano_nome === 'Bronze') ? 'chip-pro' : 'chip-base'
     const ora = new Date(ing.registrato_il).toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
     return '<div class="log-item">' +
       '<div>' +
@@ -1037,11 +1049,14 @@ function aggiornaUI(data) {
 }
 
 function aggiornaContatori(data) {
-  document.getElementById('cnt-totale').textContent = data.length
-  document.getElementById('cnt-base').textContent = data.filter(i => i.piano_nome === 'Base').length
-  document.getElementById('cnt-pro').textContent = data.filter(i => i.piano_nome === 'Pro').length
-  document.getElementById('cnt-premium').textContent = data.filter(i => i.piano_nome === 'Premium').length
-  document.getElementById('cnt-disability').textContent = data.filter(i => i.piano_nome?.toLowerCase() === 'disability').length
+  document.getElementById('cnt-totale').textContent    = data.length
+  document.getElementById('cnt-base').textContent      = data.filter(i => i.piano_nome === 'Base').length
+  document.getElementById('cnt-bronze').textContent    = data.filter(i => i.piano_nome === 'Bronze').length
+  document.getElementById('cnt-silver').textContent    = data.filter(i => i.piano_nome === 'Silver').length
+  document.getElementById('cnt-gold').textContent      = data.filter(i => i.piano_nome === 'Gold').length
+  document.getElementById('cnt-sponsor').textContent   = data.filter(i => i.piano_nome === 'Sponsor' || i.piano_nome === 'VIP').length
+  document.getElementById('cnt-cortesia').textContent  = data.filter(i => i.piano_nome === 'Cortesia').length
+  document.getElementById('cnt-disability').textContent= data.filter(i => i.piano_nome?.toLowerCase() === 'disability').length
 }
 
 // ── REALTIME ──
