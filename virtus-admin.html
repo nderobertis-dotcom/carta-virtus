@@ -3712,7 +3712,7 @@ async function salvaBiglietteria() {
 
 async function loadMaglieSciarpe() {
   const { data, error } = await sbAdmin.from('membership')
-    .select('id, maglia_taglia, maglia_cognome, maglia_numero, maglia_in_produzione, maglia_consegnata, maglia_consegnata_il, sciarpa_inclusa, sciarpa_consegnata, sciarpa_consegnata_il, sciarpa_stato, piano:piano_id(nome), tifoso:tifoso_id(id, nome, cognome)')
+    .select('id, maglia_taglia, maglia_cognome, maglia_numero, maglia_in_produzione, maglia_consegnata, maglia_consegnata_il, sciarpa_inclusa, sciarpa_consegnata, sciarpa_consegnata_il, sciarpa_stato, piano:piano_id(nome), tifoso:tifoso_id(id, nome, cognome, telefono)')
     .not('stato', 'eq', 'annullata')
     .order('creato_il', { ascending: false })
   if (error) { toast('Errore caricamento: ' + error.message, 'error'); return }
@@ -3773,6 +3773,7 @@ function renderMaglieSciarpe() {
 
   tbody.innerHTML = list.map(m => {
     const nome = m.tifoso ? m.tifoso.nome + ' ' + m.tifoso.cognome : '—'
+    const tel  = m.tifoso?.telefono || ''
     const piano = m.piano?.nome || '—'
     const consegnata = isMaglie ? m.maglia_consegnata : m.sciarpa_consegnata
     const consegnataIl = isMaglie ? m.maglia_consegnata_il : m.sciarpa_consegnata_il
@@ -3784,7 +3785,7 @@ function renderMaglieSciarpe() {
     const statoLabel = { da_produrre: '🔵 Da produrre', in_produzione: '🟠 In produzione', pronta: '🟢 Pronta' }
     const statoColor = { da_produrre: '#2196F3', in_produzione: '#FF9800', pronta: '#4CAF50' }
     return `<tr${inProd ? ' style="background:rgba(255,152,0,0.06)"' : ''}>
-      <td><strong>${nome}</strong></td>
+      <td><strong>${nome}</strong>${tel ? `<br><span style="font-size:11px;color:var(--muted)">${tel}</span>` : ''}</td>
       <td><span class="badge badge-amber">${piano}</span></td>
       <td>${dettaglio}</td>
       ${isMaglie ? `<td style="font-size:12px">${m.maglia_cognome || '—'}</td>` : ''}
