@@ -926,8 +926,8 @@ async function verificaIngresso(qr) {
   }
 
   // Accredita punti gara in base al piano
-  const puntiMap = { 'Base': 0, 'Bronze': 3, 'Silver': 5, 'Gold': 10 }  // BASE non riceve bonus punti gara
-  const puntiGara = puntiMap[pianoNome] || 3
+  const puntiMap = { 'Bronze': 3, 'Silver': 5, 'Gold': 10 }  // Base, VIP, Sponsor, Cortesia, Disability = 0 punti
+  const puntiGara = puntiMap[pianoNome] || 0
 
   if (puntiGara > 0) {
     const { data: tifosoAggiornato } = await sbA.from('tifosi').select('punti_saldo').eq('id', tifoso.id).single()
