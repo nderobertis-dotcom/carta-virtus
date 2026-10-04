@@ -587,15 +587,19 @@ async function initApp() {
                   currentOperatoreRuolo === 'admin'
 
   if (currentOperatoreEmail) {
-    const { data: assegn } = await sbA.from('operatori_accessi_gara')
-      .select('accesso, piani_abilitati')
-      .eq('gara_id', garaCorrente.id)
-      .eq('operatore_email', currentOperatoreEmail)
-      .single()
-    accessoOperatore = assegn?.accesso || null
-    // Admin e operatore@cartavirtus.it vedono tutte le card
-    const isSuper = isAdmin || currentOperatoreEmail === 'operatore@cartavirtus.it'
-    pianiAbilitati = isSuper ? null : (assegn?.piani_abilitati?.length ? assegn.piani_abilitati : null)
+    if (isAdmin) {
+      // Admin: accesso completo, nessuna query necessaria
+      accessoOperatore = null
+      pianiAbilitati = null
+    } else {
+      const { data: assegn } = await sbA.from('operatori_accessi_gara')
+        .select('accesso, piani_abilitati')
+        .eq('gara_id', garaCorrente.id)
+        .eq('operatore_email', currentOperatoreEmail)
+        .single()
+      accessoOperatore = assegn?.accesso || null
+      pianiAbilitati = assegn?.piani_abilitati?.length ? assegn.piani_abilitati : null
+    }
 
     // Badge nell'header
     const badgeAcc = document.getElementById('badge-accesso')
