@@ -2754,6 +2754,17 @@ async function completaRegistrazione() {
   try {
     const pianoNomeCap = pianoSelezionato.nome.charAt(0).toUpperCase() + pianoSelezionato.nome.slice(1)
 
+    // ── Verifica email duplicata PRIMA di procedere al pagamento ──────────────
+    const { data: tifEsistente } = await sbAdmin
+      .from('tifosi')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle()
+    if (tifEsistente) {
+      throw new Error('Questa email è già associata a una Fan Card. Accedi al tuo account oppure usa un\'indirizzo email diverso.')
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     let magliaData = null
     if (pianoSelezionato.richiedeMaglia) {
       magliaData = {
