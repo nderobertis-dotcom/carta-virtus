@@ -102,6 +102,7 @@ nav{padding:16px 0;flex:1}
 .btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
 .btn-ghost:hover{border-color:var(--muted)}
 .btn-danger{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+.btn-warning{background:rgba(245,124,0,.15);color:#f57c00;border:1px solid rgba(245,124,0,.3)}.btn-warning:hover{background:rgba(245,124,0,.25)}
 .btn-sm{padding:5px 12px;font-size:11px}
 
 /*  CONTENT  */
@@ -2158,7 +2159,88 @@ select.form-input:focus{border-color:var(--accent)}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-dettaglio-tifoso')">Chiudi</button>
       <button class="btn btn-secondary" onclick="salvaDatiTifoso()">💾 Salva anagrafica</button>
+      <button class="btn btn-warning" id="btn-upgrade-piano" style="display:none" onclick="openUpgradePiano()">⬆ Upgrade piano</button>
       <button class="btn btn-primary" onclick="openBonus(currentDetTifoso.id, currentDetTifoso.nome + ' ' + currentDetTifoso.cognome);closeModal('modal-dettaglio-tifoso')">+ Bonus punti</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Upgrade Fan Card -->
+<div class="modal-overlay" id="modal-upgrade-piano">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⬆ Upgrade Fan Card</div>
+      <button class="modal-close" onclick="closeModal('modal-upgrade-piano')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="upg-tifoso-id"/>
+      <input type="hidden" id="upg-membership-id"/>
+      <input type="hidden" id="upg-piano-corrente-key"/>
+
+      <div style="background:var(--surface-2,#f5f5f5);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Tifoso</div>
+          <div style="font-size:14px;font-weight:600;margin-top:2px" id="upg-nome">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Piano attuale</div>
+          <div style="margin-top:4px" id="upg-piano-attuale-badge">—</div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Nuovo piano</label>
+        <select class="form-input" id="upg-nuovo-piano" onchange="onUpgradePianoChange()">
+          <option value="">— seleziona —</option>
+        </select>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label>Importo da pagare (€)</label>
+          <input class="form-input" id="upg-importo" type="number" min="0" step="0.01" placeholder="calcolato automaticamente"/>
+        </div>
+        <div class="form-group">
+          <label>Metodo di pagamento</label>
+          <select class="form-input" id="upg-metodo">
+            <option value="contanti">💵 Contanti</option>
+            <option value="pos">💳 POS</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="upg-punti-info" style="font-size:12px;color:var(--muted);margin-bottom:14px;padding:8px 12px;border-radius:6px;background:var(--surface-2,#f0f4ff);display:none"></div>
+
+      <!-- Campi maglia (solo Silver/Gold) -->
+      <div id="upg-maglia-box" style="display:none;border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🎽 Dati maglia</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="form-group">
+            <label>Cognome maglia</label>
+            <input class="form-input" id="upg-maglia-cognome" placeholder="es. ROSSI" style="text-transform:uppercase"/>
+          </div>
+          <div class="form-group">
+            <label>Numero maglia</label>
+            <input class="form-input" id="upg-maglia-numero" type="number" min="1" max="99" placeholder="es. 10"/>
+          </div>
+          <div class="form-group">
+            <label>Taglia</label>
+            <select class="form-input" id="upg-maglia-taglia">
+              <option value="">—</option>
+              <option value="XS">XS</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-upgrade-piano')">Annulla</button>
+      <button class="btn btn-warning" onclick="eseguiUpgrade()">⬆ Conferma upgrade</button>
     </div>
   </div>
 </div>
@@ -6524,6 +6606,7 @@ async function loadReport() {
 
 //  DETTAGLIO TIFOSO 
 let currentDetTifoso = null
+let currentDetMembership = null
 
 async function openDettaglioTifoso(id) {
   const t = allTifosi.find(t => t.id === id)
@@ -6554,13 +6637,21 @@ async function openDettaglioTifoso(id) {
     .single()
 
   const membEl = document.getElementById('det-membership')
+  // Piani che possono essere upgradati (non Gold, VIP, Sponsor, ecc.)
+  const UPGRADEABLE_PIANI = ['base', 'bronze', 'silver']
+  const btnUpgrade = document.getElementById('btn-upgrade-piano')
+  currentDetMembership = memb || null
   if (memb) {
     const badgeMap = { in_attesa:'badge-amber', attiva:'badge-green', scaduta:'badge-red', annullata:'badge-gray' }
     membEl.innerHTML = '<span class="badge ' + (badgeMap[memb.stato]||'badge-gray') + '">' + memb.stato + '</span> ' +
       '<strong>' + (memb.piano?.nome || '—') + '</strong> · € ' + (memb.piano?.prezzo_eur || '—') + '/anno · ' +
       'Scade il ' + (memb.valida_fino ? new Date(memb.valida_fino).toLocaleDateString('it-IT') : '—')
+    // Mostra pulsante upgrade solo per piani upgradabili
+    const pianoKey = memb.piano?.nome?.toLowerCase()
+    btnUpgrade.style.display = (pianoKey && UPGRADEABLE_PIANI.includes(pianoKey) && memb.stato === 'attiva') ? '' : 'none'
   } else {
     membEl.textContent = 'Nessuna membership'
+    btnUpgrade.style.display = 'none'
   }
 
   // Accompagnatore minore
@@ -6733,7 +6824,164 @@ async function salvaBonus() {
   loadTifosi()
 }
 
-//  MODAL 
+// ══════════════════════════════════════
+//  UPGRADE PIANO FAN CARD
+// ══════════════════════════════════════
+const UPGRADE_ORDER = ['base', 'bronze', 'silver', 'gold']
+
+async function openUpgradePiano() {
+  if (!currentDetTifoso || !currentDetMembership) return
+
+  const pianoKey = currentDetMembership.piano?.nome?.toLowerCase()
+  const pianoIdx = UPGRADE_ORDER.indexOf(pianoKey)
+  if (pianoIdx < 0 || pianoIdx >= UPGRADE_ORDER.length - 1) {
+    toast('Piano non upgradabile', 'error'); return
+  }
+
+  // Carica tutti i piani disponibili
+  const { data: tuttiPiani } = await sbAdmin.from('membership_piani')
+    .select('id, nome, prezzo_eur')
+    .in('nome', ['Base','Bronze','Silver','Gold'])
+    .order('prezzo_eur', { ascending: true })
+
+  if (!tuttiPiani) { toast('Errore caricamento piani', 'error'); return }
+
+  // Popola form
+  document.getElementById('upg-tifoso-id').value = currentDetTifoso.id
+  document.getElementById('upg-membership-id').value = currentDetMembership.id
+  document.getElementById('upg-piano-corrente-key').value = pianoKey
+  document.getElementById('upg-nome').textContent = currentDetTifoso.nome + ' ' + currentDetTifoso.cognome
+
+  const colorMap = { base:'badge-gray', bronze:'badge-amber', silver:'badge-blue', gold:'badge-amber' }
+  document.getElementById('upg-piano-attuale-badge').innerHTML =
+    '<span class="badge ' + (colorMap[pianoKey]||'badge-gray') + '">' + currentDetMembership.piano.nome + ' — € ' + currentDetMembership.piano.prezzo_eur + '/anno</span>'
+
+  // Popola select piani superiori
+  const sel = document.getElementById('upg-nuovo-piano')
+  sel.innerHTML = '<option value="">— seleziona —</option>'
+  tuttiPiani.forEach(p => {
+    const pKey = p.nome.toLowerCase()
+    const pIdx = UPGRADE_ORDER.indexOf(pKey)
+    if (pIdx > pianoIdx) {
+      const opt = document.createElement('option')
+      opt.value = JSON.stringify({ id: p.id, nome: p.nome, prezzo_eur: p.prezzo_eur, key: pKey })
+      opt.textContent = p.nome + ' — € ' + p.prezzo_eur + '/anno'
+      sel.appendChild(opt)
+    }
+  })
+
+  document.getElementById('upg-importo').value = ''
+  document.getElementById('upg-punti-info').style.display = 'none'
+  document.getElementById('upg-maglia-box').style.display = 'none'
+  document.getElementById('upg-maglia-cognome').value = ''
+  document.getElementById('upg-maglia-numero').value = ''
+  document.getElementById('upg-maglia-taglia').value = ''
+
+  // Salva prezzo corrente per calcolo delta
+  document.getElementById('upg-nuovo-piano').dataset.prezzoPianoCorrente = currentDetMembership.piano.prezzo_eur || 0
+
+  closeModal('modal-dettaglio-tifoso')
+  openModal('modal-upgrade-piano')
+}
+
+function onUpgradePianoChange() {
+  const sel = document.getElementById('upg-nuovo-piano')
+  const val = sel.value
+  if (!val) {
+    document.getElementById('upg-importo').value = ''
+    document.getElementById('upg-punti-info').style.display = 'none'
+    document.getElementById('upg-maglia-box').style.display = 'none'
+    return
+  }
+  const nuovoPiano = JSON.parse(val)
+  const pianoKey = document.getElementById('upg-piano-corrente-key').value
+  const prezzoPrecedente = parseFloat(sel.dataset.prezzoPianoCorrente || 0)
+  const delta = (nuovoPiano.prezzo_eur || 0) - prezzoPrecedente
+  document.getElementById('upg-importo').value = delta > 0 ? delta.toFixed(2) : '0.00'
+
+  // Info punti
+  const ptOld = PIANI_PUNTI_BENVENUTO[pianoKey] || 0
+  const ptNew = PIANI_PUNTI_BENVENUTO[nuovoPiano.key] || 0
+  const ptDelta = ptNew - ptOld
+  const infoEl = document.getElementById('upg-punti-info')
+  infoEl.innerHTML = `🎯 Punti aggiuntivi accreditati: <strong>+${ptDelta}</strong> (da ${ptOld} pt → ${ptNew} pt)`
+  infoEl.style.display = 'block'
+
+  // Maglia (solo Silver/Gold)
+  const haMaglia = nuovoPiano.key === 'silver' || nuovoPiano.key === 'gold'
+  document.getElementById('upg-maglia-box').style.display = haMaglia ? '' : 'none'
+}
+
+async function eseguiUpgrade() {
+  const tifoso_id = document.getElementById('upg-tifoso-id').value
+  const membership_id = document.getElementById('upg-membership-id').value
+  const pianoKey = document.getElementById('upg-piano-corrente-key').value
+  const selVal = document.getElementById('upg-nuovo-piano').value
+  const metodo = document.getElementById('upg-metodo').value
+
+  if (!selVal) { toast('Seleziona il nuovo piano', 'error'); return }
+  const nuovoPiano = JSON.parse(selVal)
+  const haMaglia = nuovoPiano.key === 'silver' || nuovoPiano.key === 'gold'
+
+  // Validazione maglia
+  if (haMaglia) {
+    const cognome = document.getElementById('upg-maglia-cognome').value.trim()
+    const numero = document.getElementById('upg-maglia-numero').value
+    const taglia = document.getElementById('upg-maglia-taglia').value
+    if (!cognome || !numero || !taglia) {
+      toast('Compila tutti i dati della maglia', 'error'); return
+    }
+  }
+
+  // Calcola delta punti
+  const ptOld = PIANI_PUNTI_BENVENUTO[pianoKey] || 0
+  const ptNew = PIANI_PUNTI_BENVENUTO[nuovoPiano.key] || 0
+  const ptDelta = ptNew - ptOld
+
+  // Leggi saldo attuale
+  const { data: tifosoAttuale, error: errSaldo } = await sbAdmin.from('tifosi')
+    .select('punti_saldo').eq('id', tifoso_id).single()
+  if (errSaldo) { toast('Errore lettura saldo: ' + errSaldo.message, 'error'); return }
+
+  const saldoNuovo = tifosoAttuale.punti_saldo + ptDelta
+
+  // Aggiorna membership
+  const upgPayload = {
+    piano_id: nuovoPiano.id,
+    metodo_pagamento: metodo,
+  }
+  if (haMaglia) {
+    upgPayload.maglia_cognome = document.getElementById('upg-maglia-cognome').value.trim().toUpperCase()
+    upgPayload.maglia_numero  = parseInt(document.getElementById('upg-maglia-numero').value)
+    upgPayload.maglia_taglia  = document.getElementById('upg-maglia-taglia').value
+    upgPayload.sciarpa_inclusa = true
+  }
+
+  const { error: errMemb } = await sbAdmin.from('membership')
+    .update(upgPayload).eq('id', membership_id)
+  if (errMemb) { toast('Errore upgrade membership: ' + errMemb.message, 'error'); return }
+
+  // Aggiorna punti tifoso (NO tocco a qr_code)
+  const { error: errPunti } = await sbAdmin.from('tifosi')
+    .update({ punti_saldo: saldoNuovo }).eq('id', tifoso_id)
+  if (errPunti) { toast('Errore aggiornamento punti: ' + errPunti.message, 'error'); return }
+
+  // Inserisci transazione
+  const { error: errTx } = await sbAdmin.from('transazioni').insert({
+    tifoso_id,
+    tipo: 'UPGRADE',
+    punti_delta: ptDelta,
+    saldo_dopo: saldoNuovo,
+    note: `Upgrade piano ${pianoKey.toUpperCase()} → ${nuovoPiano.key.toUpperCase()} · pagamento: ${metodo}`
+  })
+  if (errTx) console.warn('Transazione upgrade non registrata:', errTx.message)
+
+  toast(`✅ Upgrade a ${nuovoPiano.nome} completato! +${ptDelta} punti accreditati.`, 'success')
+  closeModal('modal-upgrade-piano')
+  loadTifosi()
+}
+
+//  MODAL
 function openModal(id) {
   if (id === 'modal-ricarica-diretta') loadTifosiSelectRicarica()
   document.getElementById(id).classList.add('open') }
