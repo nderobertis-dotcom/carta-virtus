@@ -2868,19 +2868,13 @@ async function salvaNuovaPassword() {
 }
 window.salvaNuovaPassword = salvaNuovaPassword
 
-// Gestisce il redirect dopo reset password (url contiene ?reset=1 + token in hash)
-async function gestisciResetRedirect() {
+// Gestisce il redirect dopo reset password — reindirizza a reset-password.html
+function gestisciResetRedirect() {
   const hash = window.location.hash
   const params = new URLSearchParams(window.location.search)
-  if (params.get('reset') === '1' || hash.includes('type=recovery')) {
-    // Supabase gestisce automaticamente la sessione dal token nell'hash
-    const { data: { session } } = await sb.auth.getSession()
-    if (session) {
-      // Mostra modal nuova password
-      document.getElementById('modal-nuova-pw').classList.add('open')
-      // Pulisci l'URL
-      window.history.replaceState({}, '', window.location.pathname)
-    }
+  if (hash.includes('type=recovery') || params.get('reset') === '1') {
+    // Reindirizza a reset-password.html preservando l'hash con i token
+    window.location.replace('/reset-password.html' + hash)
   }
 }
 
