@@ -6861,12 +6861,25 @@ function generaPasswordOp() {
   document.getElementById('nop-password').value = pwd
 }
 
+function aggiornaDescrizioneRuolo() {
+  const ruolo = document.getElementById('nop-ruolo')?.value
+  const desc = document.getElementById('nop-ruolo-desc')
+  if (!desc) return
+  if (ruolo === 'cortesia') {
+    desc.textContent = '⚠️ L\'operatore di cortesia può scansionare la Fan Card e vedere i dati e gli accessi consentiti, ma non viene registrato nessun ingresso.'
+    desc.style.color = '#b45309'
+  } else {
+    desc.textContent = ''
+  }
+}
+
 async function creaOperatore() {
   const WORKER = 'https://carta-virtus-auth.nderobertis.workers.dev'
   const nome     = document.getElementById('nop-nome').value.trim()
   const cognome  = document.getElementById('nop-cognome').value.trim()
   const email    = document.getElementById('nop-email').value.trim()
   const password = document.getElementById('nop-password').value.trim()
+  const ruolo    = document.getElementById('nop-ruolo')?.value || 'operatore'
   const errEl    = document.getElementById('nop-error')
   const btn      = document.getElementById('nop-btn-crea')
 
@@ -6891,7 +6904,7 @@ async function creaOperatore() {
         action: 'register',
         email,
         password,
-        user_metadata: { nome, cognome, ruolo: 'operatore' }
+        user_metadata: { nome, cognome, ruolo }
       })
     })
     const data = await resp.json()
@@ -6903,10 +6916,13 @@ async function creaOperatore() {
       errEl.style.display = 'block'
       return
     }
-    toast(`Operatore ${nome} ${cognome} creato con successo`, 'success')
+    const ruoloLabel = ruolo === 'cortesia' ? 'Operatore Cortesia' : 'Operatore'
+    toast(`${ruoloLabel} ${nome} ${cognome} creato con successo`, 'success')
     closeModal('modal-nuovo-operatore')
     // Reset form
     ;['nop-nome','nop-cognome','nop-email','nop-password'].forEach(id => document.getElementById(id).value = '')
+    const ruoloSel = document.getElementById('nop-ruolo'); if (ruoloSel) ruoloSel.value = 'operatore'
+    aggiornaDescrizioneRuolo()
     // Inserisce subito in public.operatori così appare nella lista
     await sbAdmin.from('operatori').upsert({
       email, nome, cognome, created_at: new Date().toISOString()
@@ -9654,6 +9670,14 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="form-group"><label>Nome *</label><input class="form-input" id="nop-nome" placeholder="Mario"/></div>
         <div class="form-group"><label>Cognome *</label><input class="form-input" id="nop-cognome" placeholder="Rossi"/></div>
         <div class="full form-group"><label>Email *</label><input class="form-input" id="nop-email" type="email" placeholder="mario.rossi@email.com"/></div>
+        <div class="full form-group">
+          <label>Ruolo *</label>
+          <select class="form-input" id="nop-ruolo" onchange="aggiornaDescrizioneRuolo()">
+            <option value="operatore">Operatore — registra ingressi</option>
+            <option value="cortesia">Cortesia — solo verifica Fan Card (nessun ingresso registrato)</option>
+          </select>
+          <div id="nop-ruolo-desc" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+        </div>
         <div class="full form-group">
           <label>Password provvisoria *</label>
           <div style="display:flex;gap:8px">

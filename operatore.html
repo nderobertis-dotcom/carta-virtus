@@ -510,6 +510,25 @@ let currentOperatoreEmail = null
 let currentOperatoreRuolo = null
 let accessoOperatore = null   // Accesso A-F assegnato per la gara corrente
 let pianiAbilitati   = null   // Array piani abilitati per questo operatore (null = tutti)
+let isOperatoreCortesia = false  // true = solo verifica, nessun ingresso registrato
+
+// Cancelli consentiti per piano:
+// VIP/Fan/Gold/Sponsor → tutti (A B C D E F)
+// Silver               → B C D F  (non A né E)
+// Base/Bronze/Cortesia/Disability → solo B
+const CANCELLI_PER_PIANO = {
+  'Gold':       ['A','B','C','D','E','F'],
+  'VIP':        ['A','B','C','D','E','F'],
+  'Sponsor':    ['A','B','C','D','E','F'],
+  'Silver':     ['B','C','D','F'],
+  'Bronze':     ['B'],
+  'Base':       ['B'],
+  'Cortesia':   ['B'],
+  'Disability': ['B'],
+}
+function cancellatiPerPiano(pianoNome) {
+  return CANCELLI_PER_PIANO[pianoNome] || ['B']
+}
 
 
 // ── LOGIN ──
@@ -530,12 +549,13 @@ async function doLogin() {
 
     await sb.auth.setSession({ access_token: json.access_token, refresh_token: json.refresh_token || '' })
 
-    // Verifica ruolo operatore o admin
+    // Verifica ruolo operatore, admin o cortesia
     const ruolo = json.user?.user_metadata?.ruolo
-    if (!['operatore', 'admin'].includes(ruolo)) throw new Error('Accesso riservato agli operatori gare')
+    if (!['operatore', 'admin', 'cortesia'].includes(ruolo)) throw new Error('Accesso riservato agli operatori gare')
 
     currentOperatoreEmail = json.user.email
     currentOperatoreRuolo = ruolo
+    isOperatoreCortesia = ruolo === 'cortesia'
     document.getElementById('op-chip').textContent = json.user.email.split('@')[0]
     document.getElementById('login-screen').style.display = 'none'
     document.getElementById('app').style.display = 'flex'
@@ -625,7 +645,13 @@ async function initApp() {
         ).join('')
       }
 
-      if (isAdmin || currentOperatoreEmail === 'operatore@cartavirtus.it') {
+      if (isOperatoreCortesia) {
+        bg.style.background = 'linear-gradient(135deg,#4a148c,#7b1fa2)'
+        icona.textContent = '👁️'
+        titolo.textContent = 'Operatore di cortesia — SOLO VERIFICA'
+        cancello.textContent = 'Nessun ingresso registrato'
+        cardWrap.innerHTML = renderChipsPiani(null)
+      } else if (isAdmin || currentOperatoreEmail === 'operatore@cartavirtus.it') {
         bg.style.background = 'linear-gradient(135deg,#1b5e20,#2e7d32)'
         icona.textContent = '🔑'
         titolo.textContent = 'Accesso completo'
@@ -805,7 +831,7 @@ async function verificaIngresso(qr) {
 
     mostraRisultato('ok', '🏢', 'Accesso consentito — SPONSOR',
       tifoso.nome + ' ' + tifoso.cognome + ' · Ingresso omaggio',
-      'Sponsor', null)
+      'Sponsor', 0, false, null, false, null, cancellatiPerPiano('Sponsor'))
     await loadLog()
     avviaRealtime()
     return
@@ -837,9 +863,18 @@ async function verificaIngresso(qr) {
 
   if (giaEntrato) {
     const ora_ingresso = new Date(giaEntrato.registrato_il).toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
-    mostraRisultato('warn', '⚠️', 'Già entrato',
-      tifoso.nome + ' ' + tifoso.cognome + ' ha già effettuato l\'ingresso alle ' + ora_ingresso + '.',
+    mostraRisultato('err', '🔴', 'GIÀ ENTRATO',
+      tifoso.nome + ' ' + tifoso.cognome + ' ha già effettuato l\'ingresso alle <strong>' + ora_ingresso + '</strong>.',
       pianoNome)
+    return
+  }
+
+  // ── Operatore CORTESIA: solo verifica visiva, nessun ingresso registrato ──
+  if (isOperatoreCortesia) {
+    const cancConsentiti = cancellatiPerPiano(pianoNome)
+    mostraRisultato('cortesia', '👁️', 'VERIFICA — ' + (tifoso.nome + ' ' + tifoso.cognome).toUpperCase(),
+      `Piano: <strong>${pianoNome}</strong> · Accessi consentiti: <strong>${cancConsentiti.join(', ')}</strong>`,
+      pianoNome, 0, false, null, false, null, cancConsentiti)
     return
   }
 
@@ -851,19 +886,13 @@ async function verificaIngresso(qr) {
     return
   }
 
-  // ── Controlla accesso corretto (prima di registrare l'ingresso) ──
+  // ── Controlla cancello consentito per il piano (logica piano → cancelli) ──
   if (accessoOperatore) {
-    const { data: posto } = await sbA.from('posti')
-      .select('accesso')
-      .eq('tifoso_id', tifoso.auth_user_id)
-      .not('accesso', 'is', null)
-      .limit(1)
-      .maybeSingle()
-
-    if (posto && posto.accesso && posto.accesso !== accessoOperatore) {
-      mostraRisultato('wrong_access', '⚠️', 'Accesso non corretto',
-        `${tifoso.nome} ${tifoso.cognome} deve accedere dall'ingresso <strong>${posto.accesso}</strong>`,
-        pianoNome, 0, false, null, false, posto.accesso)
+    const cancConsentiti = cancellatiPerPiano(pianoNome)
+    if (!cancConsentiti.includes(accessoOperatore)) {
+      mostraRisultato('wrong_access', '⚠️', 'Cancello non corretto per questo piano',
+        `Piano <strong>${pianoNome}</strong>: accesso consentito solo da cancello <strong>${cancConsentiti.join(' / ')}</strong>`,
+        pianoNome, 0, false, null, false, cancConsentiti[0], cancConsentiti)
       return
     }
   }
@@ -890,7 +919,7 @@ async function verificaIngresso(qr) {
     const hasAccomp = memb.accompagnatore_disabile === true
     mostraRisultato('disability', '♿', 'Accesso consentito — DISABILITY CARD',
       tifoso.nome + ' ' + tifoso.cognome,
-      'Disability', 0, false, null, hasAccomp)
+      'Disability', 0, false, null, hasAccomp, null, cancellatiPerPiano('Disability'))
     await loadLog()
     avviaRealtime()
     return
@@ -948,21 +977,22 @@ async function verificaIngresso(qr) {
 
   mostraRisultato('ok', '✅', 'Accesso consentito',
     tifoso.nome + ' ' + tifoso.cognome + ' · Piano ' + pianoNome + accompagnatoreMsg,
-    pianoNome, puntiGara, conAccompagnatore, tifoso.anno_nascita_minore)
+    pianoNome, puntiGara, conAccompagnatore, tifoso.anno_nascita_minore, false, null, cancellatiPerPiano(pianoNome))
 
   await loadLog()
   avviaRealtime()
 }
 
 // ── MOSTRA RISULTATO ──
-function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore, annoMinore, hasAccompDisabile, accessoCorretto) {
+function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore, annoMinore, hasAccompDisabile, accessoCorretto, cancConsentiti) {
   const card = document.getElementById('result-card')
-  const isDisability = tipo === 'disability'
+  const isDisability  = tipo === 'disability'
   const isWrongAccess = tipo === 'wrong_access'
-  const cardType = isDisability ? 'ok' : isWrongAccess ? 'warn' : (tipo === 'ok' ? 'ok' : tipo === 'warn' ? 'warn' : 'err')
+  const isCortesia    = tipo === 'cortesia'
+  const cardType = isDisability ? 'ok' : isCortesia ? 'warn' : isWrongAccess ? 'warn' : (tipo === 'ok' ? 'ok' : tipo === 'warn' ? 'warn' : 'err')
   card.className = 'result-card show result-' + cardType
 
-  // Banner accesso errato (giallo)
+  // ── Banner CANCELLO ERRATO (giallo) ──
   if (isWrongAccess) {
     let wrongBanner = document.getElementById('result-wrong-access')
     if (!wrongBanner) {
@@ -970,11 +1000,31 @@ function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore
       wrongBanner.id = 'result-wrong-access'
       card.appendChild(wrongBanner)
     }
+    const cancLabel = cancConsentiti?.length ? cancConsentiti.join(' / ') : (accessoCorretto || '?')
     wrongBanner.style.cssText = 'margin-top:16px;background:rgba(245,124,0,.25);border:2px solid rgba(245,124,0,.7);border-radius:10px;padding:14px 16px;text-align:center;font-size:15px;font-weight:700;color:#f57c00;letter-spacing:.02em'
-    wrongBanner.innerHTML = `🚪 Recarsi all'ingresso <span style="font-size:20px;font-weight:900">${accessoCorretto || '?'}</span>`
+    wrongBanner.innerHTML = `🚪 Recarsi al cancello <span style="font-size:20px;font-weight:900">${cancLabel}</span>`
+    wrongBanner.style.display = 'block'
   } else {
     const existing = document.getElementById('result-wrong-access')
     if (existing) existing.style.display = 'none'
+  }
+
+  // ── Banner CORTESIA: mostra cancelli consentiti ──
+  let cortesiaBanner = document.getElementById('result-cortesia-banner')
+  if (!cortesiaBanner) {
+    cortesiaBanner = document.createElement('div')
+    cortesiaBanner.id = 'result-cortesia-banner'
+    card.appendChild(cortesiaBanner)
+  }
+  if (isCortesia && cancConsentiti?.length) {
+    const chips = cancConsentiti.map(c =>
+      `<span style="display:inline-block;background:rgba(255,255,255,.25);color:#fff;font-size:18px;font-weight:900;border-radius:10px;padding:8px 16px;min-width:44px;text-align:center">${c}</span>`
+    ).join('')
+    cortesiaBanner.style.cssText = 'margin-top:16px;background:rgba(74,20,140,.4);border:2px solid rgba(149,117,205,.7);border-radius:10px;padding:14px 16px;text-align:center'
+    cortesiaBanner.innerHTML = `<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Accessi consentiti</div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${chips}</div>`
+    cortesiaBanner.style.display = 'block'
+  } else {
+    cortesiaBanner.style.display = 'none'
   }
   document.getElementById('result-icon').textContent = icon
   document.getElementById('result-title').textContent = title
@@ -983,9 +1033,12 @@ function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore
   const det = document.getElementById('result-detail')
   if (piano) {
     det.style.display = 'block'
-    const chipClass = piano === 'Premium' ? 'chip-premium' : piano === 'Pro' ? 'chip-pro' : 'chip-base'
+    const chipClass = piano === 'Gold' ? 'chip-premium' : (piano === 'Silver' || piano === 'Bronze') ? 'chip-pro' : 'chip-base'
+    const cancPiano = cancellatiPerPiano(piano)
+    const cancLabel = cancPiano.length === 6 ? 'Tutti gli accessi (A B C D E F)' : 'Accessi: ' + cancPiano.join(' · ')
     det.innerHTML = '<span class="result-piano ' + chipClass + '">⭐ Piano ' + piano + '</span>' +
-      (punti ? '<br>+' + punti + ' punti Carta Virtus accreditati' : '')
+      `<div style="margin-top:6px;font-size:11px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:.05em">🚪 ${cancLabel}</div>` +
+      (punti ? '<br><span style="font-size:12px;color:rgba(255,255,255,.7)">+' + punti + ' punti Carta Virtus accreditati</span>' : '')
   } else {
     det.style.display = 'none'
   }
