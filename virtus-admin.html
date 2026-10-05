@@ -3233,7 +3233,7 @@ async function loadMsReport() {
 
   // Carica solo gare casalinghe (esclude trasferte)
   const { data: gare } = await sbAdmin.from('gare')
-    .select('id, titolo, data_ora, luogo')
+    .select('id, titolo, data_ora, luogo, biglietti_venduti, accrediti_concessi, incasso_eur')
     .ilike('luogo', '%palap%')
     .order('data_ora')
 
@@ -7833,7 +7833,7 @@ async function loadTifosiSelectRicarica() {
 
 //  EMETTI FAN CARD 
 const PIANI_PREZZI = { base: 10, bronze: 30, silver: 50, gold: 100 }
-const PIANI_PUNTI_BENVENUTO = { base: 10, bronze: 30, silver: 50, gold: 100, vip: 0 }
+const PIANI_PUNTI_BENVENUTO = { base: 10, bronze: 30, silver: 50, gold: 100, vip: 0, sponsor: 0, cortesia: 0, disability: 0 }
 
 function toggleFcAccompagnatore(checked) {
   document.getElementById('fc-campi-accompagnatore').style.display = checked ? 'block' : 'none'
