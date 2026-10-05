@@ -605,6 +605,19 @@ select.form-input:focus{border-color:var(--accent)}
             <input id="tifosi-search" type="text" placeholder="🔍 Cerca per cognome, telefono o email…"
               oninput="filtraTifosi()"
               style="flex:1;min-width:220px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text)">
+            <select id="tifosi-piano-filter" onchange="filtraTifosi()"
+              style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);min-width:150px">
+              <option value="">Tutti i piani</option>
+              <option value="Base">Base</option>
+              <option value="Bronze">Bronze</option>
+              <option value="Silver">Silver</option>
+              <option value="Gold">Gold</option>
+              <option value="Sponsor">Sponsor</option>
+              <option value="VIP">VIP</option>
+              <option value="Cortesia">Cortesia</option>
+              <option value="Disability">Disability</option>
+              <option value="_nessuno">Nessuna card</option>
+            </select>
             <span id="tifosi-results" style="font-size:12px;color:var(--muted);white-space:nowrap"></span>
           </div>
           <!-- Barra stampa massiva -->
@@ -620,6 +633,7 @@ select.form-input:focus{border-color:var(--accent)}
               <th class="th-sort" data-col="email" onclick="sortTifosi('email')" style="cursor:pointer;user-select:none">Email <span id="sort-email"></span></th>
               <th>Residenza</th>
               <th class="th-sort" data-col="sesso" onclick="sortTifosi('sesso')" style="cursor:pointer;user-select:none">Sesso <span id="sort-sesso"></span></th>
+              <th class="th-sort" data-col="_piano" onclick="sortTifosi('_piano')" style="cursor:pointer;user-select:none">Piano <span id="sort-_piano"></span></th>
               <th class="th-sort" data-col="punti_saldo" onclick="sortTifosi('punti_saldo')" style="cursor:pointer;user-select:none">Punti <span id="sort-punti_saldo"></span></th>
               <th class="th-sort" data-col="stato" onclick="sortTifosi('stato')" style="cursor:pointer;user-select:none">Stato <span id="sort-stato"></span></th>
               <th class="th-sort" data-col="creato_il" onclick="sortTifosi('creato_il')" style="cursor:pointer;user-select:none">Iscritto il <span id="sort-creato_il">▼</span></th>
@@ -5431,8 +5445,16 @@ async function loadDashboard() {
 
 //  TIFOSI 
 async function loadTifosi() {
-  const { data } = await sbAdmin.from('tifosi').select('*').order('creato_il', { ascending: false })
-  allTifosi = data || []
+  const [{ data: tifData }, { data: membData }] = await Promise.all([
+    sbAdmin.from('tifosi').select('*').order('creato_il', { ascending: false }),
+    sbAdmin.from('membership').select('tifoso_id, piano:piano_id(nome)').eq('stato', 'attiva')
+  ])
+  // Associa il piano al tifoso (prende il primo attivo se più di uno)
+  const pianoPerTifoso = {}
+  ;(membData || []).forEach(m => {
+    if (!pianoPerTifoso[m.tifoso_id]) pianoPerTifoso[m.tifoso_id] = m.piano?.nome || null
+  })
+  allTifosi = (tifData || []).map(t => ({ ...t, _piano: pianoPerTifoso[t.id] || null }))
   document.getElementById('tifosi-count').textContent = `${allTifosi.length} tifosi`
   filtraTifosi()
 }
@@ -5443,17 +5465,32 @@ function renderTifosi(list) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Nessun tifoso</td></tr>'
     return
   }
+  const PIANO_COLORS = {
+    'Base':       'background:#f5f5f5;color:#555',
+    'Bronze':     'background:#e3f2fd;color:#1565c0',
+    'Silver':     'background:#fff3e0;color:#e65100',
+    'Gold':       'background:#f3e5f5;color:#6a1b9a',
+    'Sponsor':    'background:#e8f5e9;color:#1b5e20',
+    'VIP':        'background:#fce4ec;color:#880e4f',
+    'Cortesia':   'background:#fafafa;color:#607d8b',
+    'Disability': 'background:#e1f5fe;color:#01579b',
+  }
   tbody.innerHTML = list.map(t => {
     const residenza = [t.via, t.cap, t.citta].filter(Boolean).join(', ') || '&mdash;'
     const sesso = t.sesso === 'M' ? 'M' : t.sesso === 'F' ? 'F' : t.sesso || '&mdash;'
     const stato_badge = t.stato === 'attivo' ? 'green' : 'red'
     const data = new Date(t.creato_il).toLocaleDateString('it-IT')
+    const pianoStyle = t._piano ? (PIANO_COLORS[t._piano] || 'background:#eee;color:#333') : ''
+    const pianoBadge = t._piano
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;${pianoStyle}">${t._piano}</span>`
+      : '<span style="font-size:10px;color:var(--muted)">—</span>'
     return `<tr id="trow-${t.id}">
       <td style="text-align:center"><input type="checkbox" class="tifoso-chk" data-id="${t.id}" style="cursor:pointer;width:15px;height:15px" onchange="onTifosoChk()"></td>
       <td><strong>${t.nome} ${t.cognome}</strong><br><span class="qr-code" style="font-size:10px">${t.qr_code}</span></td>
       <td style="color:var(--muted);font-size:12px">${t.email}<br><span style="font-size:11px">${t.telefono||''}</span></td>
       <td style="font-size:11px;color:var(--muted)">${residenza}</td>
       <td style="font-size:12px;text-align:center">${sesso}</td>
+      <td>${pianoBadge}</td>
       <td><span class="pts">${t.punti_saldo}</span></td>
       <td><span class="badge badge-${stato_badge}">${t.stato}</span></td>
       <td style="color:var(--muted);font-size:11px">${data}</td>
@@ -5471,19 +5508,24 @@ let _sortCol = 'creato_il'
 let _sortDir = -1  // -1 = desc, 1 = asc
 
 function filtraTifosi() {
-  const q = (document.getElementById('tifosi-search')?.value || '').toLowerCase().trim()
-  const filtered = q
-    ? allTifosi.filter(t =>
-        (t.cognome || '').toLowerCase().includes(q) ||
-        (t.nome || '').toLowerCase().includes(q) ||
-        (t.email || '').toLowerCase().includes(q) ||
-        (t.telefono || '').toLowerCase().includes(q)
-      )
-    : allTifosi
+  const q     = (document.getElementById('tifosi-search')?.value || '').toLowerCase().trim()
+  const piano = document.getElementById('tifosi-piano-filter')?.value || ''
+  let filtered = allTifosi
+  if (q) filtered = filtered.filter(t =>
+    (t.cognome || '').toLowerCase().includes(q) ||
+    (t.nome || '').toLowerCase().includes(q) ||
+    (t.email || '').toLowerCase().includes(q) ||
+    (t.telefono || '').toLowerCase().includes(q)
+  )
+  if (piano === '_nessuno') {
+    filtered = filtered.filter(t => !t._piano)
+  } else if (piano) {
+    filtered = filtered.filter(t => t._piano === piano)
+  }
   const sorted = sortedList(filtered)
   renderTifosi(sorted)
   const res = document.getElementById('tifosi-results')
-  if (res) res.textContent = q ? `${sorted.length} risultat${sorted.length === 1 ? 'o' : 'i'}` : ''
+  if (res) res.textContent = (q || piano) ? `${sorted.length} risultat${sorted.length === 1 ? 'o' : 'i'}` : ''
 }
 
 function sortedList(list) {
