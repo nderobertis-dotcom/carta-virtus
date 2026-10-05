@@ -838,6 +838,7 @@ select.form-input:focus{border-color:var(--accent)}
             <th id="ms-col-numero">Numero</th>
             <th id="ms-col-inprod">In produzione</th>
             <th id="ms-col-stato-sc" style="display:none">Stato</th>
+            <th id="ms-col-confermata">Confermata</th>
             <th>Consegnata</th>
             <th></th>
           </tr></thead>
@@ -3202,6 +3203,8 @@ function switchMaglieTab(tab, btn) {
   if (thNumero) thNumero.style.display = tab === 'maglie' ? '' : 'none'
   const thStato = document.getElementById('ms-col-stato-sc')
   if (thStato) thStato.style.display = tab === 'sciarpe' ? '' : 'none'
+  const thConfermata = document.getElementById('ms-col-confermata')
+  if (thConfermata) thConfermata.style.display = tab === 'maglie' ? '' : 'none'
   const btnAgg = document.getElementById('ms-btn-aggiungi')
   if (btnAgg) btnAgg.style.display = tab === 'maglie' ? '' : 'none'
   const btnExpSc = document.getElementById('ms-btn-export-sc')
@@ -3831,7 +3834,7 @@ async function salvaBiglietteria() {
 
 async function loadMaglieSciarpe() {
   const { data, error } = await sbAdmin.from('membership')
-    .select('id, maglia_taglia, maglia_cognome, maglia_numero, maglia_in_produzione, maglia_consegnata, maglia_consegnata_il, sciarpa_inclusa, sciarpa_consegnata, sciarpa_consegnata_il, sciarpa_stato, piano:piano_id(nome), tifoso:tifoso_id(id, nome, cognome, telefono)')
+    .select('id, maglia_taglia, maglia_cognome, maglia_numero, maglia_in_produzione, maglia_confermata, maglia_consegnata, maglia_consegnata_il, sciarpa_inclusa, sciarpa_consegnata, sciarpa_consegnata_il, sciarpa_stato, piano:piano_id(nome), tifoso:tifoso_id(id, nome, cognome, telefono)')
     .not('stato', 'eq', 'annullata')
     .order('creato_il', { ascending: false })
   if (error) { toast('Errore caricamento: ' + error.message, 'error'); return }
@@ -3926,6 +3929,14 @@ function renderMaglieSciarpe() {
         </select>
       </td>` : ''}
       <td style="text-align:center">
+        ${isMaglie
+          ? (m.maglia_confermata
+              ? `<span style="color:#4CAF50;font-size:18px" title="Scelta confermata">✅</span>`
+              : `<button class="btn btn-ghost btn-sm" style="font-size:12px;color:var(--muted);border:1px dashed var(--border)" onclick="flagConfermata('${m.id}',true)">Conferma</button>`)
+          : ''
+        }
+      </td>
+      <td style="text-align:center">
         ${consegnata
           ? `<span style="color:#4CAF50;font-size:13px">✅ ${dataConsegna}</span>`
           : '<span style="color:var(--muted);font-size:12px">—</span>'
@@ -3949,6 +3960,15 @@ async function toggleInProduzione(membId, valore) {
   const m = _msData.find(x => x.id === membId)
   if (m) m.maglia_in_produzione = valore
   toast(valore ? '🏭 Maglia segnata in produzione' : 'Flag produzione rimosso', 'success')
+  renderMaglieSciarpe()
+}
+
+async function flagConfermata(membId, valore) {
+  const { error } = await sbAdmin.from('membership').update({ maglia_confermata: valore }).eq('id', membId)
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  const m = _msData.find(x => x.id === membId)
+  if (m) m.maglia_confermata = valore
+  toast(valore ? '✅ Scelta maglia confermata' : 'Conferma rimossa', 'success')
   renderMaglieSciarpe()
 }
 
@@ -9490,18 +9510,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <label>Taglia *</label>
         <select class="form-input" id="mm-add-taglia">
           <option value="">— seleziona —</option>
-          <option value="4anni">4 anni</option>
-          <option value="6anni">6 anni</option>
-          <option value="8anni">8 anni</option>
-          <option value="10anni">10 anni</option>
-          <option value="12anni">12 anni</option>
-          <option value="14anni">14 anni</option>
-          <option value="XS">XS</option>
-          <option value="S">S</option>
-          <option value="M">M</option>
-          <option value="L">L</option>
-          <option value="XL">XL</option>
-          <option value="XXL">XXL</option>
+          <option value="S/M">S/M</option>
+          <option value="L/XL">L/XL</option>
         </select>
       </div>
       <div class="form-group">
@@ -9538,18 +9548,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <label>Taglia</label>
         <select class="form-input" id="mm-taglia">
           <option value="">— nessuna —</option>
-          <option value="4anni">4 anni</option>
-          <option value="6anni">6 anni</option>
-          <option value="8anni">8 anni</option>
-          <option value="10anni">10 anni</option>
-          <option value="12anni">12 anni</option>
-          <option value="14anni">14 anni</option>
-          <option value="XS">XS</option>
-          <option value="S">S</option>
-          <option value="M">M</option>
-          <option value="L">L</option>
-          <option value="XL">XL</option>
-          <option value="XXL">XXL</option>
+          <option value="S/M">S/M</option>
+          <option value="L/XL">L/XL</option>
         </select>
       </div>
       <div class="form-group">
