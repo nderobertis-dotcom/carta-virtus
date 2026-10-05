@@ -2873,8 +2873,8 @@ function gestisciResetRedirect() {
   const hash = window.location.hash
   const params = new URLSearchParams(window.location.search)
   if (hash.includes('type=recovery') || params.get('reset') === '1') {
-    // Reindirizza a reset-password.html preservando l'hash con i token
-    window.location.replace('/reset-password.html' + hash)
+    // Reindirizza a reset-password.html preservando hash e query string
+    window.location.replace('/reset-password.html' + window.location.search + hash)
   }
 }
 
