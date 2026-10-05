@@ -2237,6 +2237,23 @@ select.form-input:focus{border-color:var(--accent)}
           </div>
         </div>
       </div>
+
+      <!-- Posto riservato (solo Silver/Gold) -->
+      <div id="upg-posto-box" style="display:none;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;background:#F0F6FF;border-radius:8px;padding:14px;margin-top:10px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blu);margin-bottom:10px">🪑 Posto riservato <span style="font-weight:400;color:var(--muted)">(opzionale)</span></div>
+        <div style="display:flex;gap:10px;margin-bottom:12px">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="upgMostraTribuna('sud',this)">Settore A (Sud)</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="upgMostraTribuna('nord',this)">Settore B (Nord)</button>
+        </div>
+        <div id="upg-pianta-container" style="overflow-x:auto"></div>
+        <div id="upg-posto-selezionato" style="margin-top:10px;font-size:13px;color:var(--blu);font-weight:600;display:none">
+          ✅ Posto selezionato: <span id="upg-posto-label"></span>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:10px" onclick="upgDeselezionaPosto()">✕ Rimuovi</button>
+        </div>
+        <input type="hidden" id="upg-posto-tribuna"/>
+        <input type="hidden" id="upg-posto-fila"/>
+        <input type="hidden" id="upg-posto-numero"/>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-upgrade-piano')">Annulla</button>
@@ -6876,6 +6893,8 @@ async function openUpgradePiano() {
   document.getElementById('upg-maglia-cognome').value = ''
   document.getElementById('upg-maglia-numero').value = ''
   document.getElementById('upg-maglia-taglia').value = ''
+  document.getElementById('upg-posto-box').style.display = 'none'
+  upgDeselezionaPosto()
 
   // Salva prezzo corrente per calcolo delta
   document.getElementById('upg-nuovo-piano').dataset.prezzoPianoCorrente = currentDetMembership.piano.prezzo_eur || 0
@@ -6907,9 +6926,69 @@ function onUpgradePianoChange() {
   infoEl.innerHTML = `🎯 Punti aggiuntivi accreditati: <strong>+${ptDelta}</strong> (da ${ptOld} pt → ${ptNew} pt)`
   infoEl.style.display = 'block'
 
-  // Maglia (solo Silver/Gold)
+  // Maglia e posto (solo Silver/Gold)
   const haMaglia = nuovoPiano.key === 'silver' || nuovoPiano.key === 'gold'
   document.getElementById('upg-maglia-box').style.display = haMaglia ? '' : 'none'
+  document.getElementById('upg-posto-box').style.display = haMaglia ? '' : 'none'
+  if (!haMaglia) upgDeselezionaPosto()
+}
+
+let _upgStatiPosti = {}
+
+async function upgMostraTribuna(tid, btn) {
+  document.querySelectorAll('#upg-posto-box .btn').forEach(b => b.classList.remove('btn-primary'))
+  btn.classList.add('btn-primary')
+
+  if (!Object.keys(_upgStatiPosti).length) {
+    const { data } = await sbAdmin.from('posti').select('tribuna,fila,numero,stato')
+    if (data) data.forEach(p => { _upgStatiPosti[p.tribuna+'_'+p.fila+'_'+p.numero] = p.stato })
+  }
+
+  const conf = ADMIN_MAPPA_POSTI[tid]
+  if (!conf) return
+  const selT = document.getElementById('upg-posto-tribuna').value
+  const selF = document.getElementById('upg-posto-fila').value
+  const selN = parseInt(document.getElementById('upg-posto-numero').value)
+
+  let html = conf.file.map(fila => {
+    const riga = conf.struttura[fila]
+    const celle = riga.map(n => {
+      if (n === 'S') return '<div style="width:14px;height:14px;flex-shrink:0"></div>'
+      const k = tid+'_'+fila+'_'+n
+      const stato = _upgStatiPosti[k] || 'disponibile'
+      const isSel = selT === tid && selF === fila && selN === n
+      let bg = isSel ? '#F57C00' : stato === 'disponibile' ? '#4CAF50' : '#e53935'
+      const cursor = stato === 'disponibile' || isSel ? 'pointer' : 'not-allowed'
+      const click = stato === 'disponibile' ? `onclick="upgSelezionaPosto('${tid}','${fila}',${n})"` : ''
+      return `<div ${click} style="width:14px;height:14px;border-radius:2px;background:${bg};cursor:${cursor};flex-shrink:0" title="Fila ${fila} N°${n} — ${stato}"></div>`
+    }).join('')
+    return `<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px">
+      <div style="font-size:10px;color:var(--muted);width:12px;text-align:center;flex-shrink:0">${fila}</div>
+      <div style="display:flex;gap:2px">${celle}</div>
+    </div>`
+  }).join('')
+
+  document.getElementById('upg-pianta-container').innerHTML = html
+}
+
+function upgSelezionaPosto(tid, fila, numero) {
+  document.getElementById('upg-posto-tribuna').value = tid
+  document.getElementById('upg-posto-fila').value = fila
+  document.getElementById('upg-posto-numero').value = numero
+  const settore = tid === 'sud' ? 'Settore A' : 'Settore B'
+  document.getElementById('upg-posto-label').textContent = `${settore} · Fila ${fila} · N° ${numero}`
+  document.getElementById('upg-posto-selezionato').style.display = 'block'
+  const btn = document.querySelector('#upg-posto-box .btn-primary')
+  if (btn) upgMostraTribuna(tid, btn)
+}
+
+function upgDeselezionaPosto() {
+  document.getElementById('upg-posto-tribuna').value = ''
+  document.getElementById('upg-posto-fila').value = ''
+  document.getElementById('upg-posto-numero').value = ''
+  document.getElementById('upg-posto-selezionato').style.display = 'none'
+  document.getElementById('upg-pianta-container').innerHTML = ''
+  document.querySelectorAll('#upg-posto-box .btn').forEach(b => b.classList.remove('btn-primary'))
 }
 
 async function eseguiUpgrade() {
@@ -6975,6 +7054,18 @@ async function eseguiUpgrade() {
     note: `Upgrade piano ${pianoKey.toUpperCase()} → ${nuovoPiano.key.toUpperCase()} · pagamento: ${metodo}`
   })
   if (errTx) console.warn('Transazione upgrade non registrata:', errTx.message)
+
+  // Assegna posto se selezionato
+  const postoT = document.getElementById('upg-posto-tribuna').value
+  const postoF = document.getElementById('upg-posto-fila').value
+  const postoN = document.getElementById('upg-posto-numero').value
+  if (postoT && postoF && postoN) {
+    const { error: errPosto } = await sbAdmin.from('posti')
+      .update({ stato: 'assegnato', tifoso_id: tifoso_id, aggiornato_il: new Date().toISOString() })
+      .eq('tribuna', postoT).eq('fila', postoF).eq('numero', parseInt(postoN))
+    if (errPosto) console.warn('Assegnazione posto fallita:', errPosto.message)
+    else _upgStatiPosti = {} // invalida cache posti
+  }
 
   toast(`✅ Upgrade a ${nuovoPiano.nome} completato! +${ptDelta} punti accreditati.`, 'success')
   closeModal('modal-upgrade-piano')
