@@ -3571,7 +3571,7 @@ async function loadMsReport() {
     <!-- INCASSI PER CANALE -->
     <div class="card" style="margin-bottom:20px">
       <div class="card-title" style="margin-bottom:16px">💳 Incassi per canale di pagamento</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px">
         ${[
           { label:'💵 Cassa', key:'cassa', color:'#2E7D32' },
           { label:'💳 POS', key:'pos', color:'#1565C0' },
@@ -3763,20 +3763,23 @@ async function stampaReportDirettivo() {
 
   toast('Generazione report in corso...', 'success')
 
-  // Recupera dati freschi
+  // Recupera dati freschi — stessa logica del report a schermo
   const { data: gare } = await sbAdmin.from('gare')
-    .select('id,titolo,avversario,data_ora,biglietti_venduti,accrediti_concessi,incasso_eur')
+    .select('id,titolo,avversario,data_ora,biglietti_venduti,accrediti_concessi,incasso_eur,luogo')
+    .ilike('luogo', '%palap%')
     .order('data_ora')
-  const { data: tifosi } = await sbAdmin.from('tifosi').select('id,auth_user_id,nome,cognome,sesso,data_nascita,stato').eq('tipo','tifoso')
-  // Conta posti VIP assegnati (ogni posto = 1 persona fisica)
-  const { data: vipIdsSt } = await sbAdmin.from('tifosi').select('id').eq('tipo','sponsor')
-  const vipIdListSt = (vipIdsSt||[]).map(x=>x.id)
+  const { data: tifosi } = await sbAdmin.from('tifosi').select('id,nome,cognome,sesso,data_nascita').eq('tipo','tifoso')
+  // VIP: conta posti assegnati a tifosi di tipo sponsor
+  const { data: tifosiVipSt } = await sbAdmin.from('tifosi').select('id').eq('tipo','sponsor')
+  const vipIdListSt = (tifosiVipSt||[]).map(x=>x.id)
   let nFanCardVip = 0
   if (vipIdListSt.length > 0) {
     const { data: pvip } = await sbAdmin.from('posti').select('tifoso_id').eq('stato','assegnato').in('tifoso_id', vipIdListSt)
-    nFanCardVip = (pvip||[]).length
+    nFanCardVip = (pvip||[]).filter(p => vipIdListSt.includes(p.tifoso_id)).length
   }
-  const { data: memberships } = await sbAdmin.from('membership').select('tifoso_id,piano:piano_id(nome),stato').eq('stato','attiva')
+  // Membership attive escludendo VIP
+  const { data: membershipsAllSt } = await sbAdmin.from('membership').select('tifoso_id,piano:piano_id(nome),stato,metodo_pagamento').eq('stato','attiva')
+  const memberships = (membershipsAllSt||[]).filter(m => m.piano?.nome !== 'VIP')
   const { data: ingressi } = await sbAdmin.from('ingressi_gare').select('tifoso_id,gara_id,piano_nome')
 
   const ora = new Date()
@@ -3803,7 +3806,7 @@ async function stampaReportDirettivo() {
   const contesto = `
 Stagione sportiva 2026/2027 - Nuova Virtus Basket Molfetta (PalaPoli)
 
-TIFOSI ISCRITTI: ${(tifosi?.length||0)+nFanCardVip} (Base:${perPiano.Base||0}, Bronze:${perPiano.Bronze||0}, Silver:${perPiano.Silver||0}, Gold:${perPiano.Gold||0}, VIP:${nFanCardVip})
+TIFOSI ISCRITTI: ${(tifosi?.length||0)+nFanCardVip} Fan Card totali (Base:${perPiano.Base||0}, Bronze:${perPiano.Bronze||0}, Silver:${perPiano.Silver||0}, Gold:${perPiano.Gold||0}, VIP ospiti:${nFanCardVip})
 
 GARE DISPUTATE: ${gareDisputate.length} su ${(gare||[]).length} in calendario
 
