@@ -2524,7 +2524,8 @@ select.form-input:focus{border-color:var(--accent)}
       </div>
       <!-- SCELTA POSTO (Silver e Gold) -->
       <div id="fc-posto-box" style="grid-column:1/-1;display:none;background:#F0F6FF;border:1px solid #DDEEFF;border-radius:10px;padding:14px">
-        <div style="font-size:11px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">🪑 Posto riservato</div>
+        <div style="font-size:11px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">🪑 Posto riservato</div>
+        <div id="fc-posto-hint" style="font-size:11px;color:var(--muted);margin-bottom:10px">Per piano <strong>VIP</strong> puoi selezionare più posti (click per aggiungere/rimuovere). Per Silver/Gold è un solo posto.</div>
         <div style="display:flex;gap:10px;margin-bottom:12px">
           <button type="button" class="btn btn-ghost btn-sm" onclick="fcMostraTribuna('sud',this)">Settore A (Sud)</button>
           <button type="button" class="btn btn-ghost btn-sm" onclick="fcMostraTribuna('nord',this)">Settore B (Nord)</button>
@@ -8598,14 +8599,25 @@ function toggleFcMaglia(piano) {
   if (box)        box.style.display        = hasMaglia ? 'block' : 'none'
   if (postoBox)   postoBox.style.display   = haPosto   ? 'block' : 'none'
   if (aziendaBox) aziendaBox.style.display = isVip     ? 'block' : 'none'
+  // VIP: nasconde importo e metodo pagamento (gratuito)
+  const importoBox = document.getElementById('fc-importo')?.closest('.form-group')
+  const metodoBox  = document.getElementById('fc-metodo')?.closest('.form-group')
+  if (importoBox) importoBox.style.display = isVip ? 'none' : ''
+  if (metodoBox)  metodoBox.style.display  = isVip ? 'none' : ''
+  if (isVip) {
+    document.getElementById('fc-importo').value = '0'
+    document.getElementById('fc-metodo').value  = 'cortesia'
+  }
   document.getElementById('fc-posto-tribuna').value = ''
   document.getElementById('fc-posto-fila').value    = ''
   document.getElementById('fc-posto-numero').value  = ''
   document.getElementById('fc-posto-selezionato').style.display = 'none'
   document.getElementById('fc-pianta-container').innerHTML = ''
+  _fcPostiVipSelezionati = []
 }
 
 let _fcStatiPosti = {}
+let _fcPostiVipSelezionati = [] // per selezione multipla VIP
 
 async function fcMostraTribuna(tid, btn) {
   document.querySelectorAll('#fc-posto-box .btn').forEach(b => b.classList.remove('btn-primary'))
@@ -8628,10 +8640,14 @@ async function fcMostraTribuna(tid, btn) {
       if (n === 'S') return '<div style="width:14px;height:14px;flex-shrink:0"></div>'
       const k = tid+'_'+fila+'_'+n
       const stato = _fcStatiPosti[k] || 'disponibile'
-      const isSel = selT === tid && selF === fila && selN === n
+      const pianoCorrente = document.getElementById('fc-piano').value
+      const isVipPianta = pianoCorrente === 'vip'
+      const isSel = isVipPianta
+        ? _fcPostiVipSelezionati.some(p => p.tribuna===tid && p.fila===fila && p.numero===n)
+        : (selT === tid && selF === fila && selN === n)
       let bg = isSel ? '#F57C00' : stato === 'disponibile' ? '#4CAF50' : '#e53935'
       const cursor = stato === 'disponibile' || isSel ? 'pointer' : 'not-allowed'
-      const click = stato === 'disponibile' ? `onclick="fcSelezionaPosto('${tid}','${fila}',${n})"` : ''
+      const click = stato === 'disponibile' || (isVipPianta && isSel) ? `onclick="fcSelezionaPosto('${tid}','${fila}',${n})"` : ''
       return `<div ${click} style="width:14px;height:14px;border-radius:2px;background:${bg};cursor:${cursor};flex-shrink:0" title="Fila ${fila} N°${n} — ${stato}"></div>`
     }).join('')
     return `<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px">
@@ -8644,12 +8660,38 @@ async function fcMostraTribuna(tid, btn) {
 }
 
 function fcSelezionaPosto(tid, fila, numero) {
-  document.getElementById('fc-posto-tribuna').value = tid
-  document.getElementById('fc-posto-fila').value = fila
-  document.getElementById('fc-posto-numero').value = numero
-  const settore = tid === 'sud' ? 'Settore A' : 'Settore B'
-  document.getElementById('fc-posto-label').textContent = `${settore} · Fila ${fila} · N° ${numero}`
-  document.getElementById('fc-posto-selezionato').style.display = 'block'
+  const pianoCorrente = document.getElementById('fc-piano').value
+  const isVipPianta = pianoCorrente === 'vip'
+
+  if (isVipPianta) {
+    // Selezione multipla per VIP: toggle
+    const idx = _fcPostiVipSelezionati.findIndex(p => p.tribuna===tid && p.fila===fila && p.numero===numero)
+    if (idx >= 0) {
+      _fcPostiVipSelezionati.splice(idx, 1)
+    } else {
+      _fcPostiVipSelezionati.push({ tribuna: tid, fila, numero })
+    }
+    const labelEl = document.getElementById('fc-posto-selezionato')
+    const labelTxt = document.getElementById('fc-posto-label')
+    if (_fcPostiVipSelezionati.length) {
+      const descrizioni = _fcPostiVipSelezionati.map(p => {
+        const s = p.tribuna === 'sud' ? 'Sett. A' : 'Sett. B'
+        return `${s} F${p.fila} N°${p.numero}`
+      })
+      labelTxt.textContent = descrizioni.join(' · ')
+      labelEl.style.display = 'block'
+    } else {
+      labelEl.style.display = 'none'
+    }
+  } else {
+    // Selezione singola (Silver/Gold)
+    document.getElementById('fc-posto-tribuna').value = tid
+    document.getElementById('fc-posto-fila').value = fila
+    document.getElementById('fc-posto-numero').value = numero
+    const settore = tid === 'sud' ? 'Settore A' : 'Settore B'
+    document.getElementById('fc-posto-label').textContent = `${settore} · Fila ${fila} · N° ${numero}`
+    document.getElementById('fc-posto-selezionato').style.display = 'block'
+  }
   // Ricarica pianta per evidenziare selezione
   const btn = document.querySelector(`#fc-posto-box .btn-primary`)
   if (btn) fcMostraTribuna(tid, btn)
@@ -8669,8 +8711,12 @@ async function emettiFantCard() {
   const importo  = parseFloat(document.getElementById('fc-importo').value)
   const metodo   = document.getElementById('fc-metodo').value
 
-  if (!nome || !cognome || !email || !piano || !metodo || isNaN(importo)) {
+  const isVip = piano === 'vip'
+  if (!nome || !cognome || !email || !piano) {
     toast('Compila tutti i campi obbligatori', 'error'); return
+  }
+  if (!isVip && (!metodo || isNaN(importo))) {
+    toast('Compila importo e metodo di pagamento', 'error'); return
   }
 
   // Validazione maglia (Silver e Gold)
@@ -8758,7 +8804,7 @@ async function emettiFantCard() {
     // 
 
     // 3. Recupera piano_id da membership_piani
-    const pianoNomeMap = { base: 'Base', bronze: 'Bronze', silver: 'Silver', gold: 'Gold' }
+    const pianoNomeMap = { base: 'Base', bronze: 'Bronze', silver: 'Silver', gold: 'Gold', vip: 'VIP' }
     const { data: pianoData, error: pianoErr } = await sbAdmin.from('membership_piani')
       .select('id').eq('nome', pianoNomeMap[piano] || piano).single()
     if (pianoErr || !pianoData) throw new Error('Piano non trovato: ' + piano)
@@ -8781,10 +8827,18 @@ async function emettiFantCard() {
     const { error: membErr } = await sbAdmin.from('membership').insert(membPayload)
     if (membErr) throw new Error('Errore membership: ' + membErr.message)
 
-    // 4b. Assegna posto se selezionato
-    if (postoTribuna && postoFila && postoNumero) {
+    // 4b. Assegna posto/i se selezionati
+    if (isVip && _fcPostiVipSelezionati.length) {
+      // VIP: assegna tutti i posti selezionati
+      for (const p of _fcPostiVipSelezionati) {
+        await sbAdmin.from('posti')
+          .update({ stato: 'assegnato', tifoso_id: uid, aggiornato_il: new Date().toISOString() })
+          .eq('tribuna', p.tribuna).eq('fila', p.fila).eq('numero', p.numero)
+      }
+    } else if (!isVip && postoTribuna && postoFila && postoNumero) {
+      // Silver/Gold: assegna singolo posto
       await sbAdmin.from('posti')
-        .update({ stato: 'assegnato', tifoso_id: authData.user.id })
+        .update({ stato: 'assegnato', tifoso_id: uid })
         .eq('tribuna', postoTribuna).eq('fila', postoFila).eq('numero', postoNumero)
     }
     await sbAdmin.from('transazioni').insert({
@@ -8825,6 +8879,7 @@ async function emettiFantCard() {
     document.getElementById('fc-anno-minore').value = ''
     document.getElementById('fc-campi-accompagnatore').style.display = 'none'
     document.getElementById('fc-maglia-box').style.display = 'none'
+    _fcPostiVipSelezionati = []
     document.getElementById('fc-maglia-taglia').value = ''
     document.getElementById('fc-maglia-cognome').value = ''
     document.getElementById('fc-maglia-numero').value = ''
