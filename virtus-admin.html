@@ -1238,9 +1238,27 @@ select.form-input:focus{border-color:var(--accent)}
         </div>
         <div class="card-body">
           <table>
-            <thead><tr><th>Titolo</th><th>Avversario</th><th>Data e ora</th><th>Luogo</th><th>Stagione</th><th>Stato</th><th>Ingressi</th><th></th></tr></thead>
+            <thead><tr><th>Titolo</th><th>Avversario</th><th>Data e ora</th><th>Luogo</th><th>Stagione</th><th>Stato</th><th>Ingressi</th><th>Penalità</th><th></th></tr></thead>
             <tbody id="gare-list"></tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Penalità assenze Fan Card Base -->
+      <div class="card" style="margin-top:16px;border-left:4px solid var(--gold)">
+        <div class="card-header">
+          <div class="card-title">⚠️ Penalità assenze — Fan Card Base</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadPenalitaInfo()">↻ Aggiorna</button>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
+            I tifosi Fan Card Base assenti a una gara con saldo ≥ 5 punti ricevono automaticamente −5 punti a mezzanotte del giorno della gara. Usa il pulsante per applicare manualmente la penalità a gare non ancora processate.
+          </p>
+          <div id="penalita-gare-list" style="margin-bottom:12px;font-size:13px;color:var(--muted)">Caricamento...</div>
+          <button class="btn btn-primary" onclick="eseguiPenalitaManuale()" id="btn-penalita-manuale" style="background:var(--gold);border-color:var(--gold)">
+            ▶ Applica penalità gare non processate
+          </button>
+          <div id="penalita-result" style="margin-top:12px;font-size:13px"></div>
         </div>
       </div>
     </div>
@@ -5509,7 +5527,7 @@ function showSection(name) {
   if (name === 'report-stagionale')  { loadMsReport() }
   if (name === 'cortesia')      loadCortesia()
   if (name === 'membership')    loadMembership('in_attesa')
-  if (name === 'gare')          loadGare()
+  if (name === 'gare')          { loadGare(); loadPenalitaInfo() }
   if (name === 'gare-esterne') loadGareEsterne()
   if (name === 'operatori')     loadOperatori()
   if (name === 'merchants')     loadMerchants()
@@ -7652,6 +7670,14 @@ async function loadGare() {
       <td style="font-size:12px;color:var(--muted)">${g.luogo}</td>
       <td style="font-size:12px;color:var(--muted)">${g.stagione}</td>
       <td><span class="badge ${badgeCol}">${stato}</span></td>
+      <td style="text-align:center">
+        ${passata
+          ? (g.penalita_base_applicata
+              ? '<span class="badge badge-green" title="Penalità −5 già applicata">✓ Fatto</span>'
+              : `<button class="btn btn-ghost btn-sm" style="color:var(--gold);border-color:var(--gold)" onclick='eseguiPenalitaGara("${g.id}","${g.titolo.replace(/"/g,'&quot;')}")'>−5 pt</button>`)
+          : '<span style="color:var(--muted);font-size:11px">—</span>'
+        }
+      </td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" data-id="${g.id}" data-titolo="${g.titolo}" onclick="loadIngressi(this.dataset.id, this.dataset.titolo)">Ingressi</button>
         <button class="btn btn-ghost btn-sm" onclick='toggleGaraAttiva("${g.id}", ${!!g.attiva})' title="${g.attiva ? 'Scanner attivo — clicca per disattivare' : 'Scanner non attivo — clicca per attivare'}" style="min-width:90px">${g.attiva ? '🟢 Attiva' : '⚫ Non attiva'}</button>
@@ -7659,7 +7685,7 @@ async function loadGare() {
         <button class="btn btn-danger btn-sm" onclick='confermaEliminaGara("${g.id}","${g.titolo.replace(/"/g,"&quot;")}")'>🗑️</button>
       </td>
     </tr>`
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Nessuna gara</td></tr>'
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Nessuna gara</td></tr>'
 }
 
 async function toggleGaraAttiva(id, attivaCorrente) {
@@ -7668,6 +7694,79 @@ async function toggleGaraAttiva(id, attivaCorrente) {
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast(nuovoValore ? '🟢 Scanner attivato per questa gara' : '⚫ Scanner disattivato', nuovoValore ? 'success' : 'info')
   loadGare()
+}
+
+// Penalità −5 per singola gara (da bottone in tabella)
+async function eseguiPenalitaGara(garaId, titolo) {
+  if (!confirm(`Applicare penalità −5 punti agli assenti Fan Card Base per la gara:\n"${titolo}"?\n\nSolo i tifosi con saldo ≥ 5 verranno scalati.`)) return
+
+  // Prima resetta il flag così la funzione la processa
+  const { error: e1 } = await sbAdmin.from('gare')
+    .update({ penalita_base_applicata: false })
+    .eq('id', garaId)
+  if (e1) { toast('Errore: ' + e1.message, 'error'); return }
+
+  // Esegui la funzione
+  const { data, error } = await sbAdmin.rpc('applica_penalita_assenza_base')
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+
+  const scalati = (data || []).filter(r => r.tifoso_id)
+  if (scalati.length === 0) {
+    toast('Nessun tifoso con saldo ≥ 5 da scalare per questa gara.', 'info')
+  } else {
+    toast(`✓ Penalità applicata a ${scalati.length} tifos${scalati.length === 1 ? 'o' : 'i'}`, 'success')
+  }
+  loadGare()
+}
+
+// Penalità per tutte le gare non processate (bottone nella card)
+async function eseguiPenalitaManuale() {
+  const btn = document.getElementById('btn-penalita-manuale')
+  btn.disabled = true
+  btn.textContent = 'Elaborazione...'
+  document.getElementById('penalita-result').innerHTML = ''
+
+  const { data, error } = await sbAdmin.rpc('applica_penalita_assenza_base')
+  btn.disabled = false
+  btn.textContent = '▶ Applica penalità gare non processate'
+
+  if (error) {
+    document.getElementById('penalita-result').innerHTML = `<span style="color:#c62828">Errore: ${error.message}</span>`
+    return
+  }
+  const scalati = data || []
+  if (scalati.length === 0) {
+    document.getElementById('penalita-result').innerHTML = '<span style="color:var(--muted)">Nessuna penalità da applicare — tutte le gare risultano già processate o nessun tifoso ha saldo ≥ 5.</span>'
+  } else {
+    const righe = scalati.map(r => `• ${r.nome} ${r.cognome}: ${r.saldo_prima} → ${r.saldo_dopo} pt`).join('<br>')
+    document.getElementById('penalita-result').innerHTML = `<strong style="color:var(--gold)">Penalità applicate a ${scalati.length} tifos${scalati.length===1?'o':'i'}:</strong><br>${righe}`
+  }
+  loadGare()
+  loadPenalitaInfo()
+}
+
+// Info gare non ancora processate
+async function loadPenalitaInfo() {
+  const { data, error } = await sbAdmin.from('gare')
+    .select('id, titolo, data_ora, penalita_base_applicata')
+    .ilike('luogo', '%palap%')
+    .order('data_ora', { ascending: false })
+    .limit(10)
+
+  const el = document.getElementById('penalita-gare-list')
+  if (error || !data) { el.textContent = 'Errore caricamento.'; return }
+
+  const ora = new Date()
+  const passate = data.filter(g => new Date(g.data_ora) < ora)
+  if (passate.length === 0) { el.textContent = 'Nessuna gara passata trovata.'; return }
+
+  el.innerHTML = passate.map(g => {
+    const d = new Date(g.data_ora).toLocaleDateString('it-IT')
+    const stato = g.penalita_base_applicata
+      ? `<span style="color:green">✓ Processata</span>`
+      : `<span style="color:var(--gold)">⚠ Non processata</span>`
+    return `<div style="padding:4px 0;border-bottom:1px solid var(--border)">${d} — ${g.titolo} &nbsp; ${stato}</div>`
+  }).join('')
 }
 
 function apriModificaGara(g) {
