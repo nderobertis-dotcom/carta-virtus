@@ -5796,16 +5796,7 @@ function renderTifosi(list) {
       <td style="font-size:11px;color:var(--muted)">${residenza}</td>
       <td style="font-size:12px;text-align:center">${sesso}</td>
       <td>${pianoBadge}</td>
-      <td>
-        <span class="pts">${t.punti_saldo}</span>
-        ${t._piano === 'Base' && t._totGare > 0
-          ? `<br><span style="font-size:10px;margin-top:2px;display:inline-block">
-              <span style="color:#2e7d32">✅${t._presenze}</span>
-              <span style="color:var(--muted)"> / </span>
-              <span style="color:${t._assenze > 0 ? '#e65100' : 'var(--muted)'}">❌${t._assenze}</span>
-            </span>`
-          : ''}
-      </td>
+      <td><span class="pts">${t.punti_saldo}</span></td>
       <td><span class="badge badge-${stato_badge}">${t.stato}</span></td>
       <td style="color:var(--muted);font-size:11px">${data}</td>
       <td style="display:flex;gap:4px">
