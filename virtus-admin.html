@@ -8124,7 +8124,7 @@ async function registraIngressoManuale() {
         tifoso_id: _ingManTifoso.id,
         tipo: 'BONUS',
         punti_delta: 5,
-        nota: `Ripristino presenza gara (admin-manuale) — vs ${gara.avversario}`
+        note: `Ripristino presenza gara (admin-manuale) — vs ${gara.avversario}`
       })
       toast(`✅ Ingresso registrato + +5 pt ripristinati per ${_ingManTifoso.nome}`, 'success')
     } else {
@@ -8163,7 +8163,7 @@ async function ripristinaIngressoBase(tifosoId, garaId, avversario, btn) {
     tifoso_id: tifosoId,
     tipo: 'BONUS',
     punti_delta: 5,
-    nota: `Ripristino presenza gara (admin) — vs ${avversario}`
+    note: `Ripristino presenza gara (admin) — vs ${avversario}`
   })
 
   toast('✅ Presenza ripristinata e +5 pt accreditati', 'success')
