@@ -3672,16 +3672,6 @@ async function loadMsReport() {
       </div>` : ''}
     </div>
 
-    <!-- TAGLIE MAGLIE -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-title" style="margin-bottom:16px">👕 Taglie Maglie</div>
-      ${Object.keys(taglie).length ? `
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px">
-        ${Object.entries(taglie).sort((a,b)=>b[1]-a[1]).map(([t,n]) =>
-          kpiCard(t, n, 'var(--arancio)')
-        ).join('')}
-      </div>` : '<div style="color:var(--muted);font-size:13px">Nessun dato maglia ancora inserito</div>'}
-    </div>
 
 
     <!-- BIGLIETTERIA PER GARA -->
