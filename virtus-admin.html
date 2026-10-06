@@ -8112,7 +8112,27 @@ async function registraIngressoManuale() {
     operatore_email: 'admin-manuale'
   })
   if (error) { toast('Errore: ' + error.message, 'error'); btn.disabled = false; btn.textContent = '✓ Registra ingresso'; return }
-  toast(`✅ Ingresso registrato per ${_ingManTifoso.nome}`, 'success')
+
+  // Se tifoso Base: verifica se la gara aveva penalità applicata → ripristina +5 pt
+  if (_ingManTifoso.piano === 'Base') {
+    const { data: gara } = await sbAdmin.from('gare').select('penalita_base_applicata, avversario').eq('id', currentGaraId).single()
+    if (gara?.penalita_base_applicata) {
+      const { data: tif } = await sbAdmin.from('tifosi').select('punti_saldo').eq('id', _ingManTifoso.id).single()
+      const nuoviPunti = (tif?.punti_saldo || 0) + 5
+      await sbAdmin.from('tifosi').update({ punti_saldo: nuoviPunti }).eq('id', _ingManTifoso.id)
+      await sbAdmin.from('transazioni').insert({
+        tifoso_id: _ingManTifoso.id,
+        tipo: 'BONUS',
+        punti_delta: 5,
+        nota: `Ripristino presenza gara (admin-manuale) — vs ${gara.avversario}`
+      })
+      toast(`✅ Ingresso registrato + +5 pt ripristinati per ${_ingManTifoso.nome}`, 'success')
+    } else {
+      toast(`✅ Ingresso registrato per ${_ingManTifoso.nome}`, 'success')
+    }
+  } else {
+    toast(`✅ Ingresso registrato per ${_ingManTifoso.nome}`, 'success')
+  }
   toggleIngManuale()
   aggiornaIngressi(currentGaraId)
 }
