@@ -3705,8 +3705,8 @@ async function loadMsReport() {
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
         ${kpiCard('Biglietti venduti', totBiglietti, '#1565C0')}
         ${kpiCard('Accrediti', totAccrediti, '#546E7A')}
-        ${kpiCard('Incasso totale', '€ '+totIncasso.toFixed(2), '#2E7D32')}
-        ${kpiCard('Media incasso/gara', gareConDati ? '€ '+mediaIncasso : '—', 'var(--gold)')}
+        ${kpiCard('Incasso totale', '€ '+(totIncasso+totIncassoFanCard).toFixed(2), '#2E7D32')}
+        ${kpiCard('Media incasso/gara', gareConDati ? '€ '+((totIncasso+totIncassoFanCard)/gareConDati).toFixed(2) : '—', 'var(--gold)')}
       </div>
 
       <table class="table">
