@@ -2200,6 +2200,11 @@ select.form-input:focus{border-color:var(--accent)}
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Membership</div>
         <div id="det-membership" style="font-size:13px;color:var(--muted)">Caricamento...</div>
       </div>
+      <!-- ASSENZE GARE (solo Fan Card Base) -->
+      <div id="det-assenze-section" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">📋 Presenze gare interne — Fan Card Base</div>
+        <div id="det-assenze-content" style="font-size:13px;color:var(--muted)">Caricamento...</div>
+      </div>
       <!-- ACCOMPAGNATORE MINORE -->
       <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">👶 Accompagnatore minore</div>
@@ -5725,16 +5730,36 @@ async function loadDashboard() {
 
 //  TIFOSI 
 async function loadTifosi() {
-  const [{ data: tifData }, { data: membData }] = await Promise.all([
+  const [{ data: tifData }, { data: membData }, { data: garePassate }, { data: tuttiIngressi }] = await Promise.all([
     sbAdmin.from('tifosi').select('*').order('creato_il', { ascending: false }),
-    sbAdmin.from('membership').select('tifoso_id, piano:piano_id(nome)').eq('stato', 'attiva')
+    sbAdmin.from('membership').select('tifoso_id, piano:piano_id(nome)').eq('stato', 'attiva'),
+    sbAdmin.from('gare').select('id').ilike('luogo', '%palap%').lt('data_ora', new Date().toISOString()),
+    sbAdmin.from('ingressi_gare').select('tifoso_id, gara_id')
   ])
-  // Associa il piano al tifoso (prende il primo attivo se più di uno)
+
+  // Piano per tifoso
   const pianoPerTifoso = {}
   ;(membData || []).forEach(m => {
     if (!pianoPerTifoso[m.tifoso_id]) pianoPerTifoso[m.tifoso_id] = m.piano?.nome || null
   })
-  allTifosi = (tifData || []).map(t => ({ ...t, _piano: pianoPerTifoso[t.id] || null }))
+
+  // Presenze/assenze per tifosi Base
+  const idGareInterne = new Set((garePassate || []).map(g => g.id))
+  const totGareInterne = idGareInterne.size
+  const presenzePerTifoso = {}
+  ;(tuttiIngressi || []).forEach(i => {
+    if (idGareInterne.has(i.gara_id)) {
+      presenzePerTifoso[i.tifoso_id] = (presenzePerTifoso[i.tifoso_id] || 0) + 1
+    }
+  })
+
+  allTifosi = (tifData || []).map(t => ({
+    ...t,
+    _piano: pianoPerTifoso[t.id] || null,
+    _presenze: presenzePerTifoso[t.id] || 0,
+    _assenze: totGareInterne - (presenzePerTifoso[t.id] || 0),
+    _totGare: totGareInterne
+  }))
   document.getElementById('tifosi-count').textContent = `${allTifosi.length} tifosi`
   filtraTifosi()
 }
@@ -5771,7 +5796,16 @@ function renderTifosi(list) {
       <td style="font-size:11px;color:var(--muted)">${residenza}</td>
       <td style="font-size:12px;text-align:center">${sesso}</td>
       <td>${pianoBadge}</td>
-      <td><span class="pts">${t.punti_saldo}</span></td>
+      <td>
+        <span class="pts">${t.punti_saldo}</span>
+        ${t._piano === 'Base' && t._totGare > 0
+          ? `<br><span style="font-size:10px;margin-top:2px;display:inline-block">
+              <span style="color:#2e7d32">✅${t._presenze}</span>
+              <span style="color:var(--muted)"> / </span>
+              <span style="color:${t._assenze > 0 ? '#e65100' : 'var(--muted)'}">❌${t._assenze}</span>
+            </span>`
+          : ''}
+      </td>
       <td><span class="badge badge-${stato_badge}">${t.stato}</span></td>
       <td style="color:var(--muted);font-size:11px">${data}</td>
       <td style="display:flex;gap:4px">
@@ -6871,6 +6905,65 @@ async function openDettaglioTifoso(id) {
     } else {
       docContainer.innerHTML = ''
     }
+  }
+
+  // Sezione assenze: solo per Fan Card Base
+  const sezioneAssenze = document.getElementById('det-assenze-section')
+  const contenutoAssenze = document.getElementById('det-assenze-content')
+  const isBase = memb?.piano?.nome?.toLowerCase() === 'base'
+  if (isBase) {
+    sezioneAssenze.style.display = ''
+    contenutoAssenze.innerHTML = 'Caricamento...'
+    // Carica gare interne passate e presenza/assenza
+    const { data: garePassate } = await sbAdmin.from('gare')
+      .select('id, titolo, avversario, data_ora, penalita_base_applicata')
+      .ilike('luogo', '%palap%')
+      .lt('data_ora', new Date().toISOString())
+      .order('data_ora', { ascending: false })
+
+    if (!garePassate || garePassate.length === 0) {
+      contenutoAssenze.innerHTML = '<span style="color:var(--muted)">Nessuna gara interna disputata.</span>'
+    } else {
+      // Carica ingressi del tifoso
+      const { data: ingressi } = await sbAdmin.from('ingressi_gare')
+        .select('gara_id')
+        .eq('tifoso_id', id)
+
+      const garaPresente = new Set((ingressi || []).map(i => i.gara_id))
+      const presenze = garePassate.filter(g => garaPresente.has(g.id)).length
+      const assenze  = garePassate.filter(g => !garaPresente.has(g.id)).length
+
+      const riepilogo = `
+        <div style="display:flex;gap:16px;margin-bottom:12px">
+          <div style="background:#e8f5e9;color:#2e7d32;padding:6px 14px;border-radius:8px;font-weight:700;font-size:13px">
+            ✅ Presenze: ${presenze}
+          </div>
+          <div style="background:#fff3e0;color:#e65100;padding:6px 14px;border-radius:8px;font-weight:700;font-size:13px">
+            ❌ Assenze: ${assenze}
+          </div>
+          <div style="background:var(--bg3);color:var(--muted);padding:6px 14px;border-radius:8px;font-size:13px">
+            Totale gare: ${garePassate.length}
+          </div>
+        </div>`
+
+      const righe = garePassate.map(g => {
+        const presente = garaPresente.has(g.id)
+        const data = new Date(g.data_ora).toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' })
+        const icona = presente
+          ? '<span style="color:#2e7d32;font-weight:700">✅ Presente</span>'
+          : (g.penalita_base_applicata
+              ? '<span style="color:#e65100;font-weight:700">❌ Assente <span style="font-size:10px;opacity:.8">(−5 pt applicati)</span></span>'
+              : '<span style="color:#e65100;font-weight:700">❌ Assente</span>')
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <span><strong>${data}</strong> — ${g.avversario}</span>
+          <span>${icona}</span>
+        </div>`
+      }).join('')
+
+      contenutoAssenze.innerHTML = riepilogo + righe
+    }
+  } else {
+    sezioneAssenze.style.display = 'none'
   }
 
   openModal('modal-dettaglio-tifoso')
