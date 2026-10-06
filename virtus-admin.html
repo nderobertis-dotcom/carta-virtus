@@ -3459,6 +3459,7 @@ async function loadMsReport() {
   const eta = tifosi
     .filter(t => t.data_nascita)
     .map(t => Math.floor((oggi - new Date(t.data_nascita)) / (365.25*24*3600*1000)))
+    .filter(e => e > 0)
   const etaMedia = eta.length ? (eta.reduce((a,b) => a+b,0) / eta.length).toFixed(1) : '—'
   const etaMin   = eta.length ? Math.min(...eta) : '—'
   const etaMax   = eta.length ? Math.max(...eta) : '—'
