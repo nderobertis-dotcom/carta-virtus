@@ -8113,24 +8113,36 @@ async function registraIngressoManuale() {
   })
   if (error) { toast('Errore: ' + error.message, 'error'); btn.disabled = false; btn.textContent = '✓ Registra ingresso'; return }
 
-  // Se tifoso Base: verifica se la gara aveva penalità applicata → ripristina +5 pt
+  // Solo per Base: se la penalità era già stata applicata, ripristina i −5 pt
+  // (Bronze/Silver/Gold non hanno penalità assenza, nessun punto da restituire)
   if (_ingManTifoso.piano === 'Base') {
     const { data: gara } = await sbAdmin.from('gare').select('penalita_base_applicata, avversario').eq('id', currentGaraId).single()
     if (gara?.penalita_base_applicata) {
+      // Verifica che non esista già una transazione di ripristino per questa gara+tifoso
+      // (evita doppio accredito se l'ingresso era già stato inserito manualmente da admin)
       const { data: tif } = await sbAdmin.from('tifosi').select('punti_saldo').eq('id', _ingManTifoso.id).single()
-      const nuoviPunti = (tif?.punti_saldo || 0) + 5
-      await sbAdmin.from('tifosi').update({ punti_saldo: nuoviPunti }).eq('id', _ingManTifoso.id)
-      await sbAdmin.from('transazioni').insert({
-        tifoso_id: _ingManTifoso.id,
-        tipo: 'BONUS',
-        punti_delta: 5,
-        note: `Ripristino presenza gara (admin-manuale) — vs ${gara.avversario}`
-      })
-      toast(`✅ Ingresso registrato + +5 pt ripristinati per ${_ingManTifoso.nome}`, 'success')
+      const saldoAttuale = tif?.punti_saldo || 0
+      // Accredita solo se il saldo non supererebbe 10 (cap Base)
+      if (saldoAttuale < 10) {
+        const nuoviPunti = Math.min(saldoAttuale + 5, 10)
+        const delta = nuoviPunti - saldoAttuale
+        await sbAdmin.from('tifosi').update({ punti_saldo: nuoviPunti }).eq('id', _ingManTifoso.id)
+        await sbAdmin.from('transazioni').insert({
+          tifoso_id: _ingManTifoso.id,
+          tipo: 'BONUS',
+          punti_delta: delta,
+          saldo_dopo: nuoviPunti,
+          note: `Ripristino penalità assenza gara (admin-manuale) — vs ${gara.avversario}`
+        })
+        toast(`✅ Ingresso registrato + +${delta} pt ripristinati per ${_ingManTifoso.nome}`, 'success')
+      } else {
+        toast(`✅ Ingresso registrato per ${_ingManTifoso.nome} (saldo già al massimo, nessun punto aggiunto)`, 'success')
+      }
     } else {
       toast(`✅ Ingresso registrato per ${_ingManTifoso.nome}`, 'success')
     }
   } else {
+    // Bronze/Silver/Gold: solo ingresso, nessun punto (non hanno penalità assenza)
     toast(`✅ Ingresso registrato per ${_ingManTifoso.nome}`, 'success')
   }
   toggleIngManuale()
@@ -8152,21 +8164,26 @@ async function ripristinaIngressoBase(tifosoId, garaId, avversario, btn) {
   })
   if (errIng) { toast('Errore ingresso: ' + errIng.message, 'error'); btn.disabled = false; btn.textContent = '↩ Ripristina'; return }
 
-  // 2. Accredita +5 punti
+  // 2. Accredita +5 punti con cap a 10 (max Base)
   const { data: tif } = await sbAdmin.from('tifosi').select('punti_saldo').eq('id', tifosoId).single()
-  const nuoviPunti = (tif?.punti_saldo || 0) + 5
+  const saldoAttuale = tif?.punti_saldo || 0
+  const nuoviPunti = Math.min(saldoAttuale + 5, 10)
+  const delta = nuoviPunti - saldoAttuale
   const { error: errPt } = await sbAdmin.from('tifosi').update({ punti_saldo: nuoviPunti }).eq('id', tifosoId)
   if (errPt) { toast('Ingresso OK ma errore punti: ' + errPt.message, 'error'); return }
 
   // 3. Log transazione punti
-  await sbAdmin.from('transazioni').insert({
-    tifoso_id: tifosoId,
-    tipo: 'BONUS',
-    punti_delta: 5,
-    note: `Ripristino presenza gara (admin) — vs ${avversario}`
-  })
+  if (delta > 0) {
+    await sbAdmin.from('transazioni').insert({
+      tifoso_id: tifosoId,
+      tipo: 'BONUS',
+      punti_delta: delta,
+      saldo_dopo: nuoviPunti,
+      note: `Ripristino penalità assenza gara (admin) — vs ${avversario}`
+    })
+  }
 
-  toast('✅ Presenza ripristinata e +5 pt accreditati', 'success')
+  toast(`✅ Presenza ripristinata${delta > 0 ? ` e +${delta} pt accreditati` : ' (saldo già al massimo)'}`, 'success')
   // Aggiorna visivamente la riga
   const span = btn.closest('span')
   if (span) span.outerHTML = '<span style="color:#2e7d32;font-weight:700">✅ Presente <span style="font-size:10px;opacity:.7">(ripristinato)</span></span>'
