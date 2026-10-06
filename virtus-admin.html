@@ -8113,8 +8113,8 @@ async function registraIngressoManuale() {
   })
   if (error) { toast('Errore: ' + error.message, 'error'); btn.disabled = false; btn.textContent = '✓ Registra ingresso'; return }
 
-  // Mappa bonus punti presenza per piano (come da scansione normale)
-  const bonusPresenzaPiano = { Base: 3, Bronze: 3, Silver: 5, Gold: 10 }
+  // Mappa bonus punti presenza per piano (Base non riceve bonus, solo ripristino penalità)
+  const bonusPresenzaPiano = { Bronze: 3, Silver: 5, Gold: 10 }
   const bonusPresenza = bonusPresenzaPiano[_ingManTifoso.piano] || 0
 
   const { data: tif } = await sbAdmin.from('tifosi').select('punti_saldo').eq('id', _ingManTifoso.id).single()
@@ -8214,25 +8214,7 @@ async function ripristinaIngressoBase(tifosoId, garaId, avversario, btn) {
     }
   }
 
-  // 3. Bonus presenza +3 pt (come da scansione normale Base, con cap a 10)
-  if (saldoAttuale < 10) {
-    const dopoBonus = Math.min(saldoAttuale + 3, 10)
-    const deltaBonus = dopoBonus - saldoAttuale
-    if (deltaBonus > 0) {
-      await sbAdmin.from('tifosi').update({ punti_saldo: dopoBonus }).eq('id', tifosoId)
-      await sbAdmin.from('transazioni').insert({
-        tifoso_id: tifosoId,
-        tipo: 'BONUS',
-        punti_delta: deltaBonus,
-        saldo_dopo: dopoBonus,
-        note: `Bonus presenza gara (admin-ripristino) — Base`
-      })
-      saldoAttuale = dopoBonus
-      totalDelta += deltaBonus
-    }
-  }
-
-  toast(`✅ Presenza ripristinata${totalDelta > 0 ? ` — +${totalDelta} pt totali accreditati (saldo: ${saldoAttuale} pt)` : ' (saldo già al massimo)'}`, 'success')
+  toast(`✅ Presenza ripristinata${totalDelta > 0 ? ` — +${totalDelta} pt accreditati (saldo: ${saldoAttuale} pt)` : ' (saldo già al massimo)'}`, 'success')
   // Aggiorna visivamente la riga
   const span = btn.closest('span')
   if (span) span.outerHTML = '<span style="color:#2e7d32;font-weight:700">✅ Presente <span style="font-size:10px;opacity:.7">(ripristinato)</span></span>'
