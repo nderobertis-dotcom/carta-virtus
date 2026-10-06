@@ -3721,11 +3721,16 @@ async function loadMsReport() {
       <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Clicca su ✏️ per inserire i dati di biglietteria di ogni gara disputata</div>
 
       <!-- Totali stagione -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
         ${kpiCard('Biglietti venduti', totBiglietti, '#1565C0')}
         ${kpiCard('Accrediti', totAccrediti, '#546E7A')}
         ${kpiCard('Incasso totale', '€ '+(totIncasso+totIncassoFanCard).toFixed(2), '#2E7D32')}
         ${kpiCard('Media incasso/gara', gareConDati ? '€ '+((totIncasso+totIncassoFanCard)/gareConDati).toFixed(2) : '—', 'var(--gold)')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+        ${kpiCard('Ingressi Fan Card', totalIngressi, 'var(--accent)')}
+        ${kpiCard('Spettatori totali', totBiglietti + totAccrediti + totalIngressi, '#6A1B9A')}
+        ${kpiCard('Media spettatori/gara', gareConDati ? ((totBiglietti + totAccrediti + totalIngressi) / gareConDati).toFixed(0) : '—', '#E65100')}
       </div>
 
       <table class="table">
