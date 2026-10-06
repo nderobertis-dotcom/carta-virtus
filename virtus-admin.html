@@ -101,6 +101,8 @@ nav{padding:16px 0;flex:1}
 .btn-primary:hover{background:var(--accent2)}
 .btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
 .btn-ghost:hover{border-color:var(--muted)}
+.btn-secondary{background:var(--bg3);color:var(--accent);border:1px solid var(--accent);font-weight:600}
+.btn-secondary:hover{background:#dde8fa}
 .btn-danger{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
 .btn-warning{background:rgba(245,124,0,.15);color:#f57c00;border:1px solid rgba(245,124,0,.3)}.btn-warning:hover{background:rgba(245,124,0,.25)}
 .btn-sm{padding:5px 12px;font-size:11px}
@@ -2431,8 +2433,25 @@ select.form-input:focus{border-color:var(--accent)}
         <tbody id="ingressi-list"></tbody>
       </table>
     </div>
+      <!-- Form ingresso manuale (nascosto di default) -->
+      <div id="ing-manuale-form" style="display:none;margin-top:16px;padding:14px;background:var(--bg3);border-radius:10px;border:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">➕ Registra ingresso manuale</div>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Cerca tifoso</label>
+            <input class="form-input" id="ing-man-cerca" placeholder="Nome o cognome..." oninput="cercaTifosoIngresso(this.value)" autocomplete="off" style="width:100%"/>
+            <div id="ing-man-risultati" style="position:relative"></div>
+          </div>
+          <div style="flex:0 0 auto">
+            <div id="ing-man-selezionato" style="font-size:12px;color:var(--accent);font-weight:600;padding:4px 0;min-height:20px"></div>
+            <button class="btn btn-primary btn-sm" onclick="registraIngressoManuale()" id="ing-man-btn" disabled>✓ Registra ingresso</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-ingressi');if(ingressiRealtimeChannel)sb.removeChannel(ingressiRealtimeChannel)">Chiudi</button>
+      <button class="btn btn-secondary" onclick="toggleIngManuale()" id="btn-ing-manuale">➕ Ingresso manuale</button>
       <button class="btn btn-primary" onclick="esportaIngressi()">↓ Esporta CSV</button>
     </div>
   </div>
@@ -6941,14 +6960,21 @@ async function openDettaglioTifoso(id) {
       const righe = garePassate.map(g => {
         const presente = garaPresente.has(g.id)
         const data = new Date(g.data_ora).toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' })
-        const icona = presente
-          ? '<span style="color:#2e7d32;font-weight:700">✅ Presente</span>'
-          : (g.penalita_base_applicata
-              ? '<span style="color:#e65100;font-weight:700">❌ Assente <span style="font-size:10px;opacity:.8">(−5 pt applicati)</span></span>'
-              : '<span style="color:#e65100;font-weight:700">❌ Assente</span>')
+        let stato
+        if (presente) {
+          stato = '<span style="color:#2e7d32;font-weight:700">✅ Presente</span>'
+        } else if (g.penalita_base_applicata) {
+          stato = `<span style="display:flex;align-items:center;gap:8px">
+            <span style="color:#e65100;font-weight:700">❌ Assente <span style="font-size:10px;opacity:.8">(−5 pt applicati)</span></span>
+            <button class="btn btn-sm" style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;font-size:11px;padding:2px 8px;cursor:pointer"
+              onclick="ripristinaIngressoBase('${id}','${g.id}','${g.avversario}',this)">↩ Ripristina</button>
+          </span>`
+        } else {
+          stato = '<span style="color:#e65100;font-weight:700">❌ Assente</span>'
+        }
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
           <span><strong>${data}</strong> — ${g.avversario}</span>
-          <span>${icona}</span>
+          <span>${stato}</span>
         </div>`
       }).join('')
 
@@ -8022,7 +8048,114 @@ function esportaIngressi() {
     })
 }
 
-//  MEMBERSHIP 
+// ── INGRESSO MANUALE ─────────────────────────────────────────
+let _ingManTifoso = null  // tifoso selezionato per ingresso manuale
+
+function toggleIngManuale() {
+  const form = document.getElementById('ing-manuale-form')
+  const aperto = form.style.display !== 'none'
+  form.style.display = aperto ? 'none' : 'block'
+  if (!aperto) {
+    document.getElementById('ing-man-cerca').value = ''
+    document.getElementById('ing-man-risultati').innerHTML = ''
+    document.getElementById('ing-man-selezionato').textContent = ''
+    document.getElementById('ing-man-btn').disabled = true
+    _ingManTifoso = null
+  }
+}
+
+async function cercaTifosoIngresso(val) {
+  const box = document.getElementById('ing-man-risultati')
+  if (!val || val.length < 2) { box.innerHTML = ''; return }
+  const { data } = await sbAdmin.from('tifosi')
+    .select('id, nome, cognome, membership:membership(piano:piano_id(nome), stato)')
+    .or(`nome.ilike.%${val}%,cognome.ilike.%${val}%`)
+    .eq('stato', 'attivo')
+    .limit(8)
+  const list = (data || [])
+  box.innerHTML = list.length ? `<div style="position:absolute;z-index:200;background:var(--bg2);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);width:100%;max-height:200px;overflow-y:auto">
+    ${list.map(t => {
+      const piano = t.membership?.find(m => m.stato === 'attiva')?.piano?.nome || '—'
+      return `<div onclick="selTifosoIngresso('${t.id}','${t.nome} ${t.cognome}','${piano}')"
+        style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)"
+        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+        <strong>${t.nome} ${t.cognome}</strong> <span style="color:var(--muted);font-size:11px">${piano}</span>
+      </div>`
+    }).join('')}
+  </div>` : '<div style="font-size:12px;color:var(--muted);padding:4px 0">Nessun risultato</div>'
+}
+
+function selTifosoIngresso(id, nome, piano) {
+  _ingManTifoso = { id, nome, piano }
+  document.getElementById('ing-man-cerca').value = nome
+  document.getElementById('ing-man-risultati').innerHTML = ''
+  document.getElementById('ing-man-selezionato').textContent = `✓ ${nome} — ${piano}`
+  document.getElementById('ing-man-btn').disabled = false
+}
+
+async function registraIngressoManuale() {
+  if (!_ingManTifoso || !currentGaraId) return
+  const btn = document.getElementById('ing-man-btn')
+  btn.disabled = true; btn.textContent = '...'
+  // Verifica che non esista già un ingresso per questa gara
+  const { data: esiste } = await sbAdmin.from('ingressi_gare')
+    .select('id').eq('tifoso_id', _ingManTifoso.id).eq('gara_id', currentGaraId).maybeSingle()
+  if (esiste) {
+    toast(`${_ingManTifoso.nome} ha già un ingresso registrato per questa gara`, 'error')
+    btn.disabled = false; btn.textContent = '✓ Registra ingresso'; return
+  }
+  const { error } = await sbAdmin.from('ingressi_gare').insert({
+    tifoso_id: _ingManTifoso.id,
+    gara_id: currentGaraId,
+    piano_nome: _ingManTifoso.piano,
+    registrato_il: new Date().toISOString(),
+    operatore_email: 'admin-manuale'
+  })
+  if (error) { toast('Errore: ' + error.message, 'error'); btn.disabled = false; btn.textContent = '✓ Registra ingresso'; return }
+  toast(`✅ Ingresso registrato per ${_ingManTifoso.nome}`, 'success')
+  toggleIngManuale()
+  aggiornaIngressi(currentGaraId)
+}
+
+// ── RIPRISTINA INGRESSO BASE (assenza + penalità) ────────────
+async function ripristinaIngressoBase(tifosoId, garaId, avversario, btn) {
+  if (!confirm(`Ripristinare la presenza di questo tifoso alla gara vs ${avversario}?\n\nVerrà registrato l'ingresso e accreditati +5 punti per annullare la penalità.`)) return
+  btn.disabled = true; btn.textContent = '...'
+
+  // 1. Inserisci ingresso manuale
+  const { error: errIng } = await sbAdmin.from('ingressi_gare').insert({
+    tifoso_id: tifosoId,
+    gara_id: garaId,
+    piano_nome: 'Base',
+    registrato_il: new Date().toISOString(),
+    operatore_email: 'admin-ripristino'
+  })
+  if (errIng) { toast('Errore ingresso: ' + errIng.message, 'error'); btn.disabled = false; btn.textContent = '↩ Ripristina'; return }
+
+  // 2. Accredita +5 punti
+  const { data: tif } = await sbAdmin.from('tifosi').select('punti_saldo').eq('id', tifosoId).single()
+  const nuoviPunti = (tif?.punti_saldo || 0) + 5
+  const { error: errPt } = await sbAdmin.from('tifosi').update({ punti_saldo: nuoviPunti }).eq('id', tifosoId)
+  if (errPt) { toast('Ingresso OK ma errore punti: ' + errPt.message, 'error'); return }
+
+  // 3. Log transazione punti
+  await sbAdmin.from('transazioni').insert({
+    tifoso_id: tifosoId,
+    tipo: 'BONUS',
+    punti_delta: 5,
+    nota: `Ripristino presenza gara (admin) — vs ${avversario}`
+  })
+
+  toast('✅ Presenza ripristinata e +5 pt accreditati', 'success')
+  // Aggiorna visivamente la riga
+  const span = btn.closest('span')
+  if (span) span.outerHTML = '<span style="color:#2e7d32;font-weight:700">✅ Presente <span style="font-size:10px;opacity:.7">(ripristinato)</span></span>'
+  // Aggiorna saldo punti nel modale se visibile
+  const detPunti = document.getElementById('det-punti')
+  if (detPunti) detPunti.textContent = nuoviPunti + ' pt'
+}
+
+//  MEMBERSHIP
 async function loadMembership(statoFiltro) {
   let query = sbAdmin.from('membership')
     .select('*, tifoso:tifoso_id(nome, cognome, email), piano:piano_id(nome, prezzo_eur)')
