@@ -375,6 +375,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Report
     </div>
+    <div class="nav-item" onclick="showSection('classifica-presenze')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Classifica Presenze
+    </div>
   </nav>
   <div class="sidebar-footer">
     <div class="user-chip">
@@ -500,6 +504,10 @@ select.form-input:focus{border-color:var(--accent)}
     <button class="tab-pill" onclick="showSection('report')" data-section="report">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Report
+    </button>
+    <button class="tab-pill" onclick="showSection('classifica-presenze')" data-section="classifica-presenze">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Classifica Presenze
     </button>
   </div>
 
@@ -1750,6 +1758,44 @@ select.form-input:focus{border-color:var(--accent)}
             <thead><tr><th>Tifoso</th><th>Saldo punti</th></tr></thead>
             <tbody id="rep-tifosi-top"></tbody>
           </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEZIONE CLASSIFICA PRESENZE -->
+    <div class="section" id="section-classifica-presenze">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🏆 Classifica Presenze — Stagione 2026/2027</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="cp-search" type="text" placeholder="Cerca tifoso…"
+              style="padding:6px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:'DM Sans',sans-serif;width:200px;outline:none;color:var(--text);background:var(--bg)"
+              oninput="filtraClassifica(this.value)"/>
+            <button class="btn btn-ghost btn-sm" onclick="loadClassificaPresenze()" style="font-size:12px;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);border-radius:7px;padding:6px 12px;cursor:pointer">↻ Aggiorna</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="overflow-x:auto">
+            <table id="classifica-table">
+              <thead>
+                <tr>
+                  <th style="width:52px;text-align:center">#</th>
+                  <th>Nome</th>
+                  <th>Cognome</th>
+                  <th>Piano</th>
+                  <th style="text-align:center">Presenze</th>
+                  <th>Ultima presenza</th>
+                  <th>Stato</th>
+                </tr>
+              </thead>
+              <tbody id="classifica-list">
+                <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px">Caricamento…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="classifica-empty" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:14px">
+            Nessun risultato trovato.
+          </div>
         </div>
       </div>
     </div>
@@ -5440,7 +5486,7 @@ function showSection(name) {
     cortesia:'Abbonamenti Cortesia',
     premi:'Catalogo premi', campagne:'Campagne', transazioni:'Transazioni', report:'Report',
     merchants:'Merchant', 'fop-contratti':'Contratti FOP', 'fop-catalogo':'Catalogo FOP',
-    'comunicati-stampa':'Comunicati Stampa'
+    'comunicati-stampa':'Comunicati Stampa', 'classifica-presenze':'Classifica Presenze'
   }
   document.getElementById('topbar-title').textContent = titles[name] || name
 
@@ -5470,9 +5516,106 @@ function showSection(name) {
   if (name === 'fop-contratti') loadFopContratti()
   if (name === 'fop-catalogo')  { loadFopProdotti(); loadFopPianta() }
   if (name === 'comunicati-stampa') loadComunicatiStampa()
+  if (name === 'classifica-presenze') loadClassificaPresenze()
 }
 
-//  INIT 
+// CLASSIFICA PRESENZE
+let _classificaData = []
+
+async function loadClassificaPresenze() {
+  const tbody = document.getElementById('classifica-list')
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px">Caricamento…</td></tr>'
+  document.getElementById('classifica-empty').style.display = 'none'
+
+  const { data, error } = await sbAdmin
+    .from('classifica_presenze')
+    .select('*')
+    .order('presenze_totali', { ascending: false })
+    .order('cognome', { ascending: true })
+
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--red);padding:20px">Errore: ${error.message}</td></tr>`
+    return
+  }
+
+  _classificaData = data || []
+  renderClassifica(_classificaData)
+}
+
+function renderClassifica(rows) {
+  const tbody = document.getElementById('classifica-list')
+  const empty = document.getElementById('classifica-empty')
+
+  const attivi = rows.filter(r => r.presenze_totali > 0)
+  const noPresenze = rows.filter(r => !r.presenze_totali || r.presenze_totali === 0)
+
+  if (!rows.length) {
+    tbody.innerHTML = ''
+    empty.style.display = 'block'
+    return
+  }
+  empty.style.display = 'none'
+
+  const medal = (pos) => pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `<span style="color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums">${pos}</span>`
+
+  const fmtData = (d) => {
+    if (!d) return '—'
+    const dt = new Date(d)
+    return dt.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' })
+  }
+
+  const pianoColor = (p) => {
+    if (!p) return 'var(--muted)'
+    if (p.toLowerCase().includes('gold') || p.toLowerCase().includes('premium')) return 'var(--gold)'
+    if (p.toLowerCase().includes('silver')) return '#607d8b'
+    if (p.toLowerCase().includes('cortesia')) return '#7b61ff'
+    return 'var(--accent)'
+  }
+
+  const statoChip = (s) => {
+    const map = { attivo:'#e8f5e9;color:#2e7d32', sospeso:'#fff3e0;color:#e65100', inattivo:'#fce8e8;color:#c62828' }
+    const style = map[s] || 'var(--bg3);color:var(--muted)'
+    return `<span style="background:${style};padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">${s||'—'}</span>`
+  }
+
+  let html = ''
+  // Riga tifosi con presenze
+  for (const r of rows) {
+    const pos = r.presenze_totali > 0 ? (r.posizione || '—') : '—'
+    const posHtml = r.presenze_totali > 0 && pos <= 3 ? medal(pos) : `<span style="color:var(--muted);font-variant-numeric:tabular-nums">${pos}</span>`
+    const presenzeStyle = r.presenze_totali > 0
+      ? `font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums`
+      : `color:var(--muted)`
+    html += `<tr>
+      <td style="text-align:center">${posHtml}</td>
+      <td>${r.nome || '—'}</td>
+      <td style="font-weight:600">${r.cognome || '—'}</td>
+      <td><span style="color:${pianoColor(r.piano_nome)};font-size:12px;font-weight:600">${r.piano_nome || '—'}</span></td>
+      <td style="text-align:center;${presenzeStyle}">${r.presenze_totali || 0}</td>
+      <td style="color:var(--muted);font-size:13px">${fmtData(r.ultima_presenza)}</td>
+      <td>${statoChip(r.stato)}</td>
+    </tr>`
+  }
+
+  tbody.innerHTML = html
+}
+
+function filtraClassifica(q) {
+  if (!q.trim()) {
+    renderClassifica(_classificaData)
+    return
+  }
+  const ql = q.toLowerCase()
+  const filtered = _classificaData.filter(r =>
+    (r.nome||'').toLowerCase().includes(ql) ||
+    (r.cognome||'').toLowerCase().includes(ql) ||
+    (r.email||'').toLowerCase().includes(ql) ||
+    (r.piano_nome||'').toLowerCase().includes(ql)
+  )
+  renderClassifica(filtered)
+}
+
+//  INIT
 async function initApp() {
   await Promise.all([loadDashboard(), loadPartnerList()])
 }
