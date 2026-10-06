@@ -3684,37 +3684,6 @@ async function loadMsReport() {
     </div>
 
 
-    <!-- PRESENZE -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-title" style="margin-bottom:16px">🏟️ Presenze al Palazzetto</div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
-        ${kpiCard('Gare disputate', gareDisputate.length, '#2E7D32')}
-        ${kpiCard('Gare da disputare', gareDaDisputare.length, '#F57C00')}
-        ${kpiCard('Ingressi totali', totalIngressi, 'var(--accent)')}
-        ${kpiCard('Tifosi con presenze', tifConPresenze)}
-        ${kpiCard('Media presenze/tifoso', mediaPresenze, 'var(--gold)')}
-      </div>
-
-      ${topTifosi.filter(t=>t.presenze>0).length ? `
-      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Top 5 tifosi per presenze</div>
-      <table class="table">
-        <thead><tr><th>Tifoso</th><th>Piano</th><th style="text-align:center">Presenze</th><th style="text-align:center">% gare disputate</th></tr></thead>
-        <tbody>
-          ${topTifosi.filter(t=>t.presenze>0).map(t => {
-            const memb = membMap[t.id]
-            const piano = memb?.piano?.nome || '—'
-            const pct = totalGare ? Math.round(t.presenze/totalGare*100) : 0
-            return '<tr>' +
-              '<td><strong>'+t.nome+' '+t.cognome+'</strong></td>' +
-              '<td><span class="badge badge-amber">'+piano+'</span></td>' +
-              '<td style="text-align:center;font-weight:700">'+t.presenze+'</td>' +
-              '<td style="text-align:center">'+pct+'%</td>' +
-            '</tr>'
-          }).join('')}
-        </tbody>
-      </table>` : '<div style="color:var(--muted);font-size:13px">Nessuna presenza registrata ancora</div>'}
-    </div>
-
     <!-- BIGLIETTERIA PER GARA -->
     <div class="card" style="margin-bottom:20px">
       <div class="card-title" style="margin-bottom:4px">🎟️ Biglietteria per Gara</div>
