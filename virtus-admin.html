@@ -5731,7 +5731,7 @@ async function loadTifosi() {
     sbAdmin.from('membership').select('tifoso_id, piano:piano_id(nome)').eq('stato', 'attiva'),
     sbAdmin.from('gare').select('id').ilike('luogo', '%palap%').lt('data_ora', new Date().toISOString()),
     sbAdmin.from('ingressi_gare').select('tifoso_id, gara_id'),
-    sbAdmin.from('posti').select('tifoso_id, numero, settore').eq('stato', 'assegnato')
+    sbAdmin.from('posti').select('tifoso_id, numero, tribuna').eq('stato', 'assegnato')
   ])
 
   // Piano per tifoso
@@ -5754,7 +5754,7 @@ async function loadTifosi() {
   const postiPerTifoso = {}
   ;(postiData || []).forEach(p => {
     if (!postiPerTifoso[p.tifoso_id]) postiPerTifoso[p.tifoso_id] = []
-    postiPerTifoso[p.tifoso_id].push({ numero: p.numero, settore: p.settore })
+    postiPerTifoso[p.tifoso_id].push({ numero: p.numero, settore: p.tribuna === 'sud' ? 'Settore A' : p.tribuna === 'nord' ? 'Settore B' : (p.tribuna || '') })
   })
 
   allTifosi = (tifData || []).map(t => ({
