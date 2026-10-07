@@ -5726,11 +5726,12 @@ async function loadDashboard() {
 
 //  TIFOSI 
 async function loadTifosi() {
-  const [{ data: tifData }, { data: membData }, { data: garePassate }, { data: tuttiIngressi }] = await Promise.all([
+  const [{ data: tifData }, { data: membData }, { data: garePassate }, { data: tuttiIngressi }, { data: postiData }] = await Promise.all([
     sbAdmin.from('tifosi').select('*').order('creato_il', { ascending: false }),
     sbAdmin.from('membership').select('tifoso_id, piano:piano_id(nome)').eq('stato', 'attiva'),
     sbAdmin.from('gare').select('id').ilike('luogo', '%palap%').lt('data_ora', new Date().toISOString()),
-    sbAdmin.from('ingressi_gare').select('tifoso_id, gara_id')
+    sbAdmin.from('ingressi_gare').select('tifoso_id, gara_id'),
+    sbAdmin.from('posti').select('tifoso_id, numero, settore').eq('stato', 'assegnato')
   ])
 
   // Piano per tifoso
@@ -5749,12 +5750,20 @@ async function loadTifosi() {
     }
   })
 
+  // Posti assegnati per tifoso
+  const postiPerTifoso = {}
+  ;(postiData || []).forEach(p => {
+    if (!postiPerTifoso[p.tifoso_id]) postiPerTifoso[p.tifoso_id] = []
+    postiPerTifoso[p.tifoso_id].push({ numero: p.numero, settore: p.settore })
+  })
+
   allTifosi = (tifData || []).map(t => ({
     ...t,
     _piano: pianoPerTifoso[t.id] || null,
     _presenze: presenzePerTifoso[t.id] || 0,
     _assenze: totGareInterne - (presenzePerTifoso[t.id] || 0),
-    _totGare: totGareInterne
+    _totGare: totGareInterne,
+    _posti: postiPerTifoso[t.id] || []
   }))
   document.getElementById('tifosi-count').textContent = `${allTifosi.length} tifosi`
   filtraTifosi()
@@ -5782,8 +5791,11 @@ function renderTifosi(list) {
     const stato_badge = t.stato === 'attivo' ? 'green' : 'red'
     const data = new Date(t.creato_il).toLocaleDateString('it-IT')
     const pianoStyle = t._piano ? (PIANO_COLORS[t._piano] || 'background:#eee;color:#333') : ''
+    const postiBadge = t._posti && t._posti.length > 1
+      ? `<span title="${t._posti.map(p=>(p.settore?p.settore+' ':'')+(p.numero||'')).join(', ')}" style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#fff3cd;color:#856404;margin-left:4px;cursor:default">🪑×${t._posti.length}</span>`
+      : ''
     const pianoBadge = t._piano
-      ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;${pianoStyle}">${t._piano}</span>`
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;${pianoStyle}">${t._piano}</span>${postiBadge}`
       : '<span style="font-size:10px;color:var(--muted)">—</span>'
     return `<tr id="trow-${t.id}">
       <td style="text-align:center"><input type="checkbox" class="tifoso-chk" data-id="${t.id}" style="cursor:pointer;width:15px;height:15px" onchange="onTifosoChk()"></td>
@@ -5833,22 +5845,26 @@ function filtraTifosi() {
 // --- EXPORT LISTA TIFOSI ---
 function exportTifosiCSV() {
   const list = window._tifosiCorrente || allTifosi
-  const header = ['Nome','Cognome','Email','Telefono','Sesso','Data Nascita','Via','CAP','Città','Piano','Punti','Stato','Iscritto il']
-  const rows = list.map(t => [
-    t.nome || '',
-    t.cognome || '',
-    t.email || '',
-    t.telefono || '',
-    t.sesso || '',
-    t.data_nascita || '',
-    t.via || '',
-    t.cap || '',
-    t.citta || '',
-    t._piano || '',
-    t.punti_saldo ?? 0,
-    t.stato || '',
-    t.creato_il ? new Date(t.creato_il).toLocaleDateString('it-IT') : ''
-  ])
+  const header = ['Nome','Cognome','Email','Telefono','Sesso','Data Nascita','Via','CAP','Città','Piano','Posto','Punti','Stato','Iscritto il']
+  const rows = list.flatMap(t => {
+    const posti = t._posti && t._posti.length > 0 ? t._posti : [null]
+    return posti.map(p => [
+      t.nome || '',
+      t.cognome || '',
+      t.email || '',
+      t.telefono || '',
+      t.sesso || '',
+      t.data_nascita || '',
+      t.via || '',
+      t.cap || '',
+      t.citta || '',
+      t._piano || '',
+      p ? ((p.settore ? p.settore + ' ' : '') + (p.numero || '')).trim() : '',
+      t.punti_saldo ?? 0,
+      t.stato || '',
+      t.creato_il ? new Date(t.creato_il).toLocaleDateString('it-IT') : ''
+    ])
+  })
   const csvContent = [header, ...rows]
     .map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(';'))
     .join('\r\n')
@@ -5885,21 +5901,32 @@ function stampaTifosiPDF() {
     Sponsor:'background:#e8f5e9;color:#1b5e20', VIP:'background:#fce4ec;color:#880e4f',
     Cortesia:'background:#fafafa;color:#607d8b', Disability:'background:#e1f5fe;color:#01579b' }
 
-  const righe = list.map((t,i) => {
+  let rigaCounter = 0
+  const righe = list.flatMap(t => {
     const piano = t._piano || '—'
     const pianoStyle = righePiano[t._piano] || 'background:#eee;color:#333'
     const res = [t.via, t.cap, t.citta].filter(Boolean).join(', ') || '—'
-    return `<tr style="background:${i%2===0?'#fff':'#f8f8f8'}">
-      <td>${i+1}</td>
-      <td><strong>${t.cognome} ${t.nome}</strong><br><span style="color:#666;font-size:10px">${t.email||''}</span></td>
-      <td>${t.telefono||'—'}</td>
-      <td>${t.sesso||'—'}</td>
-      <td>${res}</td>
-      <td><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;${pianoStyle}">${piano}</span></td>
-      <td style="text-align:right">${t.punti_saldo??0}</td>
-      <td><span style="color:${t.stato==='attivo'?'#2e7d32':'#c62828'}">${t.stato||'—'}</span></td>
-      <td>${t.creato_il?new Date(t.creato_il).toLocaleDateString('it-IT'):''}</td>
-    </tr>`
+    const posti = t._posti && t._posti.length > 0 ? t._posti : [null]
+    return posti.map((posto, pi) => {
+      const bg = rigaCounter++ % 2 === 0 ? '#fff' : '#f9f9f9'
+      const nomeLabel = posti.length > 1
+        ? `<strong>${t.cognome} ${t.nome}</strong> <span style="font-size:9px;color:#888">(posto ${pi+1}/${posti.length})</span>`
+        : `<strong>${t.cognome} ${t.nome}</strong>`
+      const postoLabel = posto
+        ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:#fff3cd;color:#856404">🪑 ${posto.settore ? posto.settore + ' ' : ''}${posto.numero || ''}</span>`
+        : ''
+      return `<tr style="background:${bg}">
+        <td>${rigaCounter - pi}</td>
+        <td>${nomeLabel}${postoLabel ? '<br>' + postoLabel : ''}<br><span style="color:#666;font-size:10px">${t.email||''}</span></td>
+        <td>${t.telefono||'—'}</td>
+        <td>${t.sesso||'—'}</td>
+        <td>${res}</td>
+        <td><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;${pianoStyle}">${piano}</span></td>
+        <td style="text-align:right">${t.punti_saldo??0}</td>
+        <td><span style="color:${t.stato==='attivo'?'#2e7d32':'#c62828'}">${t.stato||'—'}</span></td>
+        <td>${t.creato_il?new Date(t.creato_il).toLocaleDateString('it-IT'):''}</td>
+      </tr>`
+    })
   }).join('')
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -5916,7 +5943,7 @@ function stampaTifosiPDF() {
   </style></head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div><h2>🏀 Virtus Imola – ${titolo}</h2>
-    <div class="meta">Stampato il ${data} · ${list.length} tifosi</div></div>
+    <div class="meta">Stampato il ${data} · ${list.length} tifosi · ${list.reduce((s,t)=>s+Math.max(1,(t._posti||[]).length),0)} righe (inclusi multi-posto)</div></div>
     <button class="no-print" onclick="window.print()" style="padding:8px 16px;background:#1565c0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">🖨️ Stampa</button>
   </div>
   <table>
