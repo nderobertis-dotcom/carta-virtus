@@ -8239,6 +8239,7 @@ async function registraIngressoManuale() {
     tifoso_id: _ingManTifoso.id,
     gara_id: currentGaraId,
     piano_nome: _ingManTifoso.piano,
+    posto_num: nIngressiEsistenti + 1,
     registrato_il: new Date().toISOString(),
     operatore_email: 'admin-manuale'
   })
@@ -8318,6 +8319,7 @@ async function ripristinaIngressoBase(tifosoId, garaId, avversario, btn) {
     tifoso_id: tifosoId,
     gara_id: garaId,
     piano_nome: 'Base',
+    posto_num: 1,
     registrato_il: new Date().toISOString(),
     operatore_email: 'admin-ripristino'
   })
