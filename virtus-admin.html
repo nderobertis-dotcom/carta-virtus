@@ -3453,6 +3453,7 @@ async function loadMsReport() {
   const uomini = tifosi.filter(t => t.sesso === 'M').length
   const donne  = tifosi.filter(t => t.sesso === 'F').length
   const senzaSesso = tot - uomini - donne
+  const senzaDataNascita = tifosi.filter(t => !t.data_nascita).length
 
   // Età media
   const oggi = new Date()
@@ -3565,7 +3566,10 @@ async function loadMsReport() {
         ${kpiCard('Età media', etaMedia + ' anni', 'var(--gold)')}
         ${kpiCard('Range età', etaMin + '–' + etaMax + ' anni', '#546E7A')}
       </div>
-      <div style="font-size:12px;color:var(--muted)">${senzaSesso > 0 ? `⚠️ ${senzaSesso} tifosi senza sesso indicato` : '✅ Tutti i tifosi hanno indicato il sesso'}</div>
+      <div style="font-size:12px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap">
+        ${senzaSesso > 0 ? `<span>⚠️ ${senzaSesso} tifosi senza sesso indicato</span>` : '<span>✅ Tutti i tifosi hanno indicato il sesso</span>'}
+        ${senzaDataNascita > 0 ? `<span>⚠️ ${senzaDataNascita} tifosi senza data di nascita</span>` : '<span>✅ Tutti i tifosi hanno la data di nascita</span>'}
+      </div>
     </div>
 
     <!-- INCASSI PER CANALE -->
