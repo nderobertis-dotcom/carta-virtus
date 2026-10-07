@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it" data-build="20261007">
+<html lang="it" data-build="20261007b">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -5793,7 +5793,9 @@ function renderTifosi(list) {
     const pianoStyle = t._piano ? (PIANO_COLORS[t._piano] || 'background:#eee;color:#333') : ''
     const postiBadge = t._posti && t._posti.length > 1
       ? `<span title="${t._posti.map(p=>(p.settore?p.settore+' ':'')+(p.numero||'')).join(', ')}" style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#fff3cd;color:#856404;margin-left:4px;cursor:default">🪑×${t._posti.length}</span>`
-      : ''
+      : t._posti && t._posti.length === 1
+        ? `<span title="${(t._posti[0].settore?t._posti[0].settore+' ':'')}${t._posti[0].numero||''}" style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#fff3cd;color:#856404;margin-left:4px;cursor:default">🪑</span>`
+        : ''
     const pianoBadge = t._piano
       ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;${pianoStyle}">${t._piano}</span>${postiBadge}`
       : '<span style="font-size:10px;color:var(--muted)">—</span>'
