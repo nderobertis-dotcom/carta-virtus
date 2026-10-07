@@ -8190,24 +8190,50 @@ async function cercaTifosoIngresso(val) {
   </div>` : '<div style="font-size:12px;color:var(--muted);padding:4px 0">Nessun risultato</div>'
 }
 
-function selTifosoIngresso(id, nome, piano) {
+async function selTifosoIngresso(id, nome, piano) {
   _ingManTifoso = { id, nome, piano }
   document.getElementById('ing-man-cerca').value = nome
   document.getElementById('ing-man-risultati').innerHTML = ''
-  document.getElementById('ing-man-selezionato').textContent = `✓ ${nome} — ${piano}`
   document.getElementById('ing-man-btn').disabled = false
+
+  if (piano === 'VIP') {
+    // Mostra quanti ingressi su quanti posti
+    const [{ data: postiVip }, { data: ingressiEsist }] = await Promise.all([
+      sbAdmin.from('posti').select('id').eq('tifoso_id', id).eq('stato', 'assegnato'),
+      sbAdmin.from('ingressi_gare').select('id').eq('tifoso_id', id).eq('gara_id', currentGaraId)
+    ])
+    const nPosti = (postiVip || []).length || 1
+    const nIng = (ingressiEsist || []).length
+    document.getElementById('ing-man-selezionato').textContent = `✓ ${nome} — VIP · ${nIng}/${nPosti} ingressi registrati`
+    if (nIng >= nPosti) document.getElementById('ing-man-btn').disabled = true
+  } else {
+    document.getElementById('ing-man-selezionato').textContent = `✓ ${nome} — ${piano}`
+  }
 }
 
 async function registraIngressoManuale() {
   if (!_ingManTifoso || !currentGaraId) return
   const btn = document.getElementById('ing-man-btn')
   btn.disabled = true; btn.textContent = '...'
-  // Verifica che non esista già un ingresso per questa gara
-  const { data: esiste } = await sbAdmin.from('ingressi_gare')
-    .select('id').eq('tifoso_id', _ingManTifoso.id).eq('gara_id', currentGaraId).maybeSingle()
-  if (esiste) {
-    toast(`${_ingManTifoso.nome} ha già un ingresso registrato per questa gara`, 'error')
-    btn.disabled = false; btn.textContent = '✓ Registra ingresso'; return
+  // Verifica ingressi già registrati per questa gara
+  const { data: ingressiEsistenti } = await sbAdmin.from('ingressi_gare')
+    .select('id').eq('tifoso_id', _ingManTifoso.id).eq('gara_id', currentGaraId)
+  const nIngressiEsistenti = (ingressiEsistenti || []).length
+
+  if (_ingManTifoso.piano === 'VIP') {
+    // VIP: controlla quanti posti ha assegnati
+    const { data: postiVip } = await sbAdmin.from('posti')
+      .select('id').eq('tifoso_id', _ingManTifoso.id).eq('stato', 'assegnato')
+    const nPosti = (postiVip || []).length || 1
+    if (nIngressiEsistenti >= nPosti) {
+      toast(`${_ingManTifoso.nome} ha già ${nIngressiEsistenti} ingresso/i registrato/i su ${nPosti} posto/i assegnato/i`, 'error')
+      btn.disabled = false; btn.textContent = '✓ Registra ingresso'; return
+    }
+  } else {
+    if (nIngressiEsistenti > 0) {
+      toast(`${_ingManTifoso.nome} ha già un ingresso registrato per questa gara`, 'error')
+      btn.disabled = false; btn.textContent = '✓ Registra ingresso'; return
+    }
   }
   const { error } = await sbAdmin.from('ingressi_gare').insert({
     tifoso_id: _ingManTifoso.id,
