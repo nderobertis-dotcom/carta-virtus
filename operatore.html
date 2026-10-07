@@ -807,17 +807,29 @@ async function verificaIngresso(qr) {
     return
   }
 
-  // ── Sponsor: accesso diretto senza membership ──
+  // ── Sponsor/VIP: accesso diretto senza membership, multi-posto ──
   if (tifoso.tipo === 'sponsor') {
-    const { data: giaEntrato } = await sbA.from('ingressi_gare')
+    // Conta quanti posti ha assegnati questo sponsor
+    const { data: postiSponsor } = await sbA.from('posti')
+      .select('id')
+      .eq('tifoso_id', tifoso.id)
+      .eq('stato', 'assegnato')
+    const maxIngressi = (postiSponsor || []).length || 1  // almeno 1 se non ha posti registrati
+
+    // Conta ingressi già registrati per questa gara
+    const { data: ingressiGia } = await sbA.from('ingressi_gare')
       .select('id, registrato_il')
       .eq('gara_id', garaCorrente.id)
       .eq('tifoso_id', tifoso.id)
-      .single()
+    const nIngressiGia = (ingressiGia || []).length
 
-    if (giaEntrato) {
-      const ora = new Date(giaEntrato.registrato_il).toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
-      mostraRisultato('warn', '⚠️', 'Già entrato', tifoso.nome + ' ' + tifoso.cognome + ' (Sponsor) ha già effettuato l\'ingresso alle ' + ora + '.', 'Sponsor')
+    if (nIngressiGia >= maxIngressi) {
+      const oraUltimo = ingressiGia.length
+        ? new Date(ingressiGia[ingressiGia.length-1].registrato_il).toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
+        : '—'
+      mostraRisultato('warn', '⚠️', 'Ingressi esauriti',
+        `${tifoso.nome} ${tifoso.cognome} (Sponsor) ha già utilizzato tutti i ${maxIngressi} ingressi disponibili. Ultimo alle ${oraUltimo}.`,
+        'Sponsor')
       return
     }
 
@@ -829,8 +841,9 @@ async function verificaIngresso(qr) {
       accesso:         accessoOperatore || null
     })
 
+    const ingressoN = nIngressiGia + 1
     mostraRisultato('ok', '🏢', 'Accesso consentito — SPONSOR',
-      tifoso.nome + ' ' + tifoso.cognome + ' · Ingresso omaggio',
+      `${tifoso.nome} ${tifoso.cognome} · Ingresso omaggio (${ingressoN} di ${maxIngressi})`,
       'Sponsor', 0, false, null, false, null, cancellatiPerPiano('Sponsor'))
     await loadLog()
     avviaRealtime()
