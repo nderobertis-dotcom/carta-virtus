@@ -2804,8 +2804,18 @@ select.form-input:focus{border-color:var(--accent)}
         <input class="form-input" id="bg-accrediti" type="number" min="0" placeholder="0"/>
       </div>
       <div class="form-group">
-        <label>Incasso totale (€)</label>
+        <label>Incasso biglietteria (€)</label>
         <input class="form-input" id="bg-incasso" type="number" min="0" step="0.01" placeholder="0.00"/>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:8px 0"/>
+      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">📺 Diretta Web / Streaming</div>
+      <div class="form-group">
+        <label>Spettatori Web</label>
+        <input class="form-input" id="bg-spettatori-web" type="number" min="0" placeholder="0"/>
+      </div>
+      <div class="form-group">
+        <label>Incasso Web (€)</label>
+        <input class="form-input" id="bg-incasso-web" type="number" min="0" step="0.01" placeholder="0.00"/>
       </div>
     </div>
     <div class="modal-footer">
@@ -3442,7 +3452,7 @@ async function loadMsReport() {
 
   // Carica solo gare casalinghe (esclude trasferte)
   const { data: gare } = await sbAdmin.from('gare')
-    .select('id, titolo, data_ora, luogo, biglietti_venduti, accrediti_concessi, incasso_eur')
+    .select('id, titolo, data_ora, luogo, biglietti_venduti, accrediti_concessi, incasso_eur, spettatori_web, incasso_web_eur')
     .ilike('luogo', '%palap%')
     .order('data_ora')
 
@@ -3533,12 +3543,14 @@ async function loadMsReport() {
   // Rateo per gara (quota Fan Card / gare totali in calendario)
   const totalGareCalendario = (gare||[]).length
   const rateoFanCardPerGara = totalGareCalendario ? totIncassoFanCard / totalGareCalendario : 0
-  const totBiglietti = (gare||[]).reduce((s,g) => s + (g.biglietti_venduti||0), 0)
-  const totAccrediti  = (gare||[]).reduce((s,g) => s + (g.accrediti_concessi||0), 0)
-  const totIncasso    = (gare||[]).reduce((s,g) => s + parseFloat(g.incasso_eur||0), 0)
-  const gareConDati   = (gare||[]).filter(g => new Date(g.data_ora) < ora && (g.biglietti_venduti||0) > 0).length
-  const mediaBiglietti = gareConDati ? (totBiglietti / gareConDati).toFixed(0) : '—'
-  const mediaIncasso   = gareConDati ? (totIncasso   / gareConDati).toFixed(2) : '—'
+  const totBiglietti     = (gare||[]).reduce((s,g) => s + (g.biglietti_venduti||0), 0)
+  const totAccrediti     = (gare||[]).reduce((s,g) => s + (g.accrediti_concessi||0), 0)
+  const totIncasso       = (gare||[]).reduce((s,g) => s + parseFloat(g.incasso_eur||0), 0)
+  const totSpettatoriWeb = (gare||[]).reduce((s,g) => s + (g.spettatori_web||0), 0)
+  const totIncassoWeb    = (gare||[]).reduce((s,g) => s + parseFloat(g.incasso_web_eur||0), 0)
+  const gareConDati      = (gare||[]).filter(g => new Date(g.data_ora) < ora && (g.biglietti_venduti||0) > 0).length
+  const mediaBiglietti   = gareConDati ? (totBiglietti / gareConDati).toFixed(0) : '—'
+  const mediaIncasso     = gareConDati ? (totIncasso   / gareConDati).toFixed(2) : '—'
 
   // Tifosi con più presenze
   const topTifosi = tifosi
@@ -3692,20 +3704,23 @@ async function loadMsReport() {
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
         ${kpiCard('Biglietti venduti', totBiglietti, '#1565C0')}
         ${kpiCard('Accrediti', totAccrediti, '#546E7A')}
-        ${kpiCard('Incasso totale', '€ '+(totIncasso+totIncassoFanCard).toFixed(2), '#2E7D32')}
-        ${kpiCard('Media incasso/gara', gareConDati ? '€ '+((totIncasso+totIncassoFanCard)/gareConDati).toFixed(2) : '—', 'var(--gold)')}
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+        ${kpiCard('Spettatori Web', totSpettatoriWeb, '#0277BD')}
         ${kpiCard('Ingressi Fan Card', totalIngressi, 'var(--accent)')}
-        ${kpiCard('Spettatori totali', totBiglietti + totAccrediti + totalIngressi, '#6A1B9A')}
-        ${kpiCard('Media spettatori/gara', gareConDati ? ((totBiglietti + totAccrediti + totalIngressi) / gareConDati).toFixed(0) : '—', '#E65100')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        ${kpiCard('Spettatori totali', totBiglietti + totAccrediti + totalIngressi + totSpettatoriWeb, '#6A1B9A')}
+        ${kpiCard('Media spettatori/gara', gareConDati ? ((totBiglietti + totAccrediti + totalIngressi + totSpettatoriWeb) / gareConDati).toFixed(0) : '—', '#E65100')}
+        ${kpiCard('Incasso totale', '€ '+(totIncasso+totIncassoFanCard+totIncassoWeb).toFixed(2), '#2E7D32')}
+        ${kpiCard('Media incasso/gara', gareConDati ? '€ '+((totIncasso+totIncassoFanCard+totIncassoWeb)/gareConDati).toFixed(2) : '—', 'var(--gold)')}
       </div>
 
       <table class="table">
         <thead><tr>
           <th>Gara</th><th>Data</th><th style="text-align:center">Fan Card</th>
           <th style="text-align:center">Biglietti</th><th style="text-align:center">Accrediti</th>
+          <th style="text-align:center">Web 📺</th>
           <th style="text-align:right">Incasso biglietteria</th>
+          <th style="text-align:right">Incasso Web</th>
           <th style="text-align:right">Rateo Fan Card</th>
           <th style="text-align:right">Totale gara</th>
           <th style="width:40px"></th>
@@ -3718,8 +3733,10 @@ async function loadMsReport() {
             const bv = g.biglietti_venduti || 0
             const ac = g.accrediti_concessi || 0
             const inc = parseFloat(g.incasso_eur||0)
+            const sw = g.spettatori_web || 0
+            const iw = parseFloat(g.incasso_web_eur||0)
             const rateo = rateoFanCardPerGara
-            const totGara = inc + rateo  // rateo sempre incluso, biglietteria solo se disputata
+            const totGara = inc + iw + rateo
             const rowStyle = disputata ? '' : 'opacity:.5'
             return '<tr style="'+rowStyle+'">' +
               '<td><strong>'+g.titolo+'</strong>'+(disputata ? '' : ' <span style="font-size:10px;color:var(--muted)">(da disputare)</span>')+'</td>' +
@@ -3727,27 +3744,33 @@ async function loadMsReport() {
               '<td style="text-align:center">'+fanCard+'</td>' +
               '<td style="text-align:center">'+(disputata ? bv : '—')+'</td>' +
               '<td style="text-align:center">'+(disputata ? ac : '—')+'</td>' +
+              '<td style="text-align:center;color:#0277BD">'+(disputata ? sw : '—')+'</td>' +
               '<td style="text-align:right">'+(disputata ? '€ '+inc.toFixed(2) : '—')+'</td>' +
+              '<td style="text-align:right;color:#0277BD">'+(disputata ? '€ '+iw.toFixed(2) : '—')+'</td>' +
               '<td style="text-align:right;color:var(--muted)">€ '+rateo.toFixed(2)+'</td>' +
               '<td style="text-align:right;font-weight:600">€ '+totGara.toFixed(2)+'</td>' +
-              '<td>'+(disputata ? '<button class="btn btn-ghost btn-sm" onclick="apriEditBiglietteria(\''+g.id+'\',\''+g.titolo.replace(/'/g,'')+'\','+bv+','+ac+','+inc+')">✏️</button>' : '')+'</td>' +
+              '<td>'+(disputata ? '<button class="btn btn-ghost btn-sm" onclick="apriEditBiglietteria(\''+g.id+'\',\''+g.titolo.replace(/'/g,'')+'\','+bv+','+ac+','+inc+','+sw+','+iw+')">✏️</button>' : '')+'</td>' +
             '</tr>'
           }).join('')}
           ${gareConDati > 0 ? '<tr style="font-weight:700;border-top:2px solid var(--border)">'+
             '<td colspan="3">Totale stagione</td>'+
             '<td style="text-align:center">'+totBiglietti+'</td>'+
             '<td style="text-align:center">'+totAccrediti+'</td>'+
+            '<td style="text-align:center;color:#0277BD">'+totSpettatoriWeb+'</td>'+
             '<td style="text-align:right">€ '+totIncasso.toFixed(2)+'</td>'+
+            '<td style="text-align:right;color:#0277BD">€ '+totIncassoWeb.toFixed(2)+'</td>'+
             '<td style="text-align:right">€ '+totIncassoFanCard.toFixed(2)+'</td>'+
-            '<td style="text-align:right">€ '+(totIncasso+totIncassoFanCard).toFixed(2)+'</td>'+
+            '<td style="text-align:right">€ '+(totIncasso+totIncassoWeb+totIncassoFanCard).toFixed(2)+'</td>'+
             '<td></td></tr>' : ''}
           ${gareConDati > 1 ? '<tr style="color:var(--muted)">'+
             '<td colspan="3">Media per gara disputata</td>'+
             '<td style="text-align:center">'+mediaBiglietti+'</td>'+
             '<td style="text-align:center">'+(totAccrediti/gareConDati).toFixed(0)+'</td>'+
+            '<td style="text-align:center">'+(totSpettatoriWeb/gareConDati).toFixed(0)+'</td>'+
             '<td style="text-align:right">€ '+mediaIncasso+'</td>'+
+            '<td style="text-align:right">€ '+(totIncassoWeb/gareConDati).toFixed(2)+'</td>'+
             '<td style="text-align:right">€ '+rateoFanCardPerGara.toFixed(2)+'</td>'+
-            '<td style="text-align:right">€ '+(parseFloat(mediaIncasso)+rateoFanCardPerGara).toFixed(2)+'</td>'+
+            '<td style="text-align:right">€ '+(parseFloat(mediaIncasso)+(totIncassoWeb/gareConDati)+rateoFanCardPerGara).toFixed(2)+'</td>'+
             '<td></td></tr>' : ''}
         </tbody>
       </table>
@@ -3755,12 +3778,14 @@ async function loadMsReport() {
   `
 }
 
-function apriEditBiglietteria(garaId, titolo, biglietti, accrediti, incasso) {
+function apriEditBiglietteria(garaId, titolo, biglietti, accrediti, incasso, spettatoriWeb, incassoWeb) {
   document.getElementById('bg-gara-id').value = garaId
   document.getElementById('bg-gara-titolo').textContent = titolo
   document.getElementById('bg-biglietti').value = biglietti || 0
   document.getElementById('bg-accrediti').value = accrediti || 0
   document.getElementById('bg-incasso').value   = incasso || 0
+  document.getElementById('bg-spettatori-web').value = spettatoriWeb || 0
+  document.getElementById('bg-incasso-web').value    = incassoWeb || 0
   openModal('modal-biglietteria-gara')
 }
 
@@ -3773,7 +3798,7 @@ async function stampaReportDirettivo() {
 
   // Recupera dati freschi — stessa logica del report a schermo
   const { data: gare } = await sbAdmin.from('gare')
-    .select('id,titolo,avversario,data_ora,biglietti_venduti,accrediti_concessi,incasso_eur,luogo')
+    .select('id,titolo,avversario,data_ora,biglietti_venduti,accrediti_concessi,incasso_eur,spettatori_web,incasso_web_eur,luogo')
     .ilike('luogo', '%palap%')
     .order('data_ora')
   const { data: tifosi } = await sbAdmin.from('tifosi').select('id,nome,cognome,sesso,data_nascita').eq('tipo','tifoso')
@@ -3795,11 +3820,13 @@ async function stampaReportDirettivo() {
   const gareDaDisputare = (gare||[]).filter(g => new Date(g.data_ora) >= ora)
   const presenzePerGara = {}
   ;(ingressi||[]).forEach(i => { presenzePerGara[i.gara_id] = (presenzePerGara[i.gara_id]||0)+1 })
-  const totIngressi  = (ingressi||[]).length
-  const totBiglietti = gareDisputate.reduce((s,g) => s+(g.biglietti_venduti||0), 0)
-  const totAccrediti = gareDisputate.reduce((s,g) => s+(g.accrediti_concessi||0), 0)
-  const totIncasso   = gareDisputate.reduce((s,g) => s+parseFloat(g.incasso_eur||0), 0)
-  const gareConDati  = gareDisputate.filter(g => (g.biglietti_venduti||0) > 0).length
+  const totIngressi      = (ingressi||[]).length
+  const totBiglietti     = gareDisputate.reduce((s,g) => s+(g.biglietti_venduti||0), 0)
+  const totAccrediti     = gareDisputate.reduce((s,g) => s+(g.accrediti_concessi||0), 0)
+  const totIncasso       = gareDisputate.reduce((s,g) => s+parseFloat(g.incasso_eur||0), 0)
+  const totSpettatoriWeb = gareDisputate.reduce((s,g) => s+(g.spettatori_web||0), 0)
+  const totIncassoWeb    = gareDisputate.reduce((s,g) => s+parseFloat(g.incasso_web_eur||0), 0)
+  const gareConDati      = gareDisputate.filter(g => (g.biglietti_venduti||0) > 0).length
   const perPiano     = {}
   ;(memberships||[]).forEach(m => { const p = m.piano?.nome||'N/D'; perPiano[p]=(perPiano[p]||0)+1 })
 
@@ -3821,14 +3848,16 @@ GARE DISPUTATE: ${gareDisputate.length} su ${(gare||[]).length} in calendario
 BIGLIETTERIA (gare con dati: ${gareConDati}):
 - Totale biglietti venduti: ${totBiglietti}
 - Totale accrediti: ${totAccrediti}
-- Incasso totale: €${totIncasso.toFixed(2)}
+- Totale spettatori web: ${totSpettatoriWeb}
+- Incasso biglietteria: €${totIncasso.toFixed(2)}
+- Incasso web: €${totIncassoWeb.toFixed(2)}
 - Media biglietti/gara: ${gareConDati ? (totBiglietti/gareConDati).toFixed(0) : 'N/D'}
-- Media incasso/gara: ${gareConDati ? '€'+(totIncasso/gareConDati).toFixed(2) : 'N/D'}
+- Media incasso/gara: ${gareConDati ? '€'+((totIncasso+totIncassoWeb)/gareConDati).toFixed(2) : 'N/D'}
 
 PRESENZE FAN CARD PER GARA:
 ${gareDisputate.map(g => {
   const data = new Date(g.data_ora).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',timeZone:'Europe/Rome'})
-  return `- ${g.titolo} (${data}): ${presenzePerGara[g.id]||0} Fan Card, ${g.biglietti_venduti||0} biglietti, €${parseFloat(g.incasso_eur||0).toFixed(2)}`
+  return `- ${g.titolo} (${data}): ${presenzePerGara[g.id]||0} Fan Card, ${g.biglietti_venduti||0} biglietti, ${g.spettatori_web||0} web, €${(parseFloat(g.incasso_eur||0)+parseFloat(g.incasso_web_eur||0)).toFixed(2)}`
 }).join('\n')}
 
 GARE RIMANENTI: ${gareDaDisputare.length}
@@ -3912,7 +3941,8 @@ GARE RIMANENTI: ${gareDaDisputare.length}
     <div class="kpi verde"><div class="kpi-val">${totIngressi}</div><div class="kpi-label">Ingressi Fan Card</div></div>
     <div class="kpi"><div class="kpi-val">${totBiglietti}</div><div class="kpi-label">Biglietti venduti</div></div>
     <div class="kpi arancio"><div class="kpi-val">${totAccrediti}</div><div class="kpi-label">Accrediti</div></div>
-    <div class="kpi verde"><div class="kpi-val">€${totIncasso.toFixed(0)}</div><div class="kpi-label">Incasso totale</div></div>
+    <div class="kpi"><div class="kpi-val">${totSpettatoriWeb}</div><div class="kpi-label">Spettatori Web</div></div>
+    <div class="kpi verde"><div class="kpi-val">€${(totIncasso+totIncassoWeb).toFixed(0)}</div><div class="kpi-label">Incasso biglietteria + web</div></div>
   </div>
 
   <div class="titolo-sezione">Dettaglio Gare</div>
@@ -3922,7 +3952,9 @@ GARE RIMANENTI: ${gareDaDisputare.length}
       <th style="text-align:center">Fan Card</th>
       <th style="text-align:center">Biglietti</th>
       <th style="text-align:center">Accrediti</th>
+      <th style="text-align:center">Web</th>
       <th style="text-align:right">Biglietteria</th>
+      <th style="text-align:right">Incasso Web</th>
       <th style="text-align:right">Rateo Fan Card</th>
       <th style="text-align:right">Totale gara</th>
     </tr></thead>
@@ -3934,15 +3966,19 @@ GARE RIMANENTI: ${gareDaDisputare.length}
         const bv = g.biglietti_venduti || 0
         const ac = g.accrediti_concessi || 0
         const inc = parseFloat(g.incasso_eur||0)
+        const sw = g.spettatori_web || 0
+        const iw = parseFloat(g.incasso_web_eur||0)
         const rateo = rateoFanCardPerGara
-        const totGara = inc + rateo  // rateo sempre incluso
+        const totGara = inc + iw + rateo
         return `<tr style="${!disp ? 'opacity:.5;color:#999' : ''}">
           <td><strong>${g.avversario || g.titolo}</strong>${!disp ? ' <em style="font-size:10px">(da disputare)</em>' : ''}</td>
           <td>${data}</td>
           <td style="text-align:center">${fanCard}</td>
           <td style="text-align:center">${disp ? bv : '—'}</td>
           <td style="text-align:center">${disp ? ac : '—'}</td>
+          <td style="text-align:center">${disp ? sw : '—'}</td>
           <td style="text-align:right">${disp ? '€'+inc.toFixed(2) : '—'}</td>
+          <td style="text-align:right">${disp ? '€'+iw.toFixed(2) : '—'}</td>
           <td style="text-align:right;color:#546E7A">€${rateo.toFixed(2)}</td>
           <td style="text-align:right;font-weight:${disp?'700':'400'}">€${totGara.toFixed(2)}</td>
         </tr>`
@@ -3952,18 +3988,22 @@ GARE RIMANENTI: ${gareDaDisputare.length}
         <td style="text-align:center">${totIngressi}</td>
         <td style="text-align:center">${totBiglietti}</td>
         <td style="text-align:center">${totAccrediti}</td>
+        <td style="text-align:center">${totSpettatoriWeb}</td>
         <td style="text-align:right">€${totIncasso.toFixed(2)}</td>
+        <td style="text-align:right">€${totIncassoWeb.toFixed(2)}</td>
         <td style="text-align:right">€${totIncassoFanCard.toFixed(2)}</td>
-        <td style="text-align:right">€${(totIncasso+totIncassoFanCard).toFixed(2)}</td>
+        <td style="text-align:right">€${(totIncasso+totIncassoWeb+totIncassoFanCard).toFixed(2)}</td>
       </tr>
       ${gareConDati > 1 ? `<tr style="color:#546E7A;font-size:10px">
         <td colspan="2">Media per gara disputata</td>
         <td style="text-align:center">${gareDisputate.length ? (totIngressi/gareDisputate.length).toFixed(1) : '—'}</td>
         <td style="text-align:center">${(totBiglietti/gareConDati).toFixed(0)}</td>
         <td style="text-align:center">${(totAccrediti/gareConDati).toFixed(0)}</td>
+        <td style="text-align:center">${(totSpettatoriWeb/gareConDati).toFixed(0)}</td>
         <td style="text-align:right">€${(totIncasso/gareConDati).toFixed(2)}</td>
+        <td style="text-align:right">€${(totIncassoWeb/gareConDati).toFixed(2)}</td>
         <td style="text-align:right">€${rateoFanCardPerGara.toFixed(2)}</td>
-        <td style="text-align:right">€${((totIncasso/gareConDati)+rateoFanCardPerGara).toFixed(2)}</td>
+        <td style="text-align:right">€${((totIncasso+totIncassoWeb)/gareConDati+rateoFanCardPerGara).toFixed(2)}</td>
       </tr>` : ''}
     </tbody>
   </table>
@@ -3981,14 +4021,18 @@ GARE RIMANENTI: ${gareDaDisputare.length}
 }
 
 async function salvaBiglietteria() {
-  const garaId    = document.getElementById('bg-gara-id').value
-  const biglietti = parseInt(document.getElementById('bg-biglietti').value) || 0
-  const accrediti = parseInt(document.getElementById('bg-accrediti').value) || 0
-  const incasso   = parseFloat(document.getElementById('bg-incasso').value) || 0
+  const garaId        = document.getElementById('bg-gara-id').value
+  const biglietti     = parseInt(document.getElementById('bg-biglietti').value) || 0
+  const accrediti     = parseInt(document.getElementById('bg-accrediti').value) || 0
+  const incasso       = parseFloat(document.getElementById('bg-incasso').value) || 0
+  const spettatoriWeb = parseInt(document.getElementById('bg-spettatori-web').value) || 0
+  const incassoWeb    = parseFloat(document.getElementById('bg-incasso-web').value) || 0
   const { error } = await sbAdmin.from('gare').update({
-    biglietti_venduti: biglietti,
+    biglietti_venduti:  biglietti,
     accrediti_concessi: accrediti,
-    incasso_eur: incasso
+    incasso_eur:        incasso,
+    spettatori_web:     spettatoriWeb,
+    incasso_web_eur:    incassoWeb
   }).eq('id', garaId)
   if (error) { toast('Errore: ' + error.message, 'error'); return }
   toast('✅ Dati biglietteria salvati', 'success')
@@ -5419,7 +5463,8 @@ async function inviaNotificaEsterna(tipo) {
           sponsorLogo: document.getElementById('ge-sponsor-logo')?.value.trim()||null
         })
       })
-      if (resp.ok) {
+      const data = await resp.json()
+      if (resp.ok || data.inviati > 0) {
         toast('✅ Notifica Inizio Gara inviata', 'success')
         const doneEl = document.getElementById('ge-done-inizio')
         const btnEl  = document.getElementById('ge-btn-inizio')
@@ -5466,7 +5511,8 @@ async function inviaNotificaEsterna(tipo) {
           sponsorLogo: document.getElementById('ge-sponsor-logo')?.value.trim()||null
         })
     })
-    if(resp.ok){
+    const data2 = await resp.json()
+    if(resp.ok || data2.inviati > 0){
       toast(`✅ Notifica ${labels[tipo]} inviata`,'success')
       const doneEl2 = document.getElementById(`ge-done-${tipo}`)
       const btnEl2  = document.getElementById(`ge-btn-${tipo}`)
