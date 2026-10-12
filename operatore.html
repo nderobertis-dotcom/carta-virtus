@@ -513,14 +513,14 @@ let pianiAbilitati   = null   // Array piani abilitati per questo operatore (nul
 let isOperatoreCortesia = false  // true = solo verifica, nessun ingresso registrato
 
 // Cancelli consentiti per piano:
-// VIP/Fan/Gold/Sponsor → tutti (A B C D E F)
-// Silver               → B C D F  (non A né E)
+// VIP/Gold/Sponsor → A B D E  (C=altro scopo, F=tifosi ospiti)
+// Silver           → B D      (non A né E né C né F)
 // Base/Bronze/Cortesia/Disability → solo B
 const CANCELLI_PER_PIANO = {
-  'Gold':       ['A','B','C','D','E','F'],
-  'VIP':        ['A','B','C','D','E','F'],
-  'Sponsor':    ['A','B','C','D','E','F'],
-  'Silver':     ['B','C','D','F'],
+  'VIP':        ['A','B','D','E'],
+  'Sponsor':    ['A','B','D','E'],
+  'Gold':       ['A','B','D','E'],
+  'Silver':     ['B','D'],
   'Bronze':     ['B'],
   'Base':       ['B'],
   'Cortesia':   ['B'],
@@ -1048,7 +1048,7 @@ function mostraRisultato(tipo, icon, title, sub, piano, punti, conAccompagnatore
     det.style.display = 'block'
     const chipClass = piano === 'Gold' ? 'chip-premium' : (piano === 'Silver' || piano === 'Bronze') ? 'chip-pro' : 'chip-base'
     const cancPiano = cancellatiPerPiano(piano)
-    const cancLabel = cancPiano.length === 6 ? 'Tutti gli accessi (A B C D E F)' : 'Accessi: ' + cancPiano.join(' · ')
+    const cancLabel = 'Accessi: ' + cancPiano.join(' · ')
     det.innerHTML = '<span class="result-piano ' + chipClass + '">⭐ Piano ' + piano + '</span>' +
       `<div style="margin-top:6px;font-size:11px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:.05em">🚪 ${cancLabel}</div>` +
       (punti ? '<br><span style="font-size:12px;color:rgba(255,255,255,.7)">+' + punti + ' punti Carta Virtus accreditati</span>' : '')
