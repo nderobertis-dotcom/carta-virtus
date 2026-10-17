@@ -216,6 +216,26 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 #toast.error{background:var(--rosso)}
 #toast.success{background:#2e7d32}
 }
+
+/* ═══ MERCHANDISING ═══ */
+.merch-filtro-btn{border:1.5px solid var(--blu);color:var(--blu);background:#fff;border-radius:20px;padding:7px 18px;font-size:12px;font-weight:700;cursor:pointer;transition:.18s;font-family:'Barlow',sans-serif}
+.merch-filtro-btn:hover,.merch-filtro-btn.attivo{background:var(--blu);color:#fff}
+.merch-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
+.merch-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(21,101,192,.12)}
+.merch-card-img{width:100%;aspect-ratio:1;object-fit:cover;background:linear-gradient(135deg,#e8f0fe,#f0f4ff);display:flex;align-items:center;justify-content:center;font-size:56px}
+.merch-card-body{padding:18px;flex:1;display:flex;flex-direction:column;gap:8px}
+.merch-card-nome{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--blu);text-transform:uppercase;line-height:1.1}
+.merch-card-desc{font-size:12px;color:var(--muted);line-height:1.5;flex:1}
+.merch-card-prezzo{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.merch-card-prezzo-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:var(--arancio)}
+.merch-card-prezzo-orig{font-size:14px;color:var(--muted);text-decoration:line-through}
+.merch-card-prezzo-sconto{font-size:11px;font-weight:700;color:#2e7d32;background:#e8f5e9;padding:2px 8px;border-radius:10px}
+.merch-card-footer{padding:0 18px 18px;margin-top:auto}
+.merch-btn-ordina{width:100%;background:var(--blu);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;transition:.18s}
+.merch-btn-ordina:hover{background:var(--blu2)}
+.merch-badge-ev{display:inline-block;background:var(--arancio);color:#fff;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:10px;margin-bottom:6px}
+@media(max-width:600px){.merch-card-img{font-size:40px}}
+
 </style>
   <script src="https://js.stripe.com/v3/"></script>
   <script src="https://www.paypal.com/sdk/js?client-id=AXmqt2tfdCpl1F1latg1zMn8VcujvcKq0vic3955bSf2q7yvN47UJbavPs5ajAQWQFFwvetBnT_XII3Z&currency=EUR&locale=it_IT"></script>
@@ -234,7 +254,9 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
         <button class="btn-hero btn-hero-primary" onclick="scrollToPiani()">Scegli il tuo piano &#8594;</button>
         <button class="btn-hero btn-hero-ghost" onclick="apriLogin()">Hai gia un account</button>
         <a href="#catalogo" class="btn-hero btn-hero-ghost" style="text-decoration:none;font-size:13px;opacity:.7">&#127873; Vedi i premi</a>
-        <a href="partner.html" class="btn-hero btn-hero-ghost" style="text-decoration:none;font-size:13px;opacity:.7">🏪 Area Partner</a>
+        <a href="partner.html" class="btn-hero btn-hero-ghost" style="text-decoration:none;font-size:13px;opacity:.7">🛍️ Merch
+    </a>
+    <a href="partner.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.18)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.7)'">🏪 Area Partner</a>
       </div>
     </div>
     <div>
@@ -670,6 +692,54 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════ MERCHANDISING -->
+<section id="merch" style="background:var(--bg);padding:80px 0">
+  <div style="max-width:1100px;margin:0 auto;padding:0 24px">
+    <div class="section-label">Shop Virtus</div>
+    <div class="section-title">Merchandising Ufficiale</div>
+    <div class="section-sub" style="margin-bottom:32px">Prodotti ufficiali della Nuova Virtus Basket Molfetta. Acquista online e ritira in biglietteria.</div>
+
+    <!-- Sconto piano (visibile solo se loggato) -->
+    <div id="merch-sconto-banner" style="display:none;background:linear-gradient(135deg,#1a3a6b,#1565c0);color:#fff;border-radius:12px;padding:14px 22px;margin-bottom:28px;display:none;align-items:center;gap:14px">
+      <span style="font-size:22px">🏷️</span>
+      <div>
+        <div style="font-size:14px;font-weight:700" id="merch-sconto-titolo">Sconto Fan Card</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.75)" id="merch-sconto-desc">Sconto riservato agli abbonati</div>
+      </div>
+    </div>
+
+    <!-- Filtri categoria -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px" id="merch-filtri">
+      <button onclick="filtraMerch('tutti')" class="merch-filtro-btn attivo" data-cat="tutti">Tutti</button>
+      <button onclick="filtraMerch('abbigliamento')" class="merch-filtro-btn" data-cat="abbigliamento">👕 Abbigliamento</button>
+      <button onclick="filtraMerch('accessori')" class="merch-filtro-btn" data-cat="accessori">🎒 Accessori</button>
+      <button onclick="filtraMerch('gadget')" class="merch-filtro-btn" data-cat="gadget">🎁 Gadget</button>
+    </div>
+
+    <!-- Griglia prodotti -->
+    <div id="merch-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:24px">
+      <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--muted)">
+        <div style="font-size:32px;margin-bottom:12px">🛍️</div>
+        <div>Caricamento prodotti...</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODAL: Ordina Prodotto -->
+<div id="modal-merch-ordine" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:32px;max-width:460px;width:90%;margin:24px auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #1A3A6B">
+      <div style="font-size:18px;font-weight:800;color:#1A3A6B">🛍️ Ordina Prodotto</div>
+      <button onclick="chiudiModalMerch()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#546E7A">×</button>
+    </div>
+    <div id="modal-merch-content">
+      <!-- contenuto dinamico -->
+    </div>
+  </div>
+</div>
+
+
 <!-- MODAL: Elenco Premi GV -->
 <div id="modal-gv-premi" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:16px;padding:32px;max-width:620px;width:90%;margin:24px auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
@@ -715,6 +785,9 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
   <strong>VIRTUS FAN CARD — Nuova Virtus Basket Molfetta</strong>
   Programma fedelta ufficiale · Stagione 2026/2027
   <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a href="#merch" onclick="document.getElementById('merch').scrollIntoView({behavior:'smooth'});return false" style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,124,0,.2);border:1px solid rgba(245,124,0,.35);color:#ff9800;padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(245,124,0,.35)'" onmouseout="this.style.background='rgba(245,124,0,.2)'">
+      🛍️ Merch
+    </a>
     <a href="partner.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.18)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.7)'">
       🏪 Area Partner
     </a>
@@ -3267,5 +3340,204 @@ SITO: virtusfanmolfetta.com`
   document.head.appendChild(style)
 
 })()
+
+/* ═══════════════════════════════════════ MERCHANDISING ════════════════════════════════════ */
+let _merchProdotti = []
+let _prodottoSelezionato = null
+
+const MERCH_ICONE = { 'abbigliamento':'👕', 'accessori':'🎒', 'gadget':'🎁' }
+const MERCH_SCONTO = { 'Bronze':5, 'Silver':10, 'Gold':15, 'Base':0, 'base':0 }
+
+async function loadMerch() {
+  try {
+    const { data, error } = await sb.from('prodotti_merch').select('*').order('ordine')
+    if (error) throw error
+    _merchProdotti = data || []
+    renderMerch(_merchProdotti)
+  } catch(e) {
+    console.error('[MERCH] Errore:', e)
+    document.getElementById('merch-grid').innerHTML =
+      '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Prodotti temporaneamente non disponibili</div>'
+  }
+}
+
+function filtraMerch(cat) {
+  document.querySelectorAll('.merch-filtro-btn').forEach(b => b.classList.toggle('attivo', b.dataset.cat === cat))
+  const filtrati = cat === 'tutti' ? _merchProdotti : _merchProdotti.filter(p => p.categoria === cat)
+  renderMerch(filtrati)
+}
+
+function getMerchSconto() {
+  const piano = (typeof pianoNome !== 'undefined') ? pianoNome : null
+  return piano ? (MERCH_SCONTO[piano] || 0) : 0
+}
+
+function renderMerch(lista) {
+  const grid = document.getElementById('merch-grid')
+  const piano = (typeof pianoNome !== 'undefined') ? pianoNome : null
+  const sconto = getMerchSconto()
+
+  const banner = document.getElementById('merch-sconto-banner')
+  if (banner && sconto > 0) {
+    banner.style.display = 'flex'
+    document.getElementById('merch-sconto-titolo').textContent = 'Sconto ' + piano + ' — ' + sconto + '% su tutto il Merch'
+    document.getElementById('merch-sconto-desc').textContent = 'Vantaggio esclusivo del tuo piano Fan Card ' + piano
+  }
+
+  if (!lista || lista.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">🛍️</div><div>Nessun prodotto in questa categoria</div></div>'
+    return
+  }
+
+  grid.innerHTML = lista.map(function(p) {
+    const icona = MERCH_ICONE[p.categoria] || '🏀'
+    const prezzoBase = parseFloat(p.prezzo)
+    const prezzoScontato = sconto > 0 ? (prezzoBase * (1 - sconto / 100)) : null
+    const prezzoMostrato = prezzoScontato !== null ? prezzoScontato : prezzoBase
+
+    let taglieSel = ''
+    if (p.taglie && p.taglie.length > 0) {
+      taglieSel = '<div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Taglia</div><div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        p.taglie.map(function(t) { return '<button onclick="event.stopPropagation();selezionaTaglia(this,\'' + p.id + '\')" data-taglia="' + t + '" style="border:1.5px solid var(--border);background:#fff;color:var(--text);border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:Barlow,sans-serif;transition:.15s">' + t + '</button>' }).join('') +
+        '</div></div>'
+    }
+
+    let coloriSel = ''
+    if (p.colori && p.colori.length > 0) {
+      coloriSel = '<div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Colore</div><div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        p.colori.map(function(c) { return '<button onclick="event.stopPropagation();selezionaColore(this,\'' + p.id + '\')" data-colore="' + c + '" style="border:1.5px solid var(--border);background:#fff;color:var(--text);border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:Barlow,sans-serif;transition:.15s">' + c + '</button>' }).join('') +
+        '</div></div>'
+    }
+
+    let prezzoHtml = '<div class="merch-card-prezzo"><span class="merch-card-prezzo-val">€ ' + prezzoMostrato.toFixed(2).replace('.',',') + '</span>'
+    if (prezzoScontato !== null) {
+      prezzoHtml += '<span class="merch-card-prezzo-orig">€ ' + prezzoBase.toFixed(2).replace('.',',') + '</span><span class="merch-card-prezzo-sconto">-' + sconto + '%</span>'
+    }
+    prezzoHtml += '</div>'
+
+    return '<div class="merch-card" id="merch-prod-' + p.id + '">' +
+      '<div class="merch-card-img">' + icona + '</div>' +
+      '<div class="merch-card-body">' +
+      (p.in_evidenza ? '<div class="merch-badge-ev">⭐ In evidenza</div>' : '') +
+      '<div class="merch-card-nome">' + p.nome + '</div>' +
+      (p.descrizione ? '<div class="merch-card-desc">' + p.descrizione + '</div>' : '') +
+      prezzoHtml + taglieSel + coloriSel +
+      '</div>' +
+      '<div class="merch-card-footer"><button class="merch-btn-ordina" onclick="ordinaProdotto(\'' + p.id + '\')">🛒 Ordina</button></div>' +
+      '</div>'
+  }).join('')
+}
+
+function selezionaTaglia(btn, prodId) {
+  const parent = document.getElementById('merch-prod-' + prodId)
+  if (parent) parent.querySelectorAll('[data-taglia]').forEach(function(b) {
+    b.style.borderColor='var(--border)';b.style.background='#fff';b.style.color='var(--text)';b.classList.remove('sel')
+  })
+  btn.style.borderColor='var(--blu)';btn.style.background='var(--blu)';btn.style.color='#fff';btn.classList.add('sel')
+}
+function selezionaColore(btn, prodId) {
+  const parent = document.getElementById('merch-prod-' + prodId)
+  if (parent) parent.querySelectorAll('[data-colore]').forEach(function(b) {
+    b.style.borderColor='var(--border)';b.style.background='#fff';b.style.color='var(--text)';b.classList.remove('sel')
+  })
+  btn.style.borderColor='var(--blu)';btn.style.background='var(--blu)';btn.style.color='#fff';btn.classList.add('sel')
+}
+
+function ordinaProdotto(id) {
+  const p = _merchProdotti.find(function(x){return x.id===id})
+  if (!p) return
+  _prodottoSelezionato = p
+
+  const piano = (typeof pianoNome !== 'undefined') ? pianoNome : 'Base'
+  const sconto = MERCH_SCONTO[piano] || 0
+  const prezzoBase = parseFloat(p.prezzo)
+  const prezzo = sconto > 0 ? (prezzoBase * (1 - sconto / 100)) : prezzoBase
+
+  const card = document.getElementById('merch-prod-' + id)
+  const tagliaEl = card ? card.querySelector('[data-taglia].sel') : null
+  const coloreEl = card ? card.querySelector('[data-colore].sel') : null
+
+  let taglieHtml = ''
+  if (p.taglie && p.taglie.length > 0) {
+    taglieHtml = '<div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Taglia</label><select id="modal-merch-taglia" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:Barlow,sans-serif;color:var(--text)"><option value="">-- Seleziona taglia --</option>' +
+      p.taglie.map(function(t){ return '<option value="'+t+'"'+(tagliaEl&&tagliaEl.dataset.taglia===t?' selected':'')+'>'+t+'</option>' }).join('') +
+      '</select></div>'
+  }
+  let coloriHtml = ''
+  if (p.colori && p.colori.length > 0) {
+    coloriHtml = '<div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Colore</label><select id="modal-merch-colore" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:Barlow,sans-serif;color:var(--text)"><option value="">-- Seleziona colore --</option>' +
+      p.colori.map(function(c){ return '<option value="'+c+'"'+(coloreEl&&coloreEl.dataset.colore===c?' selected':'')+'>'+c+'</option>' }).join('') +
+      '</select></div>'
+  }
+  let scontoHtml = ''
+  if (sconto > 0) {
+    scontoHtml = '<div style="background:#e8f5e9;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#2e7d32;font-weight:600">🏷️ Sconto Fan Card ' + piano + ': -' + sconto + '% → <strong>€ ' + prezzo.toFixed(2).replace('.',',') + '</strong></div>'
+  }
+
+  document.getElementById('modal-merch-content').innerHTML =
+    '<div style="text-align:center;font-size:48px;margin-bottom:12px">' + (MERCH_ICONE[p.categoria]||'🏀') + '</div>' +
+    '<div style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:800;color:var(--blu);text-transform:uppercase;margin-bottom:6px">' + p.nome + '</div>' +
+    (p.descrizione ? '<div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">' + p.descrizione + '</div>' : '') +
+    scontoHtml +
+    '<div style="font-size:28px;font-weight:900;color:var(--arancio);font-family:Barlow Condensed,sans-serif;margin-bottom:18px">€ ' + prezzo.toFixed(2).replace('.',',') + '</div>' +
+    taglieHtml + coloriHtml +
+    '<div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Quantità</label><input type="number" id="modal-merch-qty" value="1" min="1" max="10" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:Barlow,sans-serif;color:var(--text)"></div>' +
+    '<div style="margin-bottom:18px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Note (opzionale)</label><textarea id="modal-merch-note" rows="2" placeholder="Es. per ritiro in biglietteria..." style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:Barlow,sans-serif;color:var(--text);resize:vertical"></textarea></div>' +
+    '<button onclick="inviaOrdineWhatsapp()" style="width:100%;background:#25d366;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">📱 Ordina via WhatsApp</button>' +
+    '<div style="text-align:center;font-size:11px;color:var(--muted)">Ritiro in biglietteria · PalaPoli Molfetta</div>'
+
+  document.getElementById('modal-merch-ordine').style.display = 'flex'
+}
+
+function chiudiModalMerch() {
+  document.getElementById('modal-merch-ordine').style.display = 'none'
+  _prodottoSelezionato = null
+}
+
+function inviaOrdineWhatsapp() {
+  if (!_prodottoSelezionato) return
+  const p = _prodottoSelezionato
+  const piano = (typeof pianoNome !== 'undefined') ? pianoNome : 'Base'
+  const sconto = MERCH_SCONTO[piano] || 0
+  const prezzoBase = parseFloat(p.prezzo)
+  const prezzo = sconto > 0 ? (prezzoBase * (1 - sconto / 100)) : prezzoBase
+
+  const tagliaEl = document.getElementById('modal-merch-taglia')
+  const coloreEl = document.getElementById('modal-merch-colore')
+  const qtyEl = document.getElementById('modal-merch-qty')
+  const noteEl = document.getElementById('modal-merch-note')
+
+  const taglia = tagliaEl ? tagliaEl.value : ''
+  const colore = coloreEl ? coloreEl.value : ''
+  const qty = qtyEl ? parseInt(qtyEl.value) || 1 : 1
+  const note = noteEl ? noteEl.value.trim() : ''
+
+  if (p.taglie && p.taglie.length > 0 && !taglia) { alert('Seleziona la taglia prima di procedere'); return }
+  if (p.colori && p.colori.length > 0 && !colore) { alert('Seleziona il colore prima di procedere'); return }
+
+  let testo = '\u{1F6CD} ORDINE MERCHANDISING VIRTUS\n\n'
+  testo += 'Prodotto: ' + p.nome + '\n'
+  if (taglia) testo += 'Taglia: ' + taglia + '\n'
+  if (colore) testo += 'Colore: ' + colore + '\n'
+  testo += 'Quantità: ' + qty + '\n'
+  testo += 'Prezzo unitario: € ' + prezzo.toFixed(2).replace('.',',') + '\n'
+  if (sconto > 0) testo += 'Sconto Fan Card ' + piano + ': -' + sconto + '%\n'
+  testo += 'Totale: € ' + (prezzo * qty).toFixed(2).replace('.',',') + '\n'
+  if (note) testo += '\nNote: ' + note + '\n'
+  testo += '\nFan Card: ' + piano
+
+  const numero = '393494043455'
+  window.open('https://wa.me/' + numero + '?text=' + encodeURIComponent(testo), '_blank')
+  chiudiModalMerch()
+  toast('Reindirizzamento a WhatsApp…', 'success')
+}
+
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('modal-merch-ordine')
+  if (modal && e.target === modal) chiudiModalMerch()
+})
+
+loadMerch()
+
 </script>
 </body>
