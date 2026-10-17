@@ -699,12 +699,25 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
     <div class="section-title">Merchandising Ufficiale</div>
     <div class="section-sub" style="margin-bottom:32px">Prodotti ufficiali della Nuova Virtus Basket Molfetta. Acquista online e ritira in biglietteria.</div>
 
-    <!-- Sconto piano (visibile solo se loggato) -->
-    <div id="merch-sconto-banner" style="display:none;background:linear-gradient(135deg,#1a3a6b,#1565c0);color:#fff;border-radius:12px;padding:14px 22px;margin-bottom:28px;display:none;align-items:center;gap:14px">
-      <span style="font-size:22px">🏷️</span>
+    <!-- Banner sconti non loggati (sempre visibile) -->
+    <div id="merch-login-banner" style="background:linear-gradient(135deg,#1a3a6b,#1565c0);color:#fff;border-radius:12px;padding:14px 22px;margin-bottom:20px;display:flex;align-items:center;gap:16px">
+      <span style="font-size:26px;flex-shrink:0">🏷️</span>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;margin-bottom:2px">Sconti esclusivi Fan Card</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.5">Possessori di card <strong>Bronze</strong> −5% · <strong>Silver</strong> −10% · <strong>Gold</strong> −15%</div>
+      </div>
+      <a href="#login" onclick="document.getElementById('login-email')&&document.getElementById('login-email').focus();return false"
+        style="flex-shrink:0;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;backdrop-filter:blur(4px)">
+        🔑 Accedi
+      </a>
+    </div>
+
+    <!-- Sconto piano (visibile solo se loggato con piano attivo) -->
+    <div id="merch-sconto-banner" style="display:none;background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff;border-radius:12px;padding:14px 22px;margin-bottom:20px;align-items:center;gap:14px">
+      <span style="font-size:22px">✅</span>
       <div>
-        <div style="font-size:14px;font-weight:700" id="merch-sconto-titolo">Sconto Fan Card</div>
-        <div style="font-size:12px;color:rgba(255,255,255,.75)" id="merch-sconto-desc">Sconto riservato agli abbonati</div>
+        <div style="font-size:14px;font-weight:700" id="merch-sconto-titolo">Sconto Fan Card attivo</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.85)" id="merch-sconto-desc">Sconto applicato automaticamente</div>
       </div>
     </div>
 
@@ -3387,6 +3400,10 @@ function renderMerch(lista) {
   const piano = (typeof pianoNome !== 'undefined') ? pianoNome : null
   const sconto = getMerchSconto()
 
+  // nasconde il banner "accedi" se l'utente è loggato
+  const loginBanner = document.getElementById('merch-login-banner')
+  if (loginBanner) loginBanner.style.display = sconto > 0 ? 'none' : 'flex'
+
   const banner = document.getElementById('merch-sconto-banner')
   if (banner && sconto > 0) {
     banner.style.display = 'flex'
@@ -3491,6 +3508,8 @@ function ordinaProdotto(id) {
     scontoHtml +
     '<div style="font-size:28px;font-weight:900;color:var(--arancio);font-family:Barlow Condensed,sans-serif;margin-bottom:18px">€ ' + prezzo.toFixed(2).replace('.',',') + '</div>' +
     taglieHtml + coloriHtml +
+    '<div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Il tuo nome *</label><input type="text" id="modal-merch-nome" placeholder="Es. Mario Rossi" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:Barlow,sans-serif;color:var(--text)"></div>' +
+    '<div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Il tuo numero WhatsApp *</label><input type="tel" id="modal-merch-tel" placeholder="Es. 3391234567" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:Barlow,sans-serif;color:var(--text)"></div>' +
     '<div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Quantità</label><input type="number" id="modal-merch-qty" value="1" min="1" max="10" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:Barlow,sans-serif;color:var(--text)"></div>' +
     '<div style="margin-bottom:18px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Note (opzionale)</label><textarea id="modal-merch-note" rows="2" placeholder="Es. per ritiro in biglietteria..." style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:Barlow,sans-serif;color:var(--text);resize:vertical"></textarea></div>' +
     '<button onclick="inviaOrdineWhatsapp()" style="width:100%;background:#25d366;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">📱 Ordina via WhatsApp</button>' +
@@ -3504,7 +3523,7 @@ function chiudiModalMerch() {
   _prodottoSelezionato = null
 }
 
-function inviaOrdineWhatsapp() {
+async function inviaOrdineWhatsapp() {
   if (!_prodottoSelezionato) return
   const p = _prodottoSelezionato
   const piano = (typeof pianoNome !== 'undefined') ? pianoNome : 'Base'
@@ -3512,21 +3531,29 @@ function inviaOrdineWhatsapp() {
   const prezzoBase = parseFloat(p.prezzo)
   const prezzo = sconto > 0 ? (prezzoBase * (1 - sconto / 100)) : prezzoBase
 
-  const tagliaEl = document.getElementById('modal-merch-taglia')
-  const coloreEl = document.getElementById('modal-merch-colore')
-  const qtyEl = document.getElementById('modal-merch-qty')
-  const noteEl = document.getElementById('modal-merch-note')
+  const tagliaEl  = document.getElementById('modal-merch-taglia')
+  const coloreEl  = document.getElementById('modal-merch-colore')
+  const qtyEl     = document.getElementById('modal-merch-qty')
+  const noteEl    = document.getElementById('modal-merch-note')
+  const nomeEl    = document.getElementById('modal-merch-nome')
+  const telEl     = document.getElementById('modal-merch-tel')
 
-  const taglia = tagliaEl ? tagliaEl.value : ''
-  const colore = coloreEl ? coloreEl.value : ''
-  const qty = qtyEl ? parseInt(qtyEl.value) || 1 : 1
-  const note = noteEl ? noteEl.value.trim() : ''
+  const taglia    = tagliaEl  ? tagliaEl.value.trim()    : ''
+  const colore    = coloreEl  ? coloreEl.value.trim()    : ''
+  const qty       = qtyEl     ? parseInt(qtyEl.value) || 1 : 1
+  const note      = noteEl    ? noteEl.value.trim()      : ''
+  const nomeCliente = nomeEl  ? nomeEl.value.trim()      : ''
+  const telCliente  = telEl   ? telEl.value.trim()       : ''
 
   if (p.taglie && p.taglie.length > 0 && !taglia) { alert('Seleziona la taglia prima di procedere'); return }
   if (p.colori && p.colori.length > 0 && !colore) { alert('Seleziona il colore prima di procedere'); return }
+  if (!nomeCliente) { alert('Inserisci il tuo nome'); nomeEl && nomeEl.focus(); return }
+  if (!telCliente) { alert('Inserisci il tuo numero WhatsApp'); telEl && telEl.focus(); return }
 
   let testo = '\u{1F6CD} ORDINE MERCHANDISING VIRTUS\n\n'
-  testo += 'Prodotto: ' + p.nome + '\n'
+  testo += 'Nome: ' + nomeCliente + '\n'
+  testo += 'Numero: ' + telCliente + '\n'
+  testo += '\nProdotto: ' + p.nome + '\n'
   if (taglia) testo += 'Taglia: ' + taglia + '\n'
   if (colore) testo += 'Colore: ' + colore + '\n'
   testo += 'Quantità: ' + qty + '\n'
@@ -3536,10 +3563,29 @@ function inviaOrdineWhatsapp() {
   if (note) testo += '\nNote: ' + note + '\n'
   testo += '\nFan Card: ' + piano
 
+  // Salva ordine su Supabase (best-effort, non blocca il flusso WA)
+  try {
+    await sb.from('ordini_merch').insert({
+      prodotto_id:      p.id,
+      prodotto_nome:    p.nome,
+      categoria:        p.categoria || null,
+      prezzo_unitario:  prezzoBase,
+      sconto_pct:       sconto,
+      prezzo_finale:    parseFloat((prezzo * qty).toFixed(2)),
+      taglia:           taglia || null,
+      colore:           colore || null,
+      cliente_nome:     nomeCliente,
+      cliente_numero:   telCliente,
+      piano:            piano,
+      note:             note || null,
+      stato:            'nuovo'
+    })
+  } catch(e) { console.warn('[MERCH] Salvataggio ordine fallito:', e) }
+
   const numero = '393345820200'
   window.open('https://wa.me/' + numero + '?text=' + encodeURIComponent(testo), '_blank')
   chiudiModalMerch()
-  toast('Reindirizzamento a WhatsApp…', 'success')
+  toast('Ordine inviato via WhatsApp ✓', 'success')
 }
 
 document.addEventListener('click', function(e) {

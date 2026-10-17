@@ -1972,71 +1972,188 @@ select.form-input:focus{border-color:var(--accent)}
     <!-- SEZIONE MERCH PRODOTTI -->
     <div class="section" id="section-merch-prodotti">
 
+      <!-- Header + toggle globale -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
         <div>
-          <div style="font-size:18px;font-weight:700;color:var(--text)">🛍️ Merchandising — Prodotti</div>
-          <div style="font-size:13px;color:var(--muted);margin-top:2px">Gestisci il catalogo prodotti visibile nella sezione merch della app</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text)">🛍️ Merchandising</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px">Gestisci prodotti, ordini e statistiche del catalogo merch</div>
         </div>
-        <button class="btn btn-primary" onclick="apriFormMerch(null)">+ Aggiungi prodotto</button>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;border:1px solid var(--border);border-radius:8px;padding:7px 14px;background:var(--bg)">
+            <span id="merch-attivo-label" style="font-size:12px;font-weight:600;color:var(--muted)">—</span>
+            <div onclick="toggleMerchAttivo()" id="merch-attivo-toggle"
+              style="width:40px;height:22px;border-radius:11px;background:#ccc;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0">
+              <div id="merch-attivo-knob"
+                style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+            </div>
+          </label>
+          <button class="btn btn-primary" id="btn-aggiungi-prodotto" onclick="apriFormMerch(null)">+ Aggiungi prodotto</button>
+        </div>
       </div>
 
-      <!-- Toggle sezione globale -->
-      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:18px">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--text)">Sezione merch visibile in app</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Se disattivata, la sezione 🛍️ Merch non appare affatto ai tifosi</div>
+      <!-- Tab navigation -->
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px">
+        <button id="merch-tab-prodotti" onclick="switchMerchTab('prodotti')"
+          style="padding:9px 20px;background:none;border:none;border-bottom:2px solid var(--accent);margin-bottom:-2px;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif">
+          📦 Prodotti
+        </button>
+        <button id="merch-tab-ordini" onclick="switchMerchTab('ordini')"
+          style="padding:9px 20px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+          📋 Ordini
+        </button>
+        <button id="merch-tab-stats" onclick="switchMerchTab('stats')"
+          style="padding:9px 20px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+          📊 Statistiche
+        </button>
+      </div>
+
+      <!-- ─── TAB PRODOTTI ─── -->
+      <div id="merch-panel-prodotti">
+        <!-- Filtri categoria -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <button onclick="filtraMerchAdmin('tutti')" id="mf-tutti"
+            style="padding:6px 14px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+            Tutti
+          </button>
+          <button onclick="filtraMerchAdmin('abbigliamento')" id="mf-abbigliamento"
+            style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+            👕 Abbigliamento
+          </button>
+          <button onclick="filtraMerchAdmin('accessori')" id="mf-accessori"
+            style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+            🎒 Accessori
+          </button>
+          <button onclick="filtraMerchAdmin('gadget')" id="mf-gadget"
+            style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+            🎁 Gadget
+          </button>
         </div>
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
-          <span id="merch-attivo-label" style="font-size:13px;font-weight:600;color:var(--muted)">—</span>
-          <div onclick="toggleMerchAttivo()" id="merch-attivo-toggle"
-            style="width:44px;height:24px;border-radius:12px;background:#ccc;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0">
-            <div id="merch-attivo-knob"
-              style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+
+        <!-- Tabella prodotti -->
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead>
+                <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
+                  <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Prodotto</th>
+                  <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Categoria</th>
+                  <th style="padding:12px 16px;text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Prezzo</th>
+                  <th style="padding:12px 16px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Disponibile</th>
+                  <th style="padding:12px 16px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">In evidenza</th>
+                  <th style="padding:12px 16px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Ordine</th>
+                  <th style="padding:12px 16px;text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="merch-prodotti-tbody">
+                <tr><td colspan="7"><div class="empty"><div class="empty-icon">🛍️</div><p>Caricamento prodotti…</p></div></td></tr>
+              </tbody>
+            </table>
           </div>
-        </label>
-      </div>
-
-      <!-- Filtri categoria -->
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <button onclick="filtraMerchAdmin('tutti')" id="mf-tutti"
-          style="padding:6px 14px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
-          Tutti
-        </button>
-        <button onclick="filtraMerchAdmin('abbigliamento')" id="mf-abbigliamento"
-          style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
-          👕 Abbigliamento
-        </button>
-        <button onclick="filtraMerchAdmin('accessori')" id="mf-accessori"
-          style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
-          🎒 Accessori
-        </button>
-        <button onclick="filtraMerchAdmin('gadget')" id="mf-gadget"
-          style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
-          🎁 Gadget
-        </button>
-      </div>
-
-      <!-- Tabella prodotti -->
-      <div class="card" style="padding:0;overflow:hidden">
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:13px">
-            <thead>
-              <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
-                <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Prodotto</th>
-                <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Categoria</th>
-                <th style="padding:12px 16px;text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Prezzo</th>
-                <th style="padding:12px 16px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Disponibile</th>
-                <th style="padding:12px 16px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">In evidenza</th>
-                <th style="padding:12px 16px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Ordine</th>
-                <th style="padding:12px 16px;text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Azioni</th>
-              </tr>
-            </thead>
-            <tbody id="merch-prodotti-tbody">
-              <tr><td colspan="7"><div class="empty"><div class="empty-icon">🛍️</div><p>Caricamento prodotti…</p></div></td></tr>
-            </tbody>
-          </table>
         </div>
-      </div>
+      </div><!-- /panel prodotti -->
+
+      <!-- ─── TAB ORDINI ─── -->
+      <div id="merch-panel-ordini" style="display:none">
+        <!-- Filtri stato -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1">
+            <button onclick="filtraMerchOrdini('tutti')" id="mo-tutti"
+              style="padding:5px 12px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+              Tutti
+            </button>
+            <button onclick="filtraMerchOrdini('nuovo')" id="mo-nuovo"
+              style="padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+              🆕 Nuovo
+            </button>
+            <button onclick="filtraMerchOrdini('confermato')" id="mo-confermato"
+              style="padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+              ✅ Confermato
+            </button>
+            <button onclick="filtraMerchOrdini('pronto')" id="mo-pronto"
+              style="padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+              📦 Pronto
+            </button>
+            <button onclick="filtraMerchOrdini('consegnato')" id="mo-consegnato"
+              style="padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+              🎉 Consegnato
+            </button>
+            <button onclick="filtraMerchOrdini('annullato')" id="mo-annullato"
+              style="padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+              ❌ Annullato
+            </button>
+          </div>
+          <button onclick="loadMerchOrdini()" style="padding:5px 14px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">
+            🔄 Ricarica
+          </button>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead>
+                <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
+                  <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Data</th>
+                  <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Cliente</th>
+                  <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Prodotto</th>
+                  <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Dettagli</th>
+                  <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Totale</th>
+                  <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Piano</th>
+                  <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Stato</th>
+                </tr>
+              </thead>
+              <tbody id="merch-ordini-tbody">
+                <tr><td colspan="7"><div class="empty"><div class="empty-icon">📋</div><p>Caricamento ordini…</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /panel ordini -->
+
+      <!-- ─── TAB STATISTICHE ─── -->
+      <div id="merch-panel-stats" style="display:none">
+        <!-- KPI cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px" id="merch-stats-kpi">
+          <div class="card" style="text-align:center;padding:18px">
+            <div style="font-size:28px;font-weight:800;color:var(--accent)" id="kpi-ordini-tot">—</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Ordini totali</div>
+          </div>
+          <div class="card" style="text-align:center;padding:18px">
+            <div style="font-size:28px;font-weight:800;color:#16a34a" id="kpi-fatturato">—</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Fatturato stimato</div>
+          </div>
+          <div class="card" style="text-align:center;padding:18px">
+            <div style="font-size:28px;font-weight:800;color:#ea580c" id="kpi-nuovi">—</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Nuovi (da evadere)</div>
+          </div>
+          <div class="card" style="text-align:center;padding:18px">
+            <div style="font-size:28px;font-weight:800;color:var(--gold)" id="kpi-scontati">—</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Con sconto Fan Card</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;flex-wrap:wrap">
+          <!-- Ranking prodotti -->
+          <div class="card" style="min-width:0">
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px">🏆 Ranking prodotti</div>
+            <div id="merch-stats-ranking"><div class="empty"><p>Nessun dato</p></div></div>
+          </div>
+          <!-- Breakdown stato -->
+          <div class="card" style="min-width:0">
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px">📊 Ordini per stato</div>
+            <div id="merch-stats-stati"><div class="empty"><p>Nessun dato</p></div></div>
+          </div>
+          <!-- Breakdown per piano -->
+          <div class="card" style="min-width:0">
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px">💳 Ordini per piano</div>
+            <div id="merch-stats-piani"><div class="empty"><p>Nessun dato</p></div></div>
+          </div>
+          <!-- Ultimi 7 giorni -->
+          <div class="card" style="min-width:0">
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px">📅 Trend 7 giorni</div>
+            <div id="merch-stats-trend"><div class="empty"><p>Nessun dato</p></div></div>
+          </div>
+        </div>
+      </div><!-- /panel stats -->
 
     </div><!-- /section-merch-prodotti -->
 
@@ -10434,6 +10551,241 @@ function chiediEliminaMerch(id, nome) {
   openModal('modal-merch-elimina')
 }
 
+// ── Merch: switch tab ───────────────────────────────────────────
+let _adminMerchTab = 'prodotti'
+
+function switchMerchTab(tab) {
+  _adminMerchTab = tab
+  const panels = ['prodotti','ordini','stats']
+  const tabs   = ['prodotti','ordini','stats']
+  panels.forEach(p => {
+    document.getElementById('merch-panel-' + p).style.display = p === tab ? '' : 'none'
+  })
+  tabs.forEach(t => {
+    const btn = document.getElementById('merch-tab-' + t)
+    if (!btn) return
+    if (t === tab) {
+      btn.style.borderBottomColor = 'var(--accent)'
+      btn.style.color = 'var(--accent)'
+      btn.style.fontWeight = '700'
+    } else {
+      btn.style.borderBottomColor = 'transparent'
+      btn.style.color = 'var(--muted)'
+      btn.style.fontWeight = '600'
+    }
+  })
+  const btnAggiungi = document.getElementById('btn-aggiungi-prodotto')
+  if (btnAggiungi) btnAggiungi.style.display = tab === 'prodotti' ? '' : 'none'
+
+  if (tab === 'ordini')  loadMerchOrdini()
+  if (tab === 'stats')   loadMerchStats()
+}
+
+// ── Merch: ordini ────────────────────────────────────────────────
+let _adminMerchOrdini    = []
+let _adminMerchOrdFiltro = 'tutti'
+
+const STATO_BADGE = {
+  nuovo:      { color:'#ea580c', bg:'#fff7ed', label:'Nuovo' },
+  confermato: { color:'#16a34a', bg:'#f0fdf4', label:'Confermato' },
+  pronto:     { color:'#1565c0', bg:'#e8f0fe', label:'Pronto' },
+  consegnato: { color:'#6b7280', bg:'#f3f4f6', label:'Consegnato' },
+  annullato:  { color:'#dc2626', bg:'#fef2f2', label:'Annullato' }
+}
+
+async function loadMerchOrdini() {
+  const tbody = document.getElementById('merch-ordini-tbody')
+  if (!tbody) return
+  tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">⏳</div><p>Caricamento…</p></div></td></tr>'
+  try {
+    const q = sbAdmin.from('ordini_merch').select('*').order('created_at', { ascending: false }).limit(200)
+    const { data, error } = await q
+    if (error) throw error
+    _adminMerchOrdini = data || []
+    renderMerchOrdini()
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">⚠️</div><p>Errore caricamento: ' + e.message + '</p></div></td></tr>'
+  }
+}
+
+function filtraMerchOrdini(stato) {
+  _adminMerchOrdFiltro = stato
+  const ids = ['tutti','nuovo','confermato','pronto','consegnato','annullato']
+  ids.forEach(s => {
+    const btn = document.getElementById('mo-' + s)
+    if (!btn) return
+    if (s === stato) {
+      btn.style.background = 'var(--accent)'
+      btn.style.color = '#fff'
+      btn.style.borderColor = 'var(--accent)'
+    } else {
+      btn.style.background = 'transparent'
+      btn.style.color = 'var(--text)'
+      btn.style.borderColor = 'var(--border)'
+    }
+  })
+  renderMerchOrdini()
+}
+
+function renderMerchOrdini() {
+  const tbody = document.getElementById('merch-ordini-tbody')
+  if (!tbody) return
+  const lista = _adminMerchOrdFiltro === 'tutti'
+    ? _adminMerchOrdini
+    : _adminMerchOrdini.filter(o => o.stato === _adminMerchOrdFiltro)
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">📭</div><p>Nessun ordine</p></div></td></tr>'
+    return
+  }
+  tbody.innerHTML = lista.map(o => {
+    const d = new Date(o.created_at)
+    const dataStr = d.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit' })
+    const oraStr  = d.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
+    const b = STATO_BADGE[o.stato] || { color:'#666', bg:'#f3f4f6', label: o.stato }
+    const det = [o.taglia && 'T: '+o.taglia, o.colore && 'C: '+o.colore, o.note].filter(Boolean).join(' · ')
+    const statoOpts = ['nuovo','confermato','pronto','consegnato','annullato']
+      .map(s => `<option value="${s}" ${s === o.stato ? 'selected' : ''}>${s}</option>`).join('')
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:10px 14px;font-size:12px;color:var(--muted);white-space:nowrap">${dataStr}<br><span style="font-size:11px">${oraStr}</span></td>
+      <td style="padding:10px 14px">
+        <div style="font-size:13px;font-weight:600">${escHtml(o.cliente_nome)}</div>
+        <a href="https://wa.me/${(o.cliente_numero||'').replace(/\D/g,'')}" target="_blank"
+          style="font-size:11px;color:var(--accent);text-decoration:none">📱 ${escHtml(o.cliente_numero||'')}</a>
+      </td>
+      <td style="padding:10px 14px">
+        <div style="font-size:13px;font-weight:600">${escHtml(o.prodotto_nome)}</div>
+        <div style="font-size:11px;color:var(--muted)">${escHtml(o.categoria||'')}</div>
+      </td>
+      <td style="padding:10px 14px;font-size:12px;color:var(--muted)">${escHtml(det)||'—'}</td>
+      <td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--text);white-space:nowrap">
+        € ${parseFloat(o.prezzo_finale||0).toFixed(2).replace('.',',')}
+        ${o.sconto_pct > 0 ? '<br><span style="font-size:10px;color:#16a34a">-'+o.sconto_pct+'%</span>' : ''}
+      </td>
+      <td style="padding:10px 14px;font-size:12px;color:var(--muted)">${escHtml(o.piano||'Base')}</td>
+      <td style="padding:10px 14px;text-align:center">
+        <select onchange="cambiaStatoOrdine('${o.id}', this.value)"
+          style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid ${b.color};background:${b.bg};color:${b.color};font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;outline:none">
+          ${statoOpts}
+        </select>
+      </td>
+    </tr>`
+  }).join('')
+}
+
+async function cambiaStatoOrdine(id, stato) {
+  try {
+    const { error } = await sbAdmin.from('ordini_merch').update({ stato }).eq('id', id)
+    if (error) throw error
+    const o = _adminMerchOrdini.find(x => x.id === id)
+    if (o) o.stato = stato
+    // no re-render completo: la select ha già aggiornato la UI
+  } catch(e) {
+    alert('Errore aggiornamento stato: ' + e.message)
+  }
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+// ── Merch: statistiche ──────────────────────────────────────────
+async function loadMerchStats() {
+  try {
+    const { data, error } = await sbAdmin.from('ordini_merch').select('*')
+    if (error) throw error
+    const ordini = data || []
+
+    // KPI
+    const tot = ordini.length
+    const fatturato = ordini.filter(o => o.stato !== 'annullato')
+      .reduce((s, o) => s + parseFloat(o.prezzo_finale || 0), 0)
+    const nuovi = ordini.filter(o => o.stato === 'nuovo').length
+    const scontati = ordini.filter(o => o.sconto_pct > 0).length
+
+    document.getElementById('kpi-ordini-tot').textContent = tot
+    document.getElementById('kpi-fatturato').textContent  = '€ ' + fatturato.toFixed(2).replace('.',',')
+    document.getElementById('kpi-nuovi').textContent      = nuovi
+    document.getElementById('kpi-scontati').textContent   = scontati
+
+    // Ranking prodotti
+    const byProd = {}
+    ordini.filter(o => o.stato !== 'annullato').forEach(o => {
+      const k = o.prodotto_nome || 'Sconosciuto'
+      byProd[k] = (byProd[k] || 0) + 1
+    })
+    const ranking = Object.entries(byProd).sort((a,b) => b[1]-a[1])
+    const maxR = ranking[0]?.[1] || 1
+    const rankHtml = ranking.length ? ranking.slice(0,8).map(([nome,n], i) => `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px">
+          <span style="font-weight:600">${i===0?'🥇 ':i===1?'🥈 ':i===2?'🥉 ':'   '}${escHtml(nome)}</span>
+          <span style="font-weight:700;color:var(--accent)">${n} ordini</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+          <div style="height:100%;background:var(--accent);border-radius:3px;width:${Math.round(n/maxR*100)}%;transition:width .4s"></div>
+        </div>
+      </div>`).join('') : '<div class="empty"><p>Nessun ordine</p></div>'
+    document.getElementById('merch-stats-ranking').innerHTML = rankHtml
+
+    // Breakdown per stato
+    const statiCount = {}
+    ordini.forEach(o => { statiCount[o.stato] = (statiCount[o.stato]||0)+1 })
+    const statiHtml = Object.entries(statiCount).length ? Object.entries(statiCount).map(([s,n]) => {
+      const b = STATO_BADGE[s] || { color:'#666', label: s }
+      const pct = Math.round(n/tot*100)
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;font-weight:600;color:${b.color}">${b.label}</span>
+        <span><strong>${n}</strong> <span style="font-size:11px;color:var(--muted)">(${pct}%)</span></span>
+      </div>`
+    }).join('') : '<div class="empty"><p>Nessun ordine</p></div>'
+    document.getElementById('merch-stats-stati').innerHTML = statiHtml
+
+    // Breakdown per piano
+    const pianiCount = {}
+    ordini.forEach(o => { const p = o.piano||'Base'; pianiCount[p] = (pianiCount[p]||0)+1 })
+    const pianiHtml = Object.entries(pianiCount).sort((a,b)=>b[1]-a[1]).length ?
+      Object.entries(pianiCount).sort((a,b)=>b[1]-a[1]).map(([p,n]) => {
+        const emoji = p==='Gold'?'🥇':p==='Silver'?'🥈':p==='Bronze'?'🥉':'👤'
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:13px;font-weight:600">${emoji} ${p}</span>
+          <strong>${n}</strong>
+        </div>`
+      }).join('') : '<div class="empty"><p>Nessun ordine</p></div>'
+    document.getElementById('merch-stats-piani').innerHTML = pianiHtml
+
+    // Trend ultimi 7 giorni
+    const oggi = new Date()
+    const giorni7 = []
+    for (let i=6; i>=0; i--) {
+      const d = new Date(oggi); d.setDate(d.getDate()-i)
+      giorni7.push(d.toISOString().slice(0,10))
+    }
+    const trendCount = {}
+    giorni7.forEach(g => { trendCount[g] = 0 })
+    ordini.filter(o => o.stato !== 'annullato').forEach(o => {
+      const g = o.created_at.slice(0,10)
+      if (trendCount[g] !== undefined) trendCount[g]++
+    })
+    const maxT = Math.max(...Object.values(trendCount), 1)
+    const trendHtml = `<div style="display:flex;align-items:flex-end;gap:6px;height:80px">
+      ${giorni7.map(g => {
+        const n = trendCount[g]||0
+        const h = Math.max(4, Math.round(n/maxT*72))
+        const gg = g.slice(8)+'/'+g.slice(5,7)
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+          <span style="font-size:11px;font-weight:700;color:var(--accent)">${n||''}</span>
+          <div style="width:100%;height:${h}px;background:var(--accent);border-radius:3px 3px 0 0;opacity:0.85"></div>
+          <span style="font-size:9px;color:var(--muted)">${gg}</span>
+        </div>`
+      }).join('')}
+    </div>`
+    document.getElementById('merch-stats-trend').innerHTML = trendHtml
+
+  } catch(e) {
+    console.error('[MERCH STATS]', e)
+  }
+}
+
 async function confEliminaProdotto() {
   if (!_adminMerchEliminaId) return
   const btn = document.getElementById('merch-btn-elimina')
@@ -10493,6 +10845,11 @@ document.addEventListener('DOMContentLoaded', function() {
   window.confEliminaProdotto = confEliminaProdotto;
   window.filtraMerchAdmin = filtraMerchAdmin;
   window.toggleMerchAttivo = toggleMerchAttivo;
+  window.switchMerchTab = switchMerchTab;
+  window.loadMerchOrdini = loadMerchOrdini;
+  window.filtraMerchOrdini = filtraMerchOrdini;
+  window.cambiaStatoOrdine = cambiaStatoOrdine;
+  window.loadMerchStats = loadMerchStats;
 
   window.togglePianoTifosi = function(piano, tr) {
     const existingDetail = tr.nextElementSibling
