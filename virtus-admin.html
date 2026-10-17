@@ -364,6 +364,10 @@ select.form-input:focus{border-color:var(--accent)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Catalogo FOP
     </div>
+    <div class="nav-item" onclick="showSection('merch-prodotti')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Merch / Prodotti
+    </div>
     <div class="nav-section">Analisi</div>
     <div class="nav-item" onclick="showSection('transazioni')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -493,6 +497,10 @@ select.form-input:focus{border-color:var(--accent)}
     <button class="tab-pill" onclick="showSection('fop-catalogo')" data-section="fop-catalogo">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Catalogo FOP
+    </button>
+    <button class="tab-pill" onclick="showSection('merch-prodotti')" data-section="merch-prodotti">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Merch
     </button>
     <div class="tab-sep"></div>
     <button class="tab-pill" onclick="showSection('transazioni')" data-section="transazioni">
@@ -1466,9 +1474,11 @@ select.form-input:focus{border-color:var(--accent)}
           <div class="card-title" id="op-scansioni-title">Scansioni operatore</div>
           <button class="btn btn-ghost btn-sm" onclick="esportaScansioni()">↓ CSV</button>
         </div>
-        <div class="card-body" style="padding:0">
-          <div id="op-scansioni-summary" style="display:flex;gap:12px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--border)"></div>
-          <div id="op-scansioni-list"></div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Gara</th><th>Tifoso</th><th>Piano</th><th>Ora ingresso</th></tr></thead>
+            <tbody id="op-scansioni-list"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1959,8 +1969,149 @@ select.form-input:focus{border-color:var(--accent)}
       </div>
     </div>
 
+    <!-- SEZIONE MERCH PRODOTTI -->
+    <div class="section" id="section-merch-prodotti">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--text)">🛍️ Merchandising — Prodotti</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px">Gestisci il catalogo prodotti visibile nella sezione merch della app</div>
+        </div>
+        <button class="btn btn-primary" onclick="apriFormMerch(null)">+ Aggiungi prodotto</button>
+      </div>
+
+      <!-- Filtri categoria -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button onclick="filtraMerchAdmin('tutti')" id="mf-tutti"
+          style="padding:6px 14px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+          Tutti
+        </button>
+        <button onclick="filtraMerchAdmin('abbigliamento')" id="mf-abbigliamento"
+          style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+          👕 Abbigliamento
+        </button>
+        <button onclick="filtraMerchAdmin('accessori')" id="mf-accessori"
+          style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+          🎒 Accessori
+        </button>
+        <button onclick="filtraMerchAdmin('gadget')" id="mf-gadget"
+          style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+          🎁 Gadget
+        </button>
+      </div>
+
+      <!-- Tabella prodotti -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
+                <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Prodotto</th>
+                <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Categoria</th>
+                <th style="padding:12px 16px;text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Prezzo</th>
+                <th style="padding:12px 16px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Disponibile</th>
+                <th style="padding:12px 16px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">In evidenza</th>
+                <th style="padding:12px 16px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Ordine</th>
+                <th style="padding:12px 16px;text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="merch-prodotti-tbody">
+              <tr><td colspan="7"><div class="empty"><div class="empty-icon">🛍️</div><p>Caricamento prodotti…</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /section-merch-prodotti -->
+
   </div><!-- /content -->
 </div><!-- /main -->
+
+<!-- MODAL: Merch prodotto -->
+<div class="modal-overlay" id="modal-merch-prodotto">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-merch-title">➕ Nuovo prodotto</div>
+      <button class="modal-close" onclick="closeModal('modal-merch-prodotto')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="merch-edit-id"/>
+      <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="form-group full" style="grid-column:1/-1">
+          <label>Nome prodotto *</label>
+          <input class="form-input" id="merch-nome" type="text" placeholder="Es. Felpa Virtus Molfetta"/>
+        </div>
+        <div class="form-group full" style="grid-column:1/-1">
+          <label>Descrizione</label>
+          <textarea class="form-input" id="merch-desc" rows="2" placeholder="Breve descrizione del prodotto" style="resize:vertical"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Categoria *</label>
+          <select class="form-input" id="merch-categoria">
+            <option value="">-- seleziona --</option>
+            <option value="abbigliamento">👕 Abbigliamento</option>
+            <option value="accessori">🎒 Accessori</option>
+            <option value="gadget">🎁 Gadget</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prezzo (€) *</label>
+          <input class="form-input" id="merch-prezzo" type="number" step="0.01" min="0" placeholder="0.00"/>
+        </div>
+        <div class="form-group">
+          <label>URL immagine</label>
+          <input class="form-input" id="merch-immagine" type="url" placeholder="https://…"/>
+        </div>
+        <div class="form-group">
+          <label>Ordine di visualizzazione</label>
+          <input class="form-input" id="merch-ordine" type="number" min="0" value="0"/>
+        </div>
+        <div class="form-group full" style="grid-column:1/-1">
+          <label>Taglie disponibili <span style="font-size:11px;color:var(--muted)">(separate da virgola, es. S,M,L,XL)</span></label>
+          <input class="form-input" id="merch-taglie" type="text" placeholder="Es. S, M, L, XL, XXL"/>
+        </div>
+        <div class="form-group full" style="grid-column:1/-1">
+          <label>Colori disponibili <span style="font-size:11px;color:var(--muted)">(separati da virgola)</span></label>
+          <input class="form-input" id="merch-colori" type="text" placeholder="Es. Blu, Bianco, Nero"/>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px">
+          <label style="margin:0;cursor:pointer">
+            <input type="checkbox" id="merch-disponibile" checked style="accent-color:var(--accent);width:16px;height:16px;margin-right:6px;vertical-align:middle"/>
+            Disponibile (visibile in app)
+          </label>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px">
+          <label style="margin:0;cursor:pointer">
+            <input type="checkbox" id="merch-evidenza" style="accent-color:var(--gold);width:16px;height:16px;margin-right:6px;vertical-align:middle"/>
+            In evidenza ⭐
+          </label>
+        </div>
+      </div>
+      <div id="merch-form-error" style="display:none;background:#fef2f2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-merch-prodotto')">Annulla</button>
+      <button class="btn btn-primary" id="merch-btn-salva" onclick="salvaProdottoAdmin()">Salva prodotto</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Conferma elimina merch -->
+<div class="modal-overlay" id="modal-merch-elimina">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">🗑️ Elimina prodotto</div>
+      <button class="modal-close" onclick="closeModal('modal-merch-elimina')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;color:var(--text)">Stai per eliminare <strong id="merch-elimina-nome"></strong>. L'operazione è irreversibile.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-merch-elimina')">Annulla</button>
+      <button class="btn btn-primary" style="background:#dc2626;border-color:#dc2626" id="merch-btn-elimina" onclick="confEliminaProdotto()">Elimina</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: Crea accesso partner esistente -->
 <div class="modal-overlay" id="modal-crea-accesso">
@@ -5580,6 +5731,7 @@ function showSection(name) {
   if (name === 'fop-catalogo')  { loadFopProdotti(); loadFopPianta() }
   if (name === 'comunicati-stampa') loadComunicatiStampa()
   if (name === 'classifica-presenze') loadClassificaPresenze()
+  if (name === 'merch-prodotti')    loadMerchProdotti()
 }
 
 // CLASSIFICA PRESENZE
@@ -7520,36 +7672,26 @@ let currentOpEmail = null
 let currentOpScansioni = []
 
 async function loadOperatori() {
-  // Carica utenti con ruolo operatore/cortesia/admin via RPC SECURITY DEFINER
-  const [{ data: ops, error }, { data: ruoliData }] = await Promise.all([
-    sbAdmin.rpc('get_operatori'),
-    sbAdmin.rpc('get_operatori_ruoli')
-  ])
+  // Carica utenti con ruolo operatore o operatore_pending via admin API
+  // Usa RPC SECURITY DEFINER per leggere auth.users senza permission denied
+  const { data: ops, error } = await sbAdmin.rpc('get_operatori')
 
   if (error) {
+    // Fallback: usa auth.users direttamente non è possibile via REST
+    // Mostra messaggio
     document.getElementById('operatori-list').innerHTML =
       '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Errore caricamento operatori: ' + error.message + '</td></tr>'
     return
   }
 
-  // Mappa id → ruolo per badge corretto
-  const ruoloMap = {}
-  ;(ruoliData || []).forEach(r => { ruoloMap[r.id] = r.ruolo })
-
   document.getElementById('operatori-list').innerHTML = (ops || []).map(op => {
-    const ruolo = ruoloMap[op.id] || 'operatore'
-    const badgeStyle = ruolo === 'cortesia'
-      ? 'background:#e8f0fe;color:#1a73e8;border:1px solid #c5d8fd'
-      : ruolo === 'admin'
-        ? 'background:#fce8e6;color:#c5221f;border:1px solid #f5c6c5'
-        : ''
-    const badgeClass = ruolo === 'operatore' ? 'badge badge-green' : 'badge'
+    const isActive = true // tutti quelli nella view hanno ruolo operatore
     const lastLogin = op.last_sign_in_at ? new Date(op.last_sign_in_at).toLocaleDateString('it-IT') : 'Mai'
     const creato = op.created_at ? new Date(op.created_at).toLocaleDateString('it-IT') : '—'
     return `<tr>
       <td style="font-size:13px">${op.email}</td>
-      <td style="font-size:13px">${((op.nome || '') + ' ' + (op.cognome || '')).trim() || '—'}</td>
-      <td><span class="${badgeClass}" style="${badgeStyle}">${ruolo}</span></td>
+      <td style="font-size:13px">${(op.nome || '') + ' ' + (op.cognome || '') || '—'}</td>
+      <td><span class="badge badge-green">operatore</span></td>
       <td style="font-size:11px;color:var(--muted)">${creato}</td>
       <td style="font-size:11px;color:var(--muted)">${lastLogin}</td>
       <td>
@@ -7721,81 +7863,16 @@ async function loadScansioni(email) {
 
   currentOpScansioni = data || []
 
-  const badgeMap = { Base:'badge-teal', Pro:'badge-amber', Premium:'badge-purple' }
-
-  if (!currentOpScansioni.length) {
-    document.getElementById('op-scansioni-summary').innerHTML = ''
-    document.getElementById('op-scansioni-list').innerHTML =
-      '<div style="text-align:center;color:var(--muted);padding:24px;font-size:13px">Nessuna scansione</div>'
-    document.getElementById('op-scansioni-card').scrollIntoView({ behavior: 'smooth' })
-    return
-  }
-
-  // Raggruppa per gara (mantieni ordine gara più recente prima)
-  const gareMap = new Map()
-  currentOpScansioni.forEach(ing => {
-    const key = ing.gara?.titolo || '—'
-    if (!gareMap.has(key)) gareMap.set(key, { titolo: key, data_ora: ing.gara?.data_ora, righe: [] })
-    gareMap.get(key).righe.push(ing)
-  })
-
-  // Totale generale
-  const totaleGenerale = currentOpScansioni.length
-  const totalePerPiano = {}
-  currentOpScansioni.forEach(ing => {
-    const p = ing.piano_nome || '—'
-    totalePerPiano[p] = (totalePerPiano[p] || 0) + 1
-  })
-
-  // Summary bar
-  const summaryPillsHTML = Object.entries(totalePerPiano)
-    .sort((a,b) => b[1]-a[1])
-    .map(([piano, n]) => `<span class="badge ${badgeMap[piano]||'badge-gray'}" style="font-size:12px;padding:4px 10px">${piano} <strong>${n}</strong></span>`)
-    .join('')
-  document.getElementById('op-scansioni-summary').innerHTML =
-    `<span style="font-size:13px;font-weight:700;color:var(--text);align-self:center">Totale: ${totaleGenerale} scansioni</span>
-     <span style="color:var(--border);align-self:center">|</span>
-     ${summaryPillsHTML}`
-
-  // Blocchi per gara
-  let html = ''
-  gareMap.forEach(({ titolo, data_ora, righe }) => {
-    const dataGara = data_ora ? new Date(data_ora).toLocaleDateString('it-IT', {day:'2-digit',month:'2-digit',year:'numeric'}) : ''
-    const pianoCount = {}
-    righe.forEach(r => { const p = r.piano_nome||'—'; pianoCount[p]=(pianoCount[p]||0)+1 })
-    const pianoSub = Object.entries(pianoCount)
-      .map(([p,n]) => `<span class="badge ${badgeMap[p]||'badge-gray'}" style="font-size:10px;padding:2px 7px">${p} ${n}</span>`)
-      .join(' ')
-
-    html += `
-      <div style="border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface);gap:8px;flex-wrap:wrap">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span style="font-size:13px;font-weight:700;color:var(--text)">${titolo}</span>
-            ${dataGara ? `<span style="font-size:11px;color:var(--muted)">${dataGara}</span>` : ''}
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            ${pianoSub}
-            <span style="font-size:12px;font-weight:700;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px 10px">${righe.length} tot.</span>
-          </div>
-        </div>
-        <table style="margin:0">
-          <thead><tr><th>Tifoso</th><th>Piano</th><th>Ora ingresso</th></tr></thead>
-          <tbody>
-            ${righe.map(ing => {
-              const ora = new Date(ing.registrato_il).toLocaleString('it-IT', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
-              return `<tr>
-                <td>${ing.tifoso ? ing.tifoso.nome + ' ' + ing.tifoso.cognome : '—'}</td>
-                <td><span class="badge ${badgeMap[ing.piano_nome]||'badge-gray'}">${ing.piano_nome||'—'}</span></td>
-                <td style="font-size:11px;color:var(--muted)">${ora}</td>
-              </tr>`
-            }).join('')}
-          </tbody>
-        </table>
-      </div>`
-  })
-
-  document.getElementById('op-scansioni-list').innerHTML = html
+  document.getElementById('op-scansioni-list').innerHTML = currentOpScansioni.map(ing => {
+    const ora = new Date(ing.registrato_il).toLocaleString('it-IT', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+    const badgeMap = { Base:'badge-teal', Pro:'badge-amber', Premium:'badge-purple' }
+    return `<tr>
+      <td style="font-size:12px">${ing.gara?.titolo || '—'}</td>
+      <td>${ing.tifoso ? ing.tifoso.nome + ' ' + ing.tifoso.cognome : '—'}</td>
+      <td><span class="badge ${badgeMap[ing.piano_nome]||'badge-gray'}">${ing.piano_nome||'—'}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${ora}</td>
+    </tr>`
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px">Nessuna scansione</td></tr>'
 
   // Scroll alla card
   document.getElementById('op-scansioni-card').scrollIntoView({ behavior: 'smooth' })
@@ -10124,7 +10201,206 @@ function chiudiModalComunicatoTesto() {
 
 // ════════════════════════════════════════════════════════════════════
 
+// ─── MERCH ADMIN ─────────────────────────────────────────────────────────────
+let _adminMerchAll = []
+let _adminMerchFiltro = 'tutti'
+let _adminMerchEliminaId = null
+
+async function loadMerchProdotti() {
+  const tbody = document.getElementById('merch-prodotti-tbody')
+  if (!tbody) return
+  tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">⏳</div><p>Caricamento…</p></div></td></tr>'
+  const { data, error } = await sbAdmin.from('prodotti_merch').select('*').order('ordine')
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">⚠️</div><p>Errore caricamento prodotti</p></div></td></tr>'
+    return
+  }
+  _adminMerchAll = data || []
+  renderMerchAdmin()
+}
+
+function filtraMerchAdmin(cat) {
+  _adminMerchFiltro = cat
+  ;['tutti','abbigliamento','accessori','gadget'].forEach(c => {
+    const btn = document.getElementById('mf-' + c)
+    if (!btn) return
+    if (c === cat) {
+      btn.style.background = 'var(--accent)'
+      btn.style.color = '#fff'
+      btn.style.borderColor = 'var(--accent)'
+    } else {
+      btn.style.background = 'transparent'
+      btn.style.color = 'var(--text)'
+      btn.style.borderColor = 'var(--border)'
+    }
+  })
+  renderMerchAdmin()
+}
+
+function renderMerchAdmin() {
+  const tbody = document.getElementById('merch-prodotti-tbody')
+  if (!tbody) return
+  const lista = _adminMerchFiltro === 'tutti'
+    ? _adminMerchAll
+    : _adminMerchAll.filter(p => p.categoria === _adminMerchFiltro)
+
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">🛍️</div><p>Nessun prodotto trovato</p></div></td></tr>'
+    return
+  }
+
+  const CAT_ICONA = { abbigliamento: '👕', accessori: '🎒', gadget: '🎁' }
+
+  tbody.innerHTML = lista.map(p => {
+    const taglie = (p.taglie || []).join(', ') || '—'
+    const colori = (p.colori || []).join(', ') || '—'
+    const imgHtml = p.immagine_url
+      ? `<img src="${p.immagine_url}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0" onerror="this.style.display='none'">`
+      : `<div style="width:36px;height:36px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${CAT_ICONA[p.categoria]||'🛍️'}</div>`
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:12px 16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          ${imgHtml}
+          <div>
+            <div style="font-weight:600;color:var(--text)">${p.nome}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Taglie: ${taglie} · Colori: ${colori}</div>
+          </div>
+        </div>
+      </td>
+      <td style="padding:12px 16px">
+        <span style="background:var(--bg);border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600">
+          ${CAT_ICONA[p.categoria]||''} ${(p.categoria||'').charAt(0).toUpperCase()+(p.categoria||'').slice(1)}
+        </span>
+      </td>
+      <td style="padding:12px 16px;text-align:right;font-weight:700;color:var(--accent)">€${Number(p.prezzo).toFixed(2)}</td>
+      <td style="padding:12px 16px;text-align:center">
+        <span onclick="toggleCampoMerch('${p.id}','disponibile',${!p.disponibile})"
+          style="cursor:pointer;font-size:18px" title="Clicca per cambiare">
+          ${p.disponibile ? '✅' : '❌'}
+        </span>
+      </td>
+      <td style="padding:12px 16px;text-align:center">
+        <span onclick="toggleCampoMerch('${p.id}','in_evidenza',${!p.in_evidenza})"
+          style="cursor:pointer;font-size:18px" title="Clicca per cambiare">
+          ${p.in_evidenza ? '⭐' : '☆'}
+        </span>
+      </td>
+      <td style="padding:12px 16px;text-align:center;color:var(--muted);font-size:13px">${p.ordine ?? 0}</td>
+      <td style="padding:12px 16px;text-align:right">
+        <div style="display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" onclick="apriFormMerch('${p.id}')">✏️ Modifica</button>
+          <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#dc2626" onclick="chiediEliminaMerch('${p.id}','${p.nome.replace(/'/g, "\'")}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`
+  }).join('')
+}
+
+function apriFormMerch(id) {
+  const p = id ? _adminMerchAll.find(x => x.id === id) : null
+  document.getElementById('merch-edit-id').value = id || ''
+  document.getElementById('modal-merch-title').textContent = p ? '✏️ Modifica prodotto' : '➕ Nuovo prodotto'
+  document.getElementById('merch-nome').value = p ? p.nome : ''
+  document.getElementById('merch-desc').value = p ? (p.descrizione || '') : ''
+  document.getElementById('merch-categoria').value = p ? (p.categoria || '') : ''
+  document.getElementById('merch-prezzo').value = p ? p.prezzo : ''
+  document.getElementById('merch-immagine').value = p ? (p.immagine_url || '') : ''
+  document.getElementById('merch-ordine').value = p ? (p.ordine ?? 0) : 0
+  document.getElementById('merch-taglie').value = p ? (p.taglie || []).join(', ') : ''
+  document.getElementById('merch-colori').value = p ? (p.colori || []).join(', ') : ''
+  document.getElementById('merch-disponibile').checked = p ? !!p.disponibile : true
+  document.getElementById('merch-evidenza').checked = p ? !!p.in_evidenza : false
+  document.getElementById('merch-form-error').style.display = 'none'
+  openModal('modal-merch-prodotto')
+}
+
+async function salvaProdottoAdmin() {
+  const btn = document.getElementById('merch-btn-salva')
+  const errDiv = document.getElementById('merch-form-error')
+  errDiv.style.display = 'none'
+
+  const nome = document.getElementById('merch-nome').value.trim()
+  const categoria = document.getElementById('merch-categoria').value
+  const prezzoRaw = document.getElementById('merch-prezzo').value
+
+  if (!nome) { errDiv.textContent = 'Il nome è obbligatorio.'; errDiv.style.display = 'block'; return }
+  if (!categoria) { errDiv.textContent = 'Seleziona una categoria.'; errDiv.style.display = 'block'; return }
+  if (!prezzoRaw || isNaN(parseFloat(prezzoRaw))) { errDiv.textContent = 'Inserisci un prezzo valido.'; errDiv.style.display = 'block'; return }
+
+  const parseTag = v => v.split(',').map(s => s.trim()).filter(Boolean)
+
+  const payload = {
+    nome,
+    descrizione: document.getElementById('merch-desc').value.trim() || null,
+    categoria,
+    prezzo: parseFloat(prezzoRaw),
+    immagine_url: document.getElementById('merch-immagine').value.trim() || null,
+    ordine: parseInt(document.getElementById('merch-ordine').value) || 0,
+    taglie: parseTag(document.getElementById('merch-taglie').value),
+    colori: parseTag(document.getElementById('merch-colori').value),
+    disponibile: document.getElementById('merch-disponibile').checked,
+    in_evidenza: document.getElementById('merch-evidenza').checked
+  }
+
+  btn.disabled = true
+  btn.textContent = 'Salvataggio…'
+
+  const editId = document.getElementById('merch-edit-id').value
+  let error
+  if (editId) {
+    ;({ error } = await sbAdmin.from('prodotti_merch').update(payload).eq('id', editId))
+  } else {
+    ;({ error } = await sbAdmin.from('prodotti_merch').insert(payload))
+  }
+
+  btn.disabled = false
+  btn.textContent = 'Salva prodotto'
+
+  if (error) {
+    errDiv.textContent = 'Errore: ' + error.message
+    errDiv.style.display = 'block'
+    return
+  }
+
+  closeModal('modal-merch-prodotto')
+  showToast(editId ? 'Prodotto aggiornato ✓' : 'Prodotto aggiunto ✓')
+  await loadMerchProdotti()
+}
+
+async function toggleCampoMerch(id, campo, val) {
+  const upd = {}
+  upd[campo] = val
+  const { error } = await sbAdmin.from('prodotti_merch').update(upd).eq('id', id)
+  if (error) { showToast('Errore aggiornamento'); return }
+  // aggiorna localmente senza reload completo
+  const p = _adminMerchAll.find(x => x.id === id)
+  if (p) p[campo] = val
+  renderMerchAdmin()
+}
+
+function chiediEliminaMerch(id, nome) {
+  _adminMerchEliminaId = id
+  document.getElementById('merch-elimina-nome').textContent = nome
+  openModal('modal-merch-elimina')
+}
+
+async function confEliminaProdotto() {
+  if (!_adminMerchEliminaId) return
+  const btn = document.getElementById('merch-btn-elimina')
+  btn.disabled = true
+  btn.textContent = 'Eliminazione…'
+  const { error } = await sbAdmin.from('prodotti_merch').delete().eq('id', _adminMerchEliminaId)
+  btn.disabled = false
+  btn.textContent = 'Elimina'
+  if (error) { showToast('Errore eliminazione'); return }
+  closeModal('modal-merch-elimina')
+  showToast('Prodotto eliminato')
+  _adminMerchEliminaId = null
+  await loadMerchProdotti()
+}
+
 </script>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -10159,6 +10435,13 @@ document.addEventListener('DOMContentLoaded', function() {
   window.esportaSciarpeInProduzione = esportaSciarpeInProduzione;
   window.copiaSciarpeClipboard = copiaSciarpeClipboard;
   window.loadMsReport = loadMsReport;
+  window.loadMerchProdotti = loadMerchProdotti;
+  window.apriFormMerch = apriFormMerch;
+  window.salvaProdottoAdmin = salvaProdottoAdmin;
+  window.toggleCampoMerch = toggleCampoMerch;
+  window.chiediEliminaMerch = chiediEliminaMerch;
+  window.confEliminaProdotto = confEliminaProdotto;
+  window.filtraMerchAdmin = filtraMerchAdmin;
 
   window.togglePianoTifosi = function(piano, tr) {
     const existingDetail = tr.nextElementSibling
