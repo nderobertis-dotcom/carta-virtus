@@ -10504,16 +10504,21 @@ function apriFormMerch(id) {
   document.getElementById('merch-img-file').value = ''
   document.getElementById('merch-img-filename').textContent = 'Nessun file selezionato'
   document.getElementById('merch-img-progress').style.display = 'none'
+  const imgEl = document.getElementById('merch-img-preview')
+  const imgPlaceholder = document.getElementById('merch-img-placeholder')
+  const imgCurrent = document.getElementById('merch-img-current')
   if (p && p.immagine_url) {
-    document.getElementById('merch-img-preview').src = p.immagine_url
-    document.getElementById('merch-img-preview').style.display = 'block'
-    document.getElementById('merch-img-placeholder').style.display = 'none'
-    document.getElementById('merch-img-current').style.display = 'block'
+    imgEl.src = ''                        // reset forzato per evitare cache stuck
+    imgEl.src = p.immagine_url
+    imgEl.style.display = 'block'
+    imgPlaceholder.style.display = 'none'
+    imgCurrent.style.display = 'block'
     document.getElementById('merch-img-current-link').href = p.immagine_url
   } else {
-    document.getElementById('merch-img-preview').style.display = 'none'
-    document.getElementById('merch-img-placeholder').style.display = 'block'
-    document.getElementById('merch-img-current').style.display = 'none'
+    imgEl.src = ''
+    imgEl.style.display = 'none'
+    imgPlaceholder.style.display = 'block'
+    imgCurrent.style.display = 'none'
   }
   document.getElementById('merch-ordine').value = p ? (p.ordine ?? 0) : 0
   document.getElementById('merch-taglie').value = p ? (p.taglie || []).join(', ') : ''
