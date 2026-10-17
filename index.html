@@ -3520,7 +3520,7 @@ function ordinaProdotto(id) {
     '<div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Nome da stampare</label>' +
     '<input type="text" id="modal-pers-nome" placeholder="Es. ROSSI" maxlength="20" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:Barlow,sans-serif;color:var(--text);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>' +
     '<div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Numero</label>' +
-    '<input type="text" id="modal-pers-numero" placeholder="Es. 10" maxlength="3" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:Barlow,sans-serif;color:var(--text);text-align:center" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>' +
+    '<input type="text" id="modal-pers-numero" placeholder="Es. 10" maxlength="3" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:Barlow,sans-serif;color:var(--text);text-align:center" oninput="this.value=this.value.replace(/[^0-9]/g,\x27\x27)"></div>' +
     '</div>' +
     '<div style="font-size:11px;color:#ea580c;margin-top:8px;font-style:italic">⚠️ La personalizzazione potrebbe comportare un costo aggiuntivo — sarai contattato per conferma.</div>' +
     '</div>' +
