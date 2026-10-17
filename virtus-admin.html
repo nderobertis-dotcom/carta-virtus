@@ -1972,12 +1972,28 @@ select.form-input:focus{border-color:var(--accent)}
     <!-- SEZIONE MERCH PRODOTTI -->
     <div class="section" id="section-merch-prodotti">
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
         <div>
           <div style="font-size:18px;font-weight:700;color:var(--text)">🛍️ Merchandising — Prodotti</div>
           <div style="font-size:13px;color:var(--muted);margin-top:2px">Gestisci il catalogo prodotti visibile nella sezione merch della app</div>
         </div>
         <button class="btn btn-primary" onclick="apriFormMerch(null)">+ Aggiungi prodotto</button>
+      </div>
+
+      <!-- Toggle sezione globale -->
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:18px">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">Sezione merch visibile in app</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Se disattivata, la sezione 🛍️ Merch non appare affatto ai tifosi</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
+          <span id="merch-attivo-label" style="font-size:13px;font-weight:600;color:var(--muted)">—</span>
+          <div onclick="toggleMerchAttivo()" id="merch-attivo-toggle"
+            style="width:44px;height:24px;border-radius:12px;background:#ccc;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0">
+            <div id="merch-attivo-knob"
+              style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+          </div>
+        </label>
       </div>
 
       <!-- Filtri categoria -->
@@ -10205,10 +10221,44 @@ function chiudiModalComunicatoTesto() {
 let _adminMerchAll = []
 let _adminMerchFiltro = 'tutti'
 let _adminMerchEliminaId = null
+let _adminMerchAttivo = true  // stato locale del toggle globale
+
+function aggiornaMerchToggleUI(attivo) {
+  const tog = document.getElementById('merch-attivo-toggle')
+  const knob = document.getElementById('merch-attivo-knob')
+  const lbl = document.getElementById('merch-attivo-label')
+  if (!tog) return
+  tog.style.background = attivo ? 'var(--accent)' : '#ccc'
+  knob.style.left = attivo ? '22px' : '2px'
+  lbl.textContent = attivo ? 'Attiva' : 'Disattiva'
+  lbl.style.color = attivo ? 'var(--accent)' : 'var(--muted)'
+}
+
+async function toggleMerchAttivo() {
+  const nuovo = !_adminMerchAttivo
+  aggiornaMerchToggleUI(nuovo)  // ottimistico
+  const { error } = await sbAdmin
+    .from('impostazioni')
+    .update({ valore: nuovo ? 'true' : 'false' })
+    .eq('chiave', 'merch_attivo')
+  if (error) {
+    aggiornaMerchToggleUI(_adminMerchAttivo)  // ripristina
+    showToast('Errore aggiornamento impostazione')
+    return
+  }
+  _adminMerchAttivo = nuovo
+  showToast(nuovo ? 'Sezione merch attivata ✓' : 'Sezione merch disattivata')
+}
 
 async function loadMerchProdotti() {
   const tbody = document.getElementById('merch-prodotti-tbody')
   if (!tbody) return
+  // Carica stato toggle globale
+  const { data: imp } = await sbAdmin.from('impostazioni').select('valore').eq('chiave', 'merch_attivo').single()
+  if (imp) {
+    _adminMerchAttivo = imp.valore === 'true'
+    aggiornaMerchToggleUI(_adminMerchAttivo)
+  }
   tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">⏳</div><p>Caricamento…</p></div></td></tr>'
   const { data, error } = await sbAdmin.from('prodotti_merch').select('*').order('ordine')
   if (error) {
@@ -10442,6 +10492,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.chiediEliminaMerch = chiediEliminaMerch;
   window.confEliminaProdotto = confEliminaProdotto;
   window.filtraMerchAdmin = filtraMerchAdmin;
+  window.toggleMerchAttivo = toggleMerchAttivo;
 
   window.togglePianoTifosi = function(piano, tr) {
     const existingDetail = tr.nextElementSibling

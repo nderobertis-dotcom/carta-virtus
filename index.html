@@ -785,7 +785,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
   <strong>VIRTUS FAN CARD — Nuova Virtus Basket Molfetta</strong>
   Programma fedelta ufficiale · Stagione 2026/2027
   <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <a href="#merch" onclick="document.getElementById('merch').scrollIntoView({behavior:'smooth'});return false" style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,124,0,.2);border:1px solid rgba(245,124,0,.35);color:#ff9800;padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(245,124,0,.35)'" onmouseout="this.style.background='rgba(245,124,0,.2)'">
+    <a id="footer-link-merch" href="#merch" onclick="document.getElementById('merch').scrollIntoView({behavior:'smooth'});return false" style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,124,0,.2);border:1px solid rgba(245,124,0,.35);color:#ff9800;padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(245,124,0,.35)'" onmouseout="this.style.background='rgba(245,124,0,.2)'">
       🛍️ Merch
     </a>
     <a href="partner.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.18)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.7)'">
@@ -3350,6 +3350,16 @@ const MERCH_SCONTO = { 'Bronze':5, 'Silver':10, 'Gold':15, 'Base':0, 'base':0 }
 
 async function loadMerch() {
   try {
+    // Controlla se la sezione merch è attiva globalmente
+    const { data: imp } = await sb.from('impostazioni').select('valore').eq('chiave', 'merch_attivo').single()
+    if (imp && imp.valore !== 'true') {
+      // Sezione disattivata dall'admin — nasconde tutto incluso il link footer
+      const sec = document.getElementById('merch')
+      if (sec) sec.style.display = 'none'
+      const lnk = document.getElementById('footer-link-merch')
+      if (lnk) lnk.style.display = 'none'
+      return
+    }
     const { data, error } = await sb.from('prodotti_merch').select('*').order('ordine')
     if (error) throw error
     _merchProdotti = data || []
@@ -3526,7 +3536,7 @@ function inviaOrdineWhatsapp() {
   if (note) testo += '\nNote: ' + note + '\n'
   testo += '\nFan Card: ' + piano
 
-  const numero = '393494043455'
+  const numero = '393345820200'
   window.open('https://wa.me/' + numero + '?text=' + encodeURIComponent(testo), '_blank')
   chiudiModalMerch()
   toast('Reindirizzamento a WhatsApp…', 'success')
