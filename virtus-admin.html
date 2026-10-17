@@ -7522,26 +7522,36 @@ let currentOpEmail = null
 let currentOpScansioni = []
 
 async function loadOperatori() {
-  // Carica utenti con ruolo operatore o operatore_pending via admin API
-  // Usa RPC SECURITY DEFINER per leggere auth.users senza permission denied
-  const { data: ops, error } = await sbAdmin.rpc('get_operatori')
+  // Carica utenti con ruolo operatore/cortesia/admin via RPC SECURITY DEFINER
+  const [{ data: ops, error }, { data: ruoliData }] = await Promise.all([
+    sbAdmin.rpc('get_operatori'),
+    sbAdmin.rpc('get_operatori_ruoli')
+  ])
 
   if (error) {
-    // Fallback: usa auth.users direttamente non è possibile via REST
-    // Mostra messaggio
     document.getElementById('operatori-list').innerHTML =
       '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Errore caricamento operatori: ' + error.message + '</td></tr>'
     return
   }
 
+  // Mappa id → ruolo per badge corretto
+  const ruoloMap = {}
+  ;(ruoliData || []).forEach(r => { ruoloMap[r.id] = r.ruolo })
+
   document.getElementById('operatori-list').innerHTML = (ops || []).map(op => {
-    const isActive = true // tutti quelli nella view hanno ruolo operatore
+    const ruolo = ruoloMap[op.id] || 'operatore'
+    const badgeStyle = ruolo === 'cortesia'
+      ? 'background:#e8f0fe;color:#1a73e8;border:1px solid #c5d8fd'
+      : ruolo === 'admin'
+        ? 'background:#fce8e6;color:#c5221f;border:1px solid #f5c6c5'
+        : ''
+    const badgeClass = ruolo === 'operatore' ? 'badge badge-green' : 'badge'
     const lastLogin = op.last_sign_in_at ? new Date(op.last_sign_in_at).toLocaleDateString('it-IT') : 'Mai'
     const creato = op.created_at ? new Date(op.created_at).toLocaleDateString('it-IT') : '—'
     return `<tr>
       <td style="font-size:13px">${op.email}</td>
-      <td style="font-size:13px">${(op.nome || '') + ' ' + (op.cognome || '') || '—'}</td>
-      <td><span class="badge badge-green">operatore</span></td>
+      <td style="font-size:13px">${((op.nome || '') + ' ' + (op.cognome || '')).trim() || '—'}</td>
+      <td><span class="${badgeClass}" style="${badgeStyle}">${ruolo}</span></td>
       <td style="font-size:11px;color:var(--muted)">${creato}</td>
       <td style="font-size:11px;color:var(--muted)">${lastLogin}</td>
       <td>
