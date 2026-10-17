@@ -867,6 +867,17 @@ async function verificaIngresso(qr) {
 
   const pianoNome = memb.piano?.nome || '—'
 
+  // ── Operatore CORTESIA: solo verifica visiva, nessun ingresso registrato ──
+  // Viene eseguito prima di qualsiasi altro controllo: il cortesia deve vedere
+  // sempre nome, piano e cancelli consentiti, indipendentemente dallo stato ingresso.
+  if (isOperatoreCortesia) {
+    const cancConsentiti = cancellatiPerPiano(pianoNome)
+    mostraRisultato('cortesia', '👁️', 'VERIFICA — ' + (tifoso.nome + ' ' + tifoso.cognome).toUpperCase(),
+      `Piano: <strong>${pianoNome}</strong> · Accessi consentiti: <strong>${cancConsentiti.join(', ')}</strong>`,
+      pianoNome, 0, false, null, false, null, cancConsentiti)
+    return
+  }
+
   // Controlla accesso già effettuato (unique constraint)
   const { data: giaEntrato } = await sbA.from('ingressi_gare')
     .select('id, registrato_il')
@@ -879,15 +890,6 @@ async function verificaIngresso(qr) {
     mostraRisultato('err', '🔴', 'GIÀ ENTRATO',
       tifoso.nome + ' ' + tifoso.cognome + ' ha già effettuato l\'ingresso alle <strong>' + ora_ingresso + '</strong>.',
       pianoNome)
-    return
-  }
-
-  // ── Operatore CORTESIA: solo verifica visiva, nessun ingresso registrato ──
-  if (isOperatoreCortesia) {
-    const cancConsentiti = cancellatiPerPiano(pianoNome)
-    mostraRisultato('cortesia', '👁️', 'VERIFICA — ' + (tifoso.nome + ' ' + tifoso.cognome).toUpperCase(),
-      `Piano: <strong>${pianoNome}</strong> · Accessi consentiti: <strong>${cancConsentiti.join(', ')}</strong>`,
-      pianoNome, 0, false, null, false, null, cancConsentiti)
     return
   }
 
