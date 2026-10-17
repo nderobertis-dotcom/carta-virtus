@@ -2061,6 +2061,10 @@ select.form-input:focus{border-color:var(--accent)}
               style="padding:5px 12px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
               Tutti
             </button>
+            <button onclick="filtraMerchOrdini('in_attesa_pagamento')" id="mo-in_attesa_pagamento"
+              style="padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+              ⏳ In attesa
+            </button>
             <button onclick="filtraMerchOrdini('nuovo')" id="mo-nuovo"
               style="padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
               🆕 Nuovo
@@ -2096,8 +2100,9 @@ select.form-input:focus{border-color:var(--accent)}
                   <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Cliente</th>
                   <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Prodotto</th>
                   <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Dettagli</th>
+                  <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Pers.</th>
                   <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Totale</th>
-                  <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Piano</th>
+                  <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Piano / Pag.</th>
                   <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Stato</th>
                 </tr>
               </thead>
@@ -10586,6 +10591,7 @@ let _adminMerchOrdini    = []
 let _adminMerchOrdFiltro = 'tutti'
 
 const STATO_BADGE = {
+  in_attesa_pagamento: { color:'#7c3aed', bg:'#f5f3ff', label:'⏳ In attesa pagamento' },
   nuovo:      { color:'#ea580c', bg:'#fff7ed', label:'Nuovo' },
   confermato: { color:'#16a34a', bg:'#f0fdf4', label:'Confermato' },
   pronto:     { color:'#1565c0', bg:'#e8f0fe', label:'Pronto' },
@@ -10643,8 +10649,14 @@ function renderMerchOrdini() {
     const oraStr  = d.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
     const b = STATO_BADGE[o.stato] || { color:'#666', bg:'#f3f4f6', label: o.stato }
     const det = [o.taglia && 'T: '+o.taglia, o.colore && 'C: '+o.colore, o.note].filter(Boolean).join(' · ')
-    const statoOpts = ['nuovo','confermato','pronto','consegnato','annullato']
-      .map(s => `<option value="${s}" ${s === o.stato ? 'selected' : ''}>${s}</option>`).join('')
+    const statoOpts = ['in_attesa_pagamento','nuovo','confermato','pronto','consegnato','annullato']
+      .map(s => { const sl = STATO_BADGE[s]?.label || s; return `<option value="${s}" ${s === o.stato ? 'selected' : ''}>${sl}</option>` }).join('')
+    const persHtml = o.personalizzato
+      ? `<span style="font-size:11px;font-weight:700;color:#7c3aed;white-space:nowrap;line-height:1.6">✏️ Sì${o.pers_nome ? '<br>'+escHtml(o.pers_nome) : ''}${o.pers_numero ? ' #'+escHtml(o.pers_numero) : ''}</span>`
+      : '<span style="font-size:11px;color:var(--muted)">—</span>'
+    const pagHtml = o.metodo_pagamento === 'stripe'
+      ? '<span style="font-size:10px;font-weight:700;color:#6366f1">💳 Stripe</span>'
+      : '<span style="font-size:10px;color:var(--muted)">📱 WA</span>'
     return `<tr style="border-bottom:1px solid var(--border)">
       <td style="padding:10px 14px;font-size:12px;color:var(--muted);white-space:nowrap">${dataStr}<br><span style="font-size:11px">${oraStr}</span></td>
       <td style="padding:10px 14px">
@@ -10657,11 +10669,12 @@ function renderMerchOrdini() {
         <div style="font-size:11px;color:var(--muted)">${escHtml(o.categoria||'')}</div>
       </td>
       <td style="padding:10px 14px;font-size:12px;color:var(--muted)">${escHtml(det)||'—'}</td>
+      <td style="padding:10px 14px;text-align:center">${persHtml}</td>
       <td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--text);white-space:nowrap">
         € ${parseFloat(o.prezzo_finale||0).toFixed(2).replace('.',',')}
         ${o.sconto_pct > 0 ? '<br><span style="font-size:10px;color:#16a34a">-'+o.sconto_pct+'%</span>' : ''}
       </td>
-      <td style="padding:10px 14px;font-size:12px;color:var(--muted)">${escHtml(o.piano||'Base')}</td>
+      <td style="padding:10px 14px;font-size:12px;color:var(--muted)">${escHtml(o.piano||'Base')}<br>${pagHtml}</td>
       <td style="padding:10px 14px;text-align:center">
         <select onchange="cambiaStatoOrdine('${o.id}', this.value)"
           style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid ${b.color};background:${b.bg};color:${b.color};font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;outline:none">

@@ -2640,11 +2640,17 @@ window.addEventListener('load', async () => {
   const urlParams = new URLSearchParams(window.location.search)
   const paymentStatus = urlParams.get('payment')
   if (paymentStatus === 'success') {
-    // Rimuovi parametro dall'URL
     window.history.replaceState({}, '', window.location.pathname)
-    // Mostra toast di successo dopo un breve delay (attendi che la pagina carichi)
+    const tipoRitorno = urlParams.get('tipo')
     setTimeout(() => {
-      toast('🎉 Pagamento completato! Il tuo account è stato attivato.', 'success')
+      if (tipoRitorno === 'merch') {
+        toast('🎉 Pagamento ricevuto! Il tuo ordine merch è confermato.', 'success')
+        // Scorri alla sezione merch
+        const sec = document.getElementById('merch')
+        if (sec) setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400)
+      } else {
+        toast('🎉 Pagamento completato! Il tuo account è stato attivato.', 'success')
+      }
     }, 1500)
   } else if (paymentStatus === 'cancel') {
     window.history.replaceState({}, '', window.location.pathname)
@@ -3501,6 +3507,25 @@ function ordinaProdotto(id) {
     scontoHtml = '<div style="background:#e8f5e9;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#2e7d32;font-weight:600">🏷️ Sconto Fan Card ' + piano + ': -' + sconto + '% → <strong>€ ' + prezzo.toFixed(2).replace('.',',') + '</strong></div>'
   }
 
+  // Sezione personalizzazione (nome+numero da stampare sul prodotto)
+  const persHtml =
+    '<div style="background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px" id="merch-pers-box">' +
+    '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;margin-bottom:0" id="merch-pers-toggle-label">' +
+    '<input type="checkbox" id="modal-merch-pers" onchange="togglePersForm(this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--blu2)">' +
+    '<span style="font-size:13px;font-weight:700;color:var(--text)">✏️ Personalizza con nome e numero</span>' +
+    '</label>' +
+    '<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-left:28px">Es. nome e numero stampati sulla maglia, t-shirt, portachiavi…</div>' +
+    '<div id="merch-pers-form" style="display:none;margin-top:12px">' +
+    '<div style="display:grid;grid-template-columns:1fr 80px;gap:10px">' +
+    '<div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Nome da stampare</label>' +
+    '<input type="text" id="modal-pers-nome" placeholder="Es. ROSSI" maxlength="20" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:Barlow,sans-serif;color:var(--text);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>' +
+    '<div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Numero</label>' +
+    '<input type="text" id="modal-pers-numero" placeholder="Es. 10" maxlength="3" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:Barlow,sans-serif;color:var(--text);text-align:center" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#ea580c;margin-top:8px;font-style:italic">⚠️ La personalizzazione potrebbe comportare un costo aggiuntivo — sarai contattato per conferma.</div>' +
+    '</div>' +
+    '</div>'
+
   document.getElementById('modal-merch-content').innerHTML =
     '<div style="text-align:center;font-size:48px;margin-bottom:12px">' + (MERCH_ICONE[p.categoria]||'🏀') + '</div>' +
     '<div style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:800;color:var(--blu);text-transform:uppercase;margin-bottom:6px">' + p.nome + '</div>' +
@@ -3511,8 +3536,10 @@ function ordinaProdotto(id) {
     '<div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Il tuo nome *</label><input type="text" id="modal-merch-nome" placeholder="Es. Mario Rossi" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:Barlow,sans-serif;color:var(--text)"></div>' +
     '<div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Il tuo numero WhatsApp *</label><input type="tel" id="modal-merch-tel" placeholder="Es. 3391234567" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:Barlow,sans-serif;color:var(--text)"></div>' +
     '<div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Quantità</label><input type="number" id="modal-merch-qty" value="1" min="1" max="10" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:Barlow,sans-serif;color:var(--text)"></div>' +
+    persHtml +
     '<div style="margin-bottom:18px"><label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Note (opzionale)</label><textarea id="modal-merch-note" rows="2" placeholder="Es. per ritiro in biglietteria..." style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:Barlow,sans-serif;color:var(--text);resize:vertical"></textarea></div>' +
-    '<button onclick="inviaOrdineWhatsapp()" style="width:100%;background:#25d366;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">📱 Ordina via WhatsApp</button>' +
+    '<button onclick="pagaConStripe()" style="width:100%;background:var(--blu2);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px" id="btn-merch-stripe">💳 Paga con Stripe</button>' +
+    '<button onclick="inviaOrdineWhatsapp()" style="width:100%;background:#25d366;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:Barlow,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px" id="btn-merch-wa">📱 Ordina via WhatsApp (paga al ritiro)</button>' +
     '<div style="text-align:center;font-size:11px;color:var(--muted)">Ritiro in biglietteria · PalaPoli Molfetta</div>'
 
   document.getElementById('modal-merch-ordine').style.display = 'flex'
@@ -3523,62 +3550,87 @@ function chiudiModalMerch() {
   _prodottoSelezionato = null
 }
 
-async function inviaOrdineWhatsapp() {
-  if (!_prodottoSelezionato) return
+function togglePersForm(checked) {
+  const form = document.getElementById('merch-pers-form')
+  if (form) form.style.display = checked ? 'block' : 'none'
+}
+
+// Raccoglie tutti i dati del form merch (usato da Stripe e WA)
+function raccogliDatiOrdine() {
   const p = _prodottoSelezionato
+  if (!p) return null
   const piano = (typeof pianoNome !== 'undefined') ? pianoNome : 'Base'
   const sconto = MERCH_SCONTO[piano] || 0
   const prezzoBase = parseFloat(p.prezzo)
-  const prezzo = sconto > 0 ? (prezzoBase * (1 - sconto / 100)) : prezzoBase
+  const prezzoUnit = sconto > 0 ? parseFloat((prezzoBase * (1 - sconto / 100)).toFixed(2)) : prezzoBase
 
-  const tagliaEl  = document.getElementById('modal-merch-taglia')
-  const coloreEl  = document.getElementById('modal-merch-colore')
-  const qtyEl     = document.getElementById('modal-merch-qty')
-  const noteEl    = document.getElementById('modal-merch-note')
-  const nomeEl    = document.getElementById('modal-merch-nome')
-  const telEl     = document.getElementById('modal-merch-tel')
+  const taglia      = (document.getElementById('modal-merch-taglia')?.value || '').trim()
+  const colore      = (document.getElementById('modal-merch-colore')?.value || '').trim()
+  const qty         = parseInt(document.getElementById('modal-merch-qty')?.value) || 1
+  const note        = (document.getElementById('modal-merch-note')?.value || '').trim()
+  const nomeCliente = (document.getElementById('modal-merch-nome')?.value || '').trim()
+  const telCliente  = (document.getElementById('modal-merch-tel')?.value || '').trim()
+  const persCheck   = document.getElementById('modal-merch-pers')?.checked || false
+  const persNome    = persCheck ? (document.getElementById('modal-pers-nome')?.value || '').trim() : ''
+  const persNumero  = persCheck ? (document.getElementById('modal-pers-numero')?.value || '').trim() : ''
 
-  const taglia    = tagliaEl  ? tagliaEl.value.trim()    : ''
-  const colore    = coloreEl  ? coloreEl.value.trim()    : ''
-  const qty       = qtyEl     ? parseInt(qtyEl.value) || 1 : 1
-  const note      = noteEl    ? noteEl.value.trim()      : ''
-  const nomeCliente = nomeEl  ? nomeEl.value.trim()      : ''
-  const telCliente  = telEl   ? telEl.value.trim()       : ''
+  // Validazioni
+  if (p.taglie && p.taglie.length > 0 && !taglia) { alert('Seleziona la taglia prima di procedere'); return null }
+  if (p.colori && p.colori.length > 0 && !colore) { alert('Seleziona il colore prima di procedere'); return null }
+  if (!nomeCliente) { alert('Inserisci il tuo nome'); document.getElementById('modal-merch-nome')?.focus(); return null }
+  if (!telCliente)  { alert('Inserisci il tuo numero WhatsApp'); document.getElementById('modal-merch-tel')?.focus(); return null }
 
-  if (p.taglie && p.taglie.length > 0 && !taglia) { alert('Seleziona la taglia prima di procedere'); return }
-  if (p.colori && p.colori.length > 0 && !colore) { alert('Seleziona il colore prima di procedere'); return }
-  if (!nomeCliente) { alert('Inserisci il tuo nome'); nomeEl && nomeEl.focus(); return }
-  if (!telCliente) { alert('Inserisci il tuo numero WhatsApp'); telEl && telEl.focus(); return }
+  return {
+    p, piano, sconto, prezzoBase, prezzoUnit, qty,
+    taglia, colore, note, nomeCliente, telCliente,
+    personalizzato: persCheck,
+    persNome, persNumero,
+    prezzoFinale: parseFloat((prezzoUnit * qty).toFixed(2))
+  }
+}
+
+async function inviaOrdineWhatsapp() {
+  const d = raccogliDatiOrdine()
+  if (!d) return
 
   let testo = '\u{1F6CD} ORDINE MERCHANDISING VIRTUS\n\n'
-  testo += 'Nome: ' + nomeCliente + '\n'
-  testo += 'Numero: ' + telCliente + '\n'
-  testo += '\nProdotto: ' + p.nome + '\n'
-  if (taglia) testo += 'Taglia: ' + taglia + '\n'
-  if (colore) testo += 'Colore: ' + colore + '\n'
-  testo += 'Quantità: ' + qty + '\n'
-  testo += 'Prezzo unitario: € ' + prezzo.toFixed(2).replace('.',',') + '\n'
-  if (sconto > 0) testo += 'Sconto Fan Card ' + piano + ': -' + sconto + '%\n'
-  testo += 'Totale: € ' + (prezzo * qty).toFixed(2).replace('.',',') + '\n'
-  if (note) testo += '\nNote: ' + note + '\n'
-  testo += '\nFan Card: ' + piano
+  testo += 'Nome: ' + d.nomeCliente + '\n'
+  testo += 'Numero: ' + d.telCliente + '\n'
+  testo += '\nProdotto: ' + d.p.nome + '\n'
+  if (d.taglia) testo += 'Taglia: ' + d.taglia + '\n'
+  if (d.colore) testo += 'Colore: ' + d.colore + '\n'
+  testo += 'Quantità: ' + d.qty + '\n'
+  testo += 'Prezzo unitario: € ' + d.prezzoUnit.toFixed(2).replace('.',',') + '\n'
+  if (d.sconto > 0) testo += 'Sconto Fan Card ' + d.piano + ': -' + d.sconto + '%\n'
+  testo += 'Totale: € ' + d.prezzoFinale.toFixed(2).replace('.',',') + '\n'
+  if (d.personalizzato) {
+    testo += '\n✏️ PERSONALIZZAZIONE RICHIESTA\n'
+    if (d.persNome)   testo += 'Nome da stampare: ' + d.persNome + '\n'
+    if (d.persNumero) testo += 'Numero da stampare: ' + d.persNumero + '\n'
+  }
+  if (d.note) testo += '\nNote: ' + d.note + '\n'
+  testo += '\nFan Card: ' + d.piano + ' · Pagamento: al ritiro'
 
-  // Salva ordine su Supabase (best-effort, non blocca il flusso WA)
+  // Salva su Supabase (best-effort)
   try {
     await sb.from('ordini_merch').insert({
-      prodotto_id:      p.id,
-      prodotto_nome:    p.nome,
-      categoria:        p.categoria || null,
-      prezzo_unitario:  prezzoBase,
-      sconto_pct:       sconto,
-      prezzo_finale:    parseFloat((prezzo * qty).toFixed(2)),
-      taglia:           taglia || null,
-      colore:           colore || null,
-      cliente_nome:     nomeCliente,
-      cliente_numero:   telCliente,
-      piano:            piano,
-      note:             note || null,
-      stato:            'nuovo'
+      prodotto_id:       d.p.id,
+      prodotto_nome:     d.p.nome,
+      categoria:         d.p.categoria || null,
+      prezzo_unitario:   d.prezzoBase,
+      sconto_pct:        d.sconto,
+      prezzo_finale:     d.prezzoFinale,
+      taglia:            d.taglia || null,
+      colore:            d.colore || null,
+      cliente_nome:      d.nomeCliente,
+      cliente_numero:    d.telCliente,
+      piano:             d.piano,
+      note:              d.note || null,
+      personalizzato:    d.personalizzato,
+      pers_nome:         d.persNome || null,
+      pers_numero:       d.persNumero || null,
+      metodo_pagamento:  'whatsapp',
+      stato:             'nuovo'
     })
   } catch(e) { console.warn('[MERCH] Salvataggio ordine fallito:', e) }
 
@@ -3586,6 +3638,68 @@ async function inviaOrdineWhatsapp() {
   window.open('https://wa.me/' + numero + '?text=' + encodeURIComponent(testo), '_blank')
   chiudiModalMerch()
   toast('Ordine inviato via WhatsApp ✓', 'success')
+}
+
+async function pagaConStripe() {
+  const d = raccogliDatiOrdine()
+  if (!d) return
+
+  const btnStripe = document.getElementById('btn-merch-stripe')
+  const btnWa     = document.getElementById('btn-merch-wa')
+  if (btnStripe) { btnStripe.disabled = true; btnStripe.textContent = '⏳ Elaborazione…' }
+  if (btnWa)     { btnWa.disabled = true }
+
+  try {
+    // 1. Salva ordine su Supabase con stato in_attesa_pagamento
+    const { data: ordine, error: insErr } = await sb.from('ordini_merch').insert({
+      prodotto_id:       d.p.id,
+      prodotto_nome:     d.p.nome,
+      categoria:         d.p.categoria || null,
+      prezzo_unitario:   d.prezzoBase,
+      sconto_pct:        d.sconto,
+      prezzo_finale:     d.prezzoFinale,
+      taglia:            d.taglia || null,
+      colore:            d.colore || null,
+      cliente_nome:      d.nomeCliente,
+      cliente_numero:    d.telCliente,
+      piano:             d.piano,
+      note:              d.note || null,
+      personalizzato:    d.personalizzato,
+      pers_nome:         d.persNome || null,
+      pers_numero:       d.persNumero || null,
+      metodo_pagamento:  'stripe',
+      stato:             'in_attesa_pagamento'
+    }).select('id').single()
+    if (insErr) throw new Error('Errore salvataggio ordine: ' + insErr.message)
+
+    // 2. Crea sessione Stripe checkout tramite worker
+    const descProd = d.p.nome + (d.taglia ? ' · ' + d.taglia : '') + (d.colore ? ' · ' + d.colore : '')
+      + (d.personalizzato ? ' ✏️ personalizzato' : '')
+    const resp = await fetch('https://carta-virtus-auth.nderobertis.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action:        'create-checkout',
+        tipoAcquisto:  'merch',
+        email:         (typeof currentAuthEmail !== 'undefined' && currentAuthEmail) || d.nomeCliente + '@virtus.it',
+        importo:       d.prezzoFinale,
+        descrizione:   descProd + ' × ' + d.qty,
+        ordineId:      ordine.id,
+        userId:        (typeof currentAuthUserId !== 'undefined') ? currentAuthUserId : null
+      })
+    })
+    const json = await resp.json()
+    if (json.error) throw new Error(json.error)
+
+    // 3. Redirect a Stripe
+    chiudiModalMerch()
+    window.location.href = json.url
+
+  } catch(e) {
+    toast('Errore pagamento: ' + e.message, 'error')
+    if (btnStripe) { btnStripe.disabled = false; btnStripe.innerHTML = '💳 Paga con Stripe' }
+    if (btnWa)     { btnWa.disabled = false }
+  }
 }
 
 document.addEventListener('click', function(e) {
