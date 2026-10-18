@@ -3759,6 +3759,7 @@ async function loadMsReport() {
   // Carica ingressi per presenze
   const { data: ingressi } = await sbAdmin.from('ingressi_gare')
     .select('tifoso_id, piano_nome, gara_id')
+    .not('operatore_email', 'is', null)
 
   // Carica solo gare casalinghe (esclude trasferte)
   const { data: gare } = await sbAdmin.from('gare')
@@ -4123,7 +4124,7 @@ async function stampaReportDirettivo() {
   // Membership attive escludendo VIP
   const { data: membershipsAllSt } = await sbAdmin.from('membership').select('tifoso_id,piano:piano_id(nome),stato,metodo_pagamento').eq('stato','attiva')
   const memberships = (membershipsAllSt||[]).filter(m => m.piano?.nome !== 'VIP')
-  const { data: ingressi } = await sbAdmin.from('ingressi_gare').select('tifoso_id,gara_id,piano_nome')
+  const { data: ingressi } = await sbAdmin.from('ingressi_gare').select('tifoso_id,gara_id,piano_nome').not('operatore_email', 'is', null)
 
   const ora = new Date()
   const gareDisputate = (gare||[]).filter(g => new Date(g.data_ora) < ora)
