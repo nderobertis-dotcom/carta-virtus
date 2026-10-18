@@ -222,7 +222,7 @@ footer strong{color:#fff;font-size:15px;font-family:'Barlow Condensed',sans-seri
 .merch-filtro-btn:hover,.merch-filtro-btn.attivo{background:var(--blu);color:#fff}
 .merch-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
 .merch-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(21,101,192,.12)}
-.merch-card-img{width:100%;aspect-ratio:1;background:#f8f9fc;display:flex;align-items:center;justify-content:center;font-size:56px;overflow:hidden;position:relative}.merch-card-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:8px}
+.merch-card-img{width:100%;aspect-ratio:1;background:#f8f9fc;display:flex;align-items:center;justify-content:center;font-size:56px;overflow:hidden}.merch-card-img img{width:100%;height:100%;object-fit:contain;padding:8px;box-sizing:border-box}
 .merch-card-body{padding:18px;flex:1;display:flex;flex-direction:column;gap:8px}
 .merch-card-nome{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--blu);text-transform:uppercase;line-height:1.1}
 .merch-card-desc{font-size:12px;color:var(--muted);line-height:1.5;flex:1}
@@ -3449,7 +3449,7 @@ function renderMerch(lista) {
     prezzoHtml += '</div>'
 
     const imgHtml = p.immagine_url
-      ? '<img src="' + p.immagine_url + '" alt="' + p.nome + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:0">'
+      ? '<img src="' + p.immagine_url + '" alt="' + p.nome + '">'
       : icona
 
     return '<div class="merch-card" id="merch-prod-' + p.id + '">' +
