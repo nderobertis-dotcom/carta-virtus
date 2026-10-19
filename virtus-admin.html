@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it" data-build="20261019c">
+<html lang="it" data-build="20261019d">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -3873,9 +3873,11 @@ async function loadMsReport() {
   ;(ingressi || []).forEach(i => {
     presenzePerGara[i.gara_id] = (presenzePerGara[i.gara_id] || 0) + 1
   })
-  // Totale ingressi Fan Card: solo gare casalinghe disputate
-  const idGareCasalinghe = new Set((gare || []).map(g => g.id))
-  const totalIngressiFanCard = (ingressi || []).filter(i => idGareCasalinghe.has(i.gara_id)).length
+  // Totale ingressi Fan Card: solo gare casalinghe già disputate
+  const idGareDisputate = new Set((gareDisputate || []).map(g => g.id))
+  const totalIngressiFanCard = Object.entries(presenzePerGara)
+    .filter(([garaId]) => idGareDisputate.has(garaId))
+    .reduce((s, [, n]) => s + n, 0)
 
   //  HTML 
   const kpiCard = (label, value, color='var(--accent)') =>
