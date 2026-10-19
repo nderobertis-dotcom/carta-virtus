@@ -7400,10 +7400,11 @@ async function openDettaglioTifoso(id) {
     if (!garePassate || garePassate.length === 0) {
       contenutoAssenze.innerHTML = '<span style="color:var(--muted)">Nessuna gara interna disputata.</span>'
     } else {
-      // Carica ingressi del tifoso
+      // Carica ingressi del tifoso (solo scansioni reali)
       const { data: ingressi } = await sbAdmin.from('ingressi_gare')
         .select('gara_id')
         .eq('tifoso_id', id)
+        .not('operatore_email', 'is', null)
 
       const garaPresente = new Set((ingressi || []).map(i => i.gara_id))
       const presenze = garePassate.filter(g => garaPresente.has(g.id)).length
