@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it" data-build="20261019b">
+<html lang="it" data-build="20261019c">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -4054,7 +4054,7 @@ async function loadMsReport() {
             return '<tr style="'+rowStyle+'">' +
               '<td><strong>'+g.titolo+'</strong>'+(disputata ? '' : ' <span style="font-size:10px;color:var(--muted)">(da disputare)</span>')+'</td>' +
               '<td style="font-size:12px;color:var(--muted)">'+data+'</td>' +
-              '<td style="text-align:center">'+fanCard+'</td>' +
+              '<td style="text-align:center">'+(disputata ? fanCard : '—')+'</td>' +
               '<td style="text-align:center">'+(disputata ? bv : '—')+'</td>' +
               '<td style="text-align:center">'+(disputata ? ac : '—')+'</td>' +
               '<td style="text-align:center;color:#0277BD">'+(disputata ? sw : '—')+'</td>' +
