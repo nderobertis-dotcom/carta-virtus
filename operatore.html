@@ -1109,6 +1109,7 @@ async function loadLog() {
   const { data } = await sbA.from('ingressi_gare')
     .select('piano_nome, registrato_il, tifoso:tifoso_id(nome, cognome)')
     .eq('gara_id', garaCorrente.id)
+    .not('operatore_email', 'is', null)
     .order('registrato_il', { ascending: false })
     .limit(30)
 
@@ -1120,6 +1121,7 @@ async function loadContatori() {
   const { data } = await sbA.from('ingressi_gare')
     .select('piano_nome')
     .eq('gara_id', garaCorrente.id)
+    .not('operatore_email', 'is', null)
   if (!data) return
   aggiornaContatori(data)
 }
