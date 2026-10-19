@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it" data-build="20261019a">
+<html lang="it" data-build="20261019b">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -3873,6 +3873,9 @@ async function loadMsReport() {
   ;(ingressi || []).forEach(i => {
     presenzePerGara[i.gara_id] = (presenzePerGara[i.gara_id] || 0) + 1
   })
+  // Totale ingressi Fan Card: solo gare casalinghe disputate
+  const idGareCasalinghe = new Set((gare || []).map(g => g.id))
+  const totalIngressiFanCard = (ingressi || []).filter(i => idGareCasalinghe.has(i.gara_id)).length
 
   //  HTML 
   const kpiCard = (label, value, color='var(--accent)') =>
@@ -4015,11 +4018,11 @@ async function loadMsReport() {
         ${kpiCard('Biglietti venduti', totBiglietti, '#1565C0')}
         ${kpiCard('Accrediti', totAccrediti, '#546E7A')}
         ${kpiCard('Spettatori Web', totSpettatoriWeb, '#0277BD')}
-        ${kpiCard('Ingressi Fan Card', totalIngressi, 'var(--accent)')}
+        ${kpiCard('Ingressi Fan Card', totalIngressiFanCard, 'var(--accent)')}
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
-        ${kpiCard('Spettatori totali', totBiglietti + totAccrediti + totalIngressi + totSpettatoriWeb, '#6A1B9A')}
-        ${kpiCard('Media spettatori/gara', gareConDati ? ((totBiglietti + totAccrediti + totalIngressi + totSpettatoriWeb) / gareConDati).toFixed(0) : '—', '#E65100')}
+        ${kpiCard('Spettatori totali', totBiglietti + totAccrediti + totalIngressiFanCard + totSpettatoriWeb, '#6A1B9A')}
+        ${kpiCard('Media spettatori/gara', gareConDati ? ((totBiglietti + totAccrediti + totalIngressiFanCard + totSpettatoriWeb) / gareConDati).toFixed(0) : '—', '#E65100')}
         ${kpiCard('Incasso totale', '€ '+(totIncasso+totIncassoFanCard+totIncassoWeb).toFixed(2), '#2E7D32')}
         ${kpiCard('Media incasso/gara', gareConDati ? '€ '+((totIncasso+totIncassoFanCard+totIncassoWeb)/gareConDati).toFixed(2) : '—', 'var(--gold)')}
       </div>
