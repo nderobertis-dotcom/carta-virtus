@@ -399,6 +399,42 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
     </div>
 
 
+    <!-- Contatori (solo admin) -->
+    <div class="counter-card" id="contatori-admin" hidden>
+      <div class="counter-item">
+        <div class="counter-value" id="cnt-totale">0</div>
+        <div class="counter-label">Totale</div>
+      </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:var(--muted)" id="cnt-base">0</div>
+        <div class="counter-label">Base</div>
+      </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:var(--blu2)" id="cnt-bronze">0</div>
+        <div class="counter-label">Bronze</div>
+      </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:var(--arancio)" id="cnt-silver">0</div>
+        <div class="counter-label">Silver</div>
+      </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:#e65100" id="cnt-gold">0</div>
+        <div class="counter-label">Gold</div>
+      </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:#F57C00" id="cnt-sponsor">0</div>
+        <div class="counter-label">Sponsor / VIP</div>
+      </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:#00897b" id="cnt-cortesia">0</div>
+        <div class="counter-label">Cortesia</div>
+      </div>
+      <div class="counter-item">
+        <div class="counter-value" style="color:#1565c0" id="cnt-disability">0</div>
+        <div class="counter-label">Disability</div>
+      </div>
+    </div>
+
     <!-- Scanner -->
     <div class="scanner-card">
       <div class="scanner-header">
@@ -576,6 +612,7 @@ async function initApp() {
       // Admin: accesso completo, nessuna query necessaria
       accessoOperatore = null
       pianiAbilitati = null
+      document.getElementById('contatori-admin').hidden = false
     } else {
       const { data: assegn } = await sbA.from('operatori_accessi_gara')
         .select('accesso, piani_abilitati')
