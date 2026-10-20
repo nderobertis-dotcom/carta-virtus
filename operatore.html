@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>Carta Virtus — Operatore Gare</title>
+<title>Carta Virtus — Operatore Gare</title><!-- build:20261020a -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -818,11 +818,12 @@ async function verificaIngresso(qr) {
       .eq('stato', 'assegnato')
     const maxIngressi = (postiSponsor || []).length || 1  // almeno 1 se non ha posti registrati
 
-    // Conta ingressi già registrati per questa gara
+    // Conta ingressi già registrati per questa gara (solo scansioni reali, non pre-registrati)
     const { data: ingressiGia } = await sbA.from('ingressi_gare')
       .select('id, registrato_il')
       .eq('gara_id', garaCorrente.id)
       .eq('tifoso_id', tifoso.id)
+      .not('operatore_email', 'is', null)
     const nIngressiGia = (ingressiGia || []).length
 
     if (nIngressiGia >= maxIngressi) {
@@ -835,15 +836,33 @@ async function verificaIngresso(qr) {
       return
     }
 
-    await sbA.from('ingressi_gare').insert({
-      gara_id:         garaCorrente.id,
-      tifoso_id:       tifoso.id,
-      piano_nome:      'Sponsor',
-      operatore_email: currentOperatoreEmail || null,
-      accesso:         accessoOperatore || null
-    })
-
+    // Aggiorna il record pre-registrato (posto_num = prossimo disponibile)
     const ingressoN = nIngressiGia + 1
+    const { data: preReg } = await sbA.from('ingressi_gare')
+      .select('id')
+      .eq('gara_id', garaCorrente.id)
+      .eq('tifoso_id', tifoso.id)
+      .eq('posto_num', ingressoN)
+      .is('operatore_email', null)
+      .single()
+
+    if (preReg) {
+      await sbA.from('ingressi_gare').update({
+        operatore_email: currentOperatoreEmail || 'admin',
+        accesso:         accessoOperatore || null,
+        registrato_il:   new Date().toISOString()
+      }).eq('id', preReg.id)
+    } else {
+      // Fallback: crea nuovo record se il pre-registrato non esiste
+      await sbA.from('ingressi_gare').insert({
+        gara_id:         garaCorrente.id,
+        tifoso_id:       tifoso.id,
+        piano_nome:      'Sponsor/VIP',
+        posto_num:       ingressoN,
+        operatore_email: currentOperatoreEmail || 'admin',
+        accesso:         accessoOperatore || null
+      })
+    }
     mostraRisultato('ok', '🏢', 'Accesso consentito — SPONSOR',
       `${tifoso.nome} ${tifoso.cognome} · Ingresso omaggio (${ingressoN} di ${maxIngressi})`,
       'Sponsor', 0, false, null, false, null, cancellatiPerPiano('Sponsor'))
