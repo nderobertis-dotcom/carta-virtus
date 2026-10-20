@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>Carta Virtus — Operatore Gare</title><!-- build:20261020c -->
+<title>Carta Virtus — Operatore Gare</title><!-- build:20261020d -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -461,8 +461,8 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
         </button>
         <div class="or-sep">oppure inserisci manualmente</div>
         <div class="qr-wrap">
-          <input class="form-input" id="qr-input" placeholder="Codice QR..." style="font-family:monospace;text-transform:uppercase"/>
-          <button class="btn-cerca" onclick="verificaIngresso(document.getElementById('qr-input').value.trim().toUpperCase())">Verifica</button>
+          <input class="form-input" id="qr-input" placeholder="Codice QR..." style="font-family:monospace"/>
+          <button class="btn-cerca" onclick="verificaIngresso(document.getElementById('qr-input').value.trim())">Verifica</button>
         </div>
       </div>
     </div>
@@ -763,7 +763,7 @@ async function toggleCamera() {
         const code = jsQR(imageData.data, imageData.width, imageData.height)
         if (code && code.data) {
           stopCamera()
-          verificaIngresso(code.data.toUpperCase().trim())
+          verificaIngresso(code.data.trim())
         }
       }
     }, 300)
@@ -798,10 +798,10 @@ async function verificaIngresso(qr) {
     return
   }
 
-  // ── Trova tifoso per QR ──
+  // ── Trova tifoso per QR (case-insensitive: VIP in maiuscolo, fan card in minuscolo) ──
   const { data: tifoso, error: tErr } = await sbA.from('tifosi')
     .select('id, nome, cognome, stato, punti_saldo, auth_user_id, tipo, accompagnatore_minore, accompagnatore_stato, anno_nascita_minore')
-    .eq('qr_code', qr)
+    .ilike('qr_code', qr)
     .eq('stato', 'attivo')
     .single()
 
@@ -1443,7 +1443,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
     if (document.getElementById('login-screen').style.display !== 'none') doLogin()
     else if (document.getElementById('qr-input') === document.activeElement) {
-      verificaIngresso(document.getElementById('qr-input').value.trim().toUpperCase())
+      verificaIngresso(document.getElementById('qr-input').value.trim())
     }
   }
 })
