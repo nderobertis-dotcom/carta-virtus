@@ -6520,7 +6520,7 @@ async function loadPartner() {
         <button class="btn btn-ghost btn-sm" onclick='apriModalPartner("${p.id}")'>✏️</button>
         <button class="btn btn-primary btn-sm" onclick='generaAccordoPartner("${p.id}")'>📄</button>
         <button class="btn btn-ghost btn-sm" title="Invia mail di benvenuto" onclick='inviaMailBenvenutoPartner("${p.id}")'>📧</button>
-        ${!p.auth_user_id ? `<button class="btn btn-primary btn-sm" onclick='apriModalCreaAccesso("${p.id}")'>🔑</button>` : ''}
+        ${!p.auth_user_id ? `<button class="btn btn-primary btn-sm" onclick='apriModalCreaAccesso("${p.id}")'>🔑</button>` : `<button class="btn btn-ghost btn-sm" title="Invia reset password" onclick='resetPasswordPartner("${p.id}")'>🔒</button>`}
         <button class="btn btn-danger btn-sm" onclick='togglePartner("${p.id}", ${p.attivo})'>${p.attivo ? 'Sospendi' : 'Riattiva'}</button>
         <button class="btn btn-danger btn-sm" onclick='eliminaPartner("${p.id}", "${p.nome_negozio.replace(/"/g,"&quot;")}")'>🗑️</button>
       </td>
@@ -6890,6 +6890,19 @@ async function eliminaPartner(id, nome) {
   loadPartnerList()
   loadCategoriePartner()
   aggiornaContatorAccompagnatori()
+}
+
+async function resetPasswordPartner(id) {
+  const p = allPartner.find(x => x.id === id)
+  if (!p) return
+  const email = p.referente_email
+  if (!email) { toast('Nessuna email associata al partner', 'error'); return }
+  if (!confirm(`Inviare email di reset password a ${email}?`)) return
+  const { error } = await sbAdmin.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://virtusfanmolfetta.com/partner.html'
+  })
+  if (error) { toast('Errore: ' + error.message, 'error'); return }
+  toast('Email di reset password inviata a ' + email, 'success')
 }
 
 async function inviaMailBenvenutoPartner(id) {
@@ -11076,6 +11089,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.rimuoviLogo = rimuoviLogo;
   window.creaAccessoPartner = creaAccessoPartner;
   window.toggleEmailBenvenuto = toggleEmailBenvenuto;
+  window.resetPasswordPartner = resetPasswordPartner;
   window.toggleDocIntesa = toggleDocIntesa;
   window.apriModalNuovaCategoria = apriModalNuovaCategoria;
   window.salvaCategoria = salvaCategoria;
