@@ -177,6 +177,25 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
   </div>
 </div>
 
+<!-- RESET PASSWORD -->
+<div id="reset-password-screen" style="display:none;min-height:100vh;background:linear-gradient(135deg,#0d2147,#1a3a6b);display:none;align-items:center;justify-content:center">
+  <div class="login-card">
+    <img src="" id="reset-logo" alt="Virtus" class="login-logo"/>
+    <div class="login-title">Nuova Password</div>
+    <div class="login-sub">Scegli una nuova password per il tuo account</div>
+    <div class="login-error" id="reset-error"></div>
+    <div class="form-group">
+      <label>Nuova password</label>
+      <input class="form-input" type="password" id="reset-pwd1" placeholder="••••••••"/>
+    </div>
+    <div class="form-group">
+      <label>Conferma password</label>
+      <input class="form-input" type="password" id="reset-pwd2" placeholder="••••••••"/>
+    </div>
+    <button class="btn-login" onclick="doResetPassword()">Salva nuova password →</button>
+  </div>
+</div>
+
 <!-- APP -->
 <!-- ACCORDO -->
 <div id="accordo-screen" style="display:none;min-height:100vh;background:linear-gradient(135deg,#0d2147,#1a3a6b);padding:24px;align-items:center;justify-content:center">
@@ -444,6 +463,72 @@ let currentPartner = null
 let currentTifoso = null
 let cameraStream = null
 let scanInterval = null
+
+// ── RECOVERY TOKEN (link reset password) ──
+;(async function checkRecoveryToken() {
+  const hash = window.location.hash
+  if (!hash.includes('type=recovery')) return
+
+  // Estrai i parametri dall'hash
+  const params = new URLSearchParams(hash.replace(/^#/, ''))
+  const access_token  = params.get('access_token')
+  const refresh_token = params.get('refresh_token') || ''
+  if (!access_token) return
+
+  // Ripulisci l'URL per sicurezza
+  history.replaceState(null, '', window.location.pathname)
+
+  // Imposta la sessione con il token di recovery
+  const { error } = await sb.auth.setSession({ access_token, refresh_token })
+  if (error) {
+    document.getElementById('login-error').textContent = 'Link scaduto o non valido. Richiedi un nuovo reset.'
+    document.getElementById('login-error').style.display = 'block'
+    return
+  }
+
+  // Copia il logo dal login-screen
+  const loginLogo = document.querySelector('#login-screen .login-logo')
+  if (loginLogo) document.getElementById('reset-logo').src = loginLogo.src
+
+  // Mostra lo schermo di reset password al posto del login
+  document.getElementById('login-screen').style.display = 'none'
+  const resetScreen = document.getElementById('reset-password-screen')
+  resetScreen.style.display = 'flex'
+})()
+
+// ── RESET PASSWORD ──
+async function doResetPassword() {
+  const pwd1  = document.getElementById('reset-pwd1').value
+  const pwd2  = document.getElementById('reset-pwd2').value
+  const errEl = document.getElementById('reset-error')
+  errEl.style.display = 'none'
+
+  if (!pwd1 || pwd1.length < 6) {
+    errEl.textContent = 'La password deve essere di almeno 6 caratteri.'
+    errEl.style.display = 'block'
+    return
+  }
+  if (pwd1 !== pwd2) {
+    errEl.textContent = 'Le due password non coincidono.'
+    errEl.style.display = 'block'
+    return
+  }
+
+  const { error } = await sb.auth.updateUser({ password: pwd1 })
+  if (error) {
+    errEl.textContent = 'Errore: ' + error.message
+    errEl.style.display = 'block'
+    return
+  }
+
+  // Password aggiornata: fai logout e torna al login
+  await sb.auth.signOut()
+  document.getElementById('reset-password-screen').style.display = 'none'
+  document.getElementById('login-screen').style.display = 'flex'
+  document.getElementById('login-error').style.color = '#2e7d32'
+  document.getElementById('login-error').textContent = 'Password aggiornata! Accedi con la nuova password.'
+  document.getElementById('login-error').style.display = 'block'
+}
 
 // ── LOGIN ──
 async function doLogin() {
