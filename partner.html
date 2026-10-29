@@ -274,6 +274,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-
     </div>
     <div class="header-right">
       <div class="partner-name-chip" id="partner-chip">—</div>
+      <button class="btn-out" onclick="avviaResetPassword()" title="Reimposta password" style="margin-right:6px">🔒</button>
       <button class="btn-out" onclick="doLogout()">Esci</button>
     </div>
   </div>
@@ -496,7 +497,20 @@ let scanInterval = null
   resetScreen.style.display = 'flex'
 })()
 
-// ── RESET PASSWORD ──
+// ── AVVIA RESET (dal pannello partner — invia mail) ──
+async function avviaResetPassword() {
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user || !user.email) { alert('Impossibile recuperare l\'email. Riprova.'); return }
+  if (!confirm(`Inviare un link di reset password a ${user.email}?`)) return
+
+  const { error } = await sb.auth.resetPasswordForEmail(user.email, {
+    redirectTo: window.location.href.split('#')[0]
+  })
+  if (error) { alert('Errore: ' + error.message); return }
+  alert(`✅ Link di reset inviato a ${user.email}.\nControlla la tua email e clicca il link.`)
+}
+
+// ── RESET PASSWORD (dalla schermata dopo click link email) ──
 async function doResetPassword() {
   const pwd1  = document.getElementById('reset-pwd1').value
   const pwd2  = document.getElementById('reset-pwd2').value
