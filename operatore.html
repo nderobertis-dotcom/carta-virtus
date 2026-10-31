@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2 -->
+<!-- v3 -->
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -984,13 +984,15 @@ async function verificaIngresso(qr) {
     }
   }
 
-  // Registra ingresso
+  // Registra ingresso — posto_num progressivo per supportare multi-ingresso
+  const postoNum = nIngressiTifoso + 1  // 1 per il primo, 2 per il secondo, ecc.
   const { data: ingresso, error: iErr } = await sbA.from('ingressi_gare').insert({
     gara_id:         garaCorrente.id,
     tifoso_id:       tifoso.id,
     piano_nome:      pianoNome,
     operatore_email: currentOperatoreEmail || null,
-    accesso:         accessoOperatore || null
+    accesso:         accessoOperatore || null,
+    posto_num:       postoNum
   }).select().single()
 
   if (iErr) {
