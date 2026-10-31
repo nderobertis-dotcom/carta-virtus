@@ -900,18 +900,29 @@ async function verificaIngresso(qr) {
     return
   }
 
-  // Controlla accesso già effettuato (unique constraint)
-  const { data: giaEntrato } = await sbA.from('ingressi_gare')
+  // Controlla accesso già effettuato — rispetta il numero di posti assegnati
+  const { data: ingressiGiaTifoso } = await sbA.from('ingressi_gare')
     .select('id, registrato_il')
     .eq('gara_id', garaCorrente.id)
     .eq('tifoso_id', tifoso.id)
-    .single()
+    .order('registrato_il', { ascending: true })
 
-  if (giaEntrato) {
-    const ora_ingresso = new Date(giaEntrato.registrato_il).toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
-    mostraRisultato('err', '🔴', 'GIÀ ENTRATO',
-      tifoso.nome + ' ' + tifoso.cognome + ' ha già effettuato l\'ingresso alle <strong>' + ora_ingresso + '</strong>.',
-      pianoNome)
+  // Calcola il limite di ingressi dal numero di posti assegnati (min 1)
+  const { data: postiTifoso } = await sbA.from('posti')
+    .select('id')
+    .eq('tifoso_id', tifoso.id)
+    .eq('stato', 'assegnato')
+  const maxIngressiTifoso = (postiTifoso || []).length || 1
+
+  const nIngressiTifoso = (ingressiGiaTifoso || []).length
+  if (nIngressiTifoso >= maxIngressiTifoso) {
+    const ora_ingresso = ingressiGiaTifoso.length
+      ? new Date(ingressiGiaTifoso[ingressiGiaTifoso.length-1].registrato_il).toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
+      : '—'
+    const msg = maxIngressiTifoso > 1
+      ? `${tifoso.nome} ${tifoso.cognome} ha già utilizzato tutti i ${maxIngressiTifoso} ingressi disponibili. Ultimo alle <strong>${ora_ingresso}</strong>.`
+      : `${tifoso.nome} ${tifoso.cognome} ha già effettuato l'ingresso alle <strong>${ora_ingresso}</strong>.`
+    mostraRisultato('err', '🔴', 'GIÀ ENTRATO', msg, pianoNome)
     return
   }
 
